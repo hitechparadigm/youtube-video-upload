@@ -1,15 +1,18 @@
 {
   "name": "automated-video-pipeline",
   "version": "1.0.0",
-  "description": "AWS-based automated video generation and publishing pipeline with AI agents, trend analysis, and YouTube publishing",
+  "description": "AWS-based automated video generation pipeline with configurable media sources, Node.js 20.x runtime, and complete project isolation",
   "main": "index.js",
   "scripts": {
-    "build": "Compile TypeScript files to JavaScript for deployment",
-    "watch": "Watch TypeScript files for changes and auto-compile",
-    "test": "Run Jest unit tests for Lambda functions and components",
-    "cdk": "AWS CDK command line interface for infrastructure management",
-    "deploy": "Deploy the entire AWS infrastructure stack using CDK",
-    "destroy": "Remove all AWS resources created by this stack"
+    "build": "tsc",
+    "watch": "tsc -w",
+    "test": "jest",
+    "cdk": "cdk",
+    "deploy": "cdk deploy",
+    "destroy": "cdk destroy",
+    "synth": "cdk synth",
+    "diff": "cdk diff",
+    "bootstrap": "cdk bootstrap"
   },
   "devDependencies": {
     "@types/aws-lambda": "^8.10.130",
@@ -26,5 +29,23 @@
     "constructs": "^10.3.0",
     "google-auth-library": "^9.4.1",
     "googleapis": "^128.0.0"
-  }
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "keywords": [
+    "aws",
+    "lambda",
+    "video-generation",
+    "youtube-automation",
+    "nodejs20",
+    "pexels",
+    "pixabay",
+    "configurable-media-sources"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/hitechparadigm/youtube-video-upload.git"
+  },
+  "license": "MIT"
 }

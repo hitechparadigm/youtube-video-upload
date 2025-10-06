@@ -7,20 +7,24 @@ This implementation plan converts the automated video pipeline design into actio
 ## Task Breakdown
 
 - [ ] 1. Set up project infrastructure and core AWS services
+
+
   - Create dedicated S3 buckets with proper tagging and lifecycle policies
   - Set up DynamoDB tables for topics, trends, videos, and cost tracking
   - Configure AWS Secrets Manager for API credentials
   - Implement IAM roles and policies with least privilege access
   - _Requirements: All storage and security requirements from requirements.md_
 
-- [ ] 1.1 Create S3 bucket infrastructure with lifecycle management
+- [x] 1.1 Create S3 bucket infrastructure with lifecycle management
+
   - Implement primary bucket: `automated-video-pipeline-{account}-{region}`
   - Configure backup bucket with cross-region replication
   - Set up folder structure: trends/, scripts/, media/, audio/, final-videos/, archives/
   - Apply comprehensive tagging strategy for cost tracking and resource management
   - _Requirements: 1.1, 2.1, 3.1_
 
-- [ ] 1.2 Set up DynamoDB tables with GSI indexes
+- [x] 1.2 Set up DynamoDB tables with GSI indexes
+
   - Create topics table with priority and status indexes
   - Create trends table with topic and timestamp indexes  
   - Create video production table with status, topic, and cost indexes
@@ -28,7 +32,8 @@ This implementation plan converts the automated video pipeline design into actio
   - Configure TTL for automatic data cleanup
   - _Requirements: 1.2, 2.2, 3.2_
 
-- [ ] 1.3 Configure AWS Secrets Manager for extensible API credentials
+- [x] 1.3 Configure AWS Secrets Manager for extensible API credentials
+
   - Create secrets structure for configurable media sources
   - Store YouTube API credentials (OAuth tokens)
   - Set up placeholder structure for additional media sources (Unsplash, Freepik, etc.)
@@ -54,7 +59,7 @@ This implementation plan converts the automated video pipeline design into actio
   - Add topic validation with keyword extraction
   - Implement priority-based scheduling logic
   - Add comprehensive error handling and logging
-  - _Requirements: 1.4, 2.4_
+  - _Requirements: 1.4, 2.4, 12.1_
 
 - [ ] 2.2 Build Google Sheets integration service
   - Implement Google Sheets API authentication
@@ -328,7 +333,8 @@ This implementation plan converts the automated video pipeline design into actio
   - Create SNS alerts for errors and performance issues
   - Add cost monitoring and budget alerts
   - Implement health checks and automated recovery
-  - _Requirements: 9.3, 9.4_
+  - Validate all Lambda functions use Node.js 20.x runtime
+  - _Requirements: 9.3, 9.4, 12.1_
 
 - [ ]* 10.3 Write operational documentation and runbooks
   - Create deployment and configuration guides
@@ -340,11 +346,12 @@ This implementation plan converts the automated video pipeline design into actio
 ## Success Criteria
 
 ### Technical Validation
-- All Lambda functions use Node.js 20.x runtime
-- Complete project isolation with dedicated resources
+- All Lambda functions use Node.js 20.x runtime (AWS compliance requirement)
+- Complete project isolation with dedicated S3 buckets and resource tagging
 - Configurable media sources with no hardcoded credentials
 - End-to-end video generation in under 10 minutes
 - Cost per video under $1.00 with optimization
+- No deprecated runtime warnings or security vulnerabilities
 
 ### Functional Requirements
 - Generate 2+ videos daily from basic topic inputs

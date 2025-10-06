@@ -59,29 +59,50 @@ The system reads simple topic ideas from your Google Sheets document and uses AI
 
 ### Step 6: Configure AWS Secrets Manager
 
-Add the Google Sheets credentials to AWS Secrets Manager:
+Add the Google Sheets credentials to the new configurable secrets structure:
 
 ```bash
 # Extract values from the downloaded JSON key file
 SERVICE_ACCOUNT_EMAIL="your-service-account@your-project.iam.gserviceaccount.com"
 PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\nYour private key here\n-----END PRIVATE KEY-----"
 
-# Update the existing secret with Google Sheets credentials
+# Update the media sources secret with Google Sheets credentials
 aws secretsmanager update-secret \
-  --secret-id automated-video-pipeline/api-credentials \
+  --secret-id automated-video-pipeline/media-sources \
   --secret-string '{
-    "googleTrendsApiKey": "",
-    "twitterBearerToken": "",
-    "youtubeClientId": "",
-    "youtubeClientSecret": "",
-    "youtubeRefreshToken": "",
-    "pexelsApiKey": "",
-    "pixabayApiKey": "",
-    "newsApiKey": "",
-    "googleSheetsServiceAccountEmail": "'$SERVICE_ACCOUNT_EMAIL'",
-    "googleSheetsServiceAccountPrivateKey": "'$PRIVATE_KEY'"
+    "pexels": {
+      "apiKey": "[YOUR_PEXELS_API_KEY]",
+      "enabled": true
+    },
+    "pixabay": {
+      "apiKey": "[YOUR_PIXABAY_API_KEY]",
+      "enabled": true
+    },
+    "youtube": {
+      "clientId": "[YOUR_YOUTUBE_CLIENT_ID]",
+      "clientSecret": "[YOUR_YOUTUBE_CLIENT_SECRET]",
+      "refreshToken": "[YOUR_YOUTUBE_REFRESH_TOKEN]",
+      "apiKey": "[YOUR_YOUTUBE_API_KEY]"
+    },
+    "googleSheets": {
+      "serviceAccountEmail": "'$SERVICE_ACCOUNT_EMAIL'",
+      "privateKey": "'$PRIVATE_KEY'",
+      "enabled": true
+    },
+    "trends": {
+      "googleTrendsApiKey": "[OPTIONAL]",
+      "twitterBearerToken": "[OPTIONAL]",
+      "newsApiKey": "[OPTIONAL]",
+      "enabled": false
+    }
   }'
 ```
+
+**🔧 New Configurable Architecture Benefits:**
+- **Modular**: Each service has its own configuration section
+- **Extensible**: Add new media sources without code changes
+- **Flexible**: Enable/disable services independently
+- **Secure**: All credentials centralized in Secrets Manager
 
 ## 📊 Simplified Spreadsheet Format
 

@@ -6,53 +6,64 @@ The Automated Video Pipeline is a comprehensive AWS-based solution that automati
 
 ## Requirements
 
-### Requirement 1: Topic Definition and Management
+### Requirement 1: Simplified Topic Definition and AI-Driven Content Generation
 
-**User Story:** As a content creator, I want to define specific topics for video creation so that I can control what content is generated on any given day.
-
-#### Acceptance Criteria
-
-1. WHEN defining topics THEN the user SHALL be able to specify detailed topics like "investing in real estate in Canada"
-2. WHEN setting topics THEN the system SHALL accept topics through API, web interface, or configuration files
-3. WHEN topics are defined THEN the system SHALL store topic definitions with scheduling information in DynamoDB
-4. WHEN multiple topics are provided THEN the system SHALL process them in the specified order or priority
-5. WHEN topics change THEN the system SHALL update the pipeline to use new topics for subsequent video creation
-
-### Requirement 2: Trend Analysis and Data Collection
-
-**User Story:** As a content creator, I want the system to automatically analyze trends from multiple sources based on my defined topics so that my videos are always relevant and timely.
+**User Story:** As a content creator, I want to specify simple topic ideas and let AI agents automatically research trends, generate keywords, and create optimized video content.
 
 #### Acceptance Criteria
 
-1. WHEN the system is triggered THEN it SHALL collect trend data from Google Trends, YouTube, Twitter, and news APIs using the user-defined topics
-2. WHEN trend data is collected THEN the system SHALL store raw data in S3 and structured metrics in DynamoDB
-3. WHEN analyzing trends THEN the system SHALL generate high-level summaries using Amazon Bedrock focused on the specified topics
-4. WHEN processing user-defined topics THEN the system SHALL filter and categorize trends by relevance to the exact topics specified
-5. IF trend analysis fails for any source THEN the system SHALL continue with available data and log the failure
+1. WHEN defining topics THEN the user SHALL only need to specify basic topic ideas like "Investing for beginners in the USA" or "Travel to Mexico"
+2. WHEN setting topics THEN the user SHALL specify topic, daily frequency (e.g., 2 videos per day), and status (active/paused)
+3. WHEN a topic is defined THEN the Trend Research Analyst agent SHALL automatically analyze recent trends (last 7 days) from news, YouTube, and social media
+4. WHEN trend analysis is complete THEN the agent SHALL identify the most relevant current trends, keywords, and subtopics for the base topic
+5. WHEN generating videos THEN the system SHALL create the specified number of videos per day based on the frequency setting
+6. WHEN topics are active THEN the system SHALL continuously generate fresh content by re-analyzing trends for each video
+7. WHEN accessing external trend sources THEN the system SHALL use appropriate authentication methods for secure API access
+8. WHEN trend analysis fails THEN the system SHALL use fallback content generation and continue with available data
 
-### Requirement 3: Automated Content Generation
+### Requirement 2: Intelligent Trend Analysis and Content Discovery
 
-**User Story:** As a content creator, I want the system to generate detailed video scripts and prompts so that I have professional-quality content without manual writing.
-
-#### Acceptance Criteria
-
-1. WHEN trend analysis is complete THEN the system SHALL generate a detailed video script using Amazon Bedrock
-2. WHEN creating scripts THEN the system SHALL ensure content duration targets 5-10 minutes
-3. WHEN generating content THEN the system SHALL include narration text, scene descriptions, and visual requirements
-4. WHEN creating scripts THEN the system SHALL incorporate trending keywords naturally for SEO
-5. WHEN content generation is complete THEN the system SHALL convert scripts to high-quality audio using Amazon Polly with neural voices
-
-### Requirement 4: Media Asset Acquisition
-
-**User Story:** As a content creator, I want the system to automatically find and download relevant free media so that my videos have professional visuals without copyright issues.
+**User Story:** As a content creator, I want the AI system to automatically discover the most current and engaging trends related to my basic topics so that every video is timely and relevant.
 
 #### Acceptance Criteria
 
-1. WHEN script generation is complete THEN the system SHALL search for relevant images and videos on Pexels and Pixabay
-2. WHEN searching for media THEN the system SHALL use keywords extracted from the script and topic
-3. WHEN downloading media THEN the system SHALL store assets in S3 with metadata tags for scene matching
-4. WHEN acquiring media THEN the system SHALL ensure sufficient variety and duration to cover the entire video length
-5. IF media search returns insufficient results THEN the system SHALL expand search terms and retry
+1. WHEN processing a basic topic THEN the Trend Research Analyst SHALL analyze trends from the last 7 days across Google Trends, YouTube, Twitter, and news sources
+2. WHEN trend data is collected THEN the agent SHALL identify trending subtopics, keywords, and angles related to the base topic
+3. WHEN analyzing trends THEN the agent SHALL use Amazon Bedrock to generate intelligent insights about what's currently popular and engaging
+4. WHEN multiple trend sources are available THEN the agent SHALL synthesize data to find the most promising content opportunities
+5. WHEN generating video concepts THEN the agent SHALL create specific, trendy variations of the base topic (e.g., "Investing for beginners" → "Best investment apps for beginners in 2025")
+6. WHEN trend analysis is complete THEN the agent SHALL provide ranked content suggestions with estimated engagement potential
+7. IF trend analysis fails for any source THEN the agent SHALL continue with available sources and generate content based on historical data
+
+### Requirement 3: Engaging Content Generation for Maximum Subscriber Growth
+
+**User Story:** As a content creator, I want the system to generate highly engaging, entertaining video content that makes viewers want to subscribe and come back for more.
+
+#### Acceptance Criteria
+
+1. WHEN trend analysis is complete THEN the system SHALL generate engaging video scripts with hooks, storytelling, and subscriber-focused content
+2. WHEN creating scripts THEN the system SHALL include attention-grabbing openings, compelling narratives, and strong calls-to-action for subscriptions
+3. WHEN generating content THEN the system SHALL use engaging formats like "Top 5", "Secrets", "Mistakes to Avoid", "Before & After", and "Shocking Truth"
+4. WHEN creating scripts THEN the system SHALL incorporate trending keywords naturally while maintaining entertainment value and viewer engagement
+5. WHEN generating titles THEN the system SHALL create click-worthy, curiosity-driven titles that encourage clicks without being clickbait
+6. WHEN content generation is complete THEN the system SHALL convert scripts to dynamic, engaging audio with varied pacing and emphasis
+7. WHEN creating video structure THEN the system SHALL include engagement elements like questions, surprises, and "wait for it" moments to increase watch time
+
+### Requirement 4: Configurable Media Asset Acquisition
+
+**User Story:** As a content creator, I want the system to automatically find and download relevant media from multiple configurable sources so that my videos have professional visuals without copyright issues and I can easily add new media sources.
+
+#### Acceptance Criteria
+
+1. WHEN script generation is complete THEN the system SHALL search for relevant images and videos from all enabled media sources
+2. WHEN configuring media sources THEN the system SHALL support Pexels, Pixabay, Unsplash, and custom S3 libraries through AWS Secrets Manager configuration
+3. WHEN adding new media sources THEN the system SHALL allow enabling/disabling sources without code changes via Secrets Manager
+4. WHEN searching for media THEN the system SHALL use keywords extracted from the script and topic across all configured sources
+5. WHEN downloading media THEN the system SHALL store assets in dedicated S3 bucket with metadata tags for scene matching and source attribution
+6. WHEN acquiring media THEN the system SHALL ensure sufficient variety and duration to cover the entire video length
+7. WHEN media sources have rate limits THEN the system SHALL implement automatic throttling and source rotation
+8. IF media search returns insufficient results THEN the system SHALL expand search terms and retry across alternative sources
+9. WHEN storing media THEN the system SHALL track attribution requirements and license information for each source
 
 ### Requirement 5: Video Production and Assembly
 
@@ -67,17 +78,19 @@ The Automated Video Pipeline is a comprehensive AWS-based solution that automati
 5. WHEN processing video THEN the system SHALL ensure final duration is between 5-10 minutes
 6. IF video processing fails THEN the system SHALL retry with alternative media assets
 
-### Requirement 6: YouTube Publishing and SEO
+### Requirement 6: YouTube Publishing with Engagement-Focused SEO
 
-**User Story:** As a content creator, I want the system to automatically upload videos to YouTube with optimal SEO so that my content reaches the maximum audience.
+**User Story:** As a content creator, I want the system to automatically upload videos with engaging titles, compelling thumbnails, and subscriber-growth optimization.
 
 #### Acceptance Criteria
 
-1. WHEN video production is complete THEN the system SHALL generate SEO-optimized titles, descriptions, and tags
-2. WHEN uploading to YouTube THEN the system SHALL use YouTube Data API v3 with OAuth 2.0 authentication
-3. WHEN publishing video THEN the system SHALL apply generated SEO metadata during upload
-4. WHEN upload is complete THEN the system SHALL log video URL and status to DynamoDB for tracking
-5. IF YouTube upload fails THEN the system SHALL retry up to 3 times with exponential backoff
+1. WHEN video production is complete THEN the system SHALL generate click-worthy titles that balance SEO with engagement psychology
+2. WHEN creating descriptions THEN the system SHALL include compelling hooks, clear value propositions, and strategic subscription calls-to-action
+3. WHEN uploading to YouTube THEN the system SHALL use YouTube Data API v3 with OAuth 2.0 authentication
+4. WHEN publishing video THEN the system SHALL apply engagement-optimized metadata including curiosity-driven titles and subscriber-focused descriptions
+5. WHEN generating thumbnails THEN the system SHALL create eye-catching thumbnails with bold text, contrasting colors, and emotional expressions
+6. WHEN upload is complete THEN the system SHALL log video URL, engagement metrics predictions, and subscriber growth tracking
+7. IF YouTube upload fails THEN the system SHALL retry up to 3 times with exponential backoff
 
 ### Requirement 7: Scheduling and Automation
 
@@ -103,17 +116,20 @@ The Automated Video Pipeline is a comprehensive AWS-based solution that automati
 4. WHEN agent communication is needed THEN the system SHALL use shared state in DynamoDB for coordination
 5. IF any agent fails THEN the supervisor agent SHALL implement error recovery and workflow continuation
 
-### Requirement 9: Data Storage and Management
+### Requirement 9: Isolated Data Storage and Management
 
-**User Story:** As a system administrator, I want comprehensive data storage so that all content, metadata, and analytics are preserved for future analysis.
+**User Story:** As a system administrator, I want comprehensive data storage with complete project isolation so that all content, metadata, and analytics are preserved separately from other projects.
 
 #### Acceptance Criteria
 
-1. WHEN storing data THEN the system SHALL use S3 for media files, videos, and raw trend data
-2. WHEN storing metadata THEN the system SHALL use DynamoDB for structured data, metrics, and tracking
-3. WHEN managing storage THEN the system SHALL implement lifecycle policies to archive old content to Glacier
-4. WHEN accessing stored data THEN the system SHALL maintain versioning for all video assets
-5. WHEN storing sensitive data THEN the system SHALL use AWS Secrets Manager for API keys and OAuth tokens
+1. WHEN storing data THEN the system SHALL use dedicated S3 buckets with project-specific naming: `automated-video-pipeline-{account}-{region}`
+2. WHEN storing metadata THEN the system SHALL use DynamoDB tables with project-specific prefixes for complete isolation
+3. WHEN managing storage THEN the system SHALL implement lifecycle policies to archive old content to Glacier after 30 days
+4. WHEN accessing stored data THEN the system SHALL maintain versioning for all video assets with automatic cleanup
+5. WHEN storing sensitive data THEN the system SHALL use AWS Secrets Manager with configurable structure for multiple media sources
+6. WHEN creating AWS resources THEN the system SHALL tag all resources with comprehensive tagging strategy for project isolation and cost tracking
+7. WHEN deploying infrastructure THEN the system SHALL ensure no resource conflicts with existing YouTube automation projects
+8. WHEN managing credentials THEN the system SHALL support extensible configuration for adding new media sources via Secrets Manager
 
 ### Requirement 10: Monitoring and Error Handling
 
@@ -138,8 +154,23 @@ The Automated Video Pipeline is a comprehensive AWS-based solution that automati
 3. WHEN scaling demand THEN the system SHALL automatically adjust resources based on workload
 4. WHEN managing costs THEN the system SHALL implement reserved concurrency limits for Lambda functions
 5. WHEN storage grows THEN the system SHALL automatically transition old data to lower-cost storage tiers
+6. WHEN deploying resources THEN the system SHALL tag all AWS resources with consistent tags for cost allocation and resource management
+7. WHEN tracking costs THEN the system SHALL use resource tags to generate detailed cost reports by service and component
 
-### Requirement 12: Per-Video Cost Tracking
+### Requirement 12: Runtime and Security Compliance
+
+**User Story:** As a system administrator, I want the system to use the latest supported AWS Lambda runtime so that it remains secure and compliant with AWS support policies.
+
+#### Acceptance Criteria
+
+1. WHEN deploying Lambda functions THEN the system SHALL use Node.js 20.x runtime for all functions
+2. WHEN AWS announces runtime deprecation THEN the system SHALL be upgraded before the end-of-support date
+3. WHEN using Node.js features THEN the system SHALL leverage ES2022 features for improved performance and security
+4. WHEN deploying infrastructure THEN the system SHALL validate that no functions use deprecated Node.js 18.x runtime
+5. WHEN updating dependencies THEN the system SHALL ensure compatibility with Node.js 20.x runtime
+6. WHEN running in production THEN the system SHALL receive latest security patches and performance improvements from AWS
+
+### Requirement 13: Per-Video Cost Tracking
 
 **User Story:** As a system owner, I want to track the exact cost of generating each video so that I can optimize the pipeline economics and understand profitability.
 

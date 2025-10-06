@@ -4,6 +4,69 @@
 
 The Automated Video Pipeline is a serverless, event-driven architecture built on AWS that leverages AI agents and GenAI services to create, produce, and publish high-quality videos automatically. The system uses a multi-agent orchestration pattern with Amazon Bedrock Agents coordinating specialized AI agents for trend analysis, content creation, media curation, and video production.
 
+## Storage Configuration
+
+### S3 Bucket Infrastructure
+
+**Primary Bucket**: `automated-video-pipeline-786673323159-us-east-1`
+
+- **Purpose**: Main storage for all video pipeline assets
+- **Structure**:
+  ```
+  automated-video-pipeline-786673323159-us-east-1/
+  ├── trends/                    # Raw trend data by date
+  ├── scripts/                   # Generated video scripts
+  ├── media/                     # Downloaded assets from Pexels/Pixabay
+  ├── audio/                     # Generated audio files
+  ├── final-videos/              # Completed videos
+  └── archives/                  # Manual archive storage
+  ```
+
+**Backup Bucket**: `automated-video-pipeline-backup-786673323159-us-west-2`
+
+- **Purpose**: Cross-region backup and disaster recovery
+- **Location**: US West 2 (Oregon) for geographic redundancy
+
+### Lifecycle Policy - Simplified Cost Management
+
+**Auto-Delete After 7 Days**:
+
+```json
+{
+  "Rules": [
+    {
+      "ID": "AutoDeleteAfter7Days",
+      "Status": "Enabled",
+      "Filter": { "Prefix": "" },
+      "Expiration": { "Days": 7 },
+      "AbortIncompleteMultipartUpload": { "DaysAfterInitiation": 1 }
+    }
+  ]
+}
+```
+
+**Benefits**:
+
+- **Cost Optimization**: No storage costs after 7 days
+- **Simplicity**: No complex storage class transitions
+- **YouTube Focus**: Videos are published to YouTube, S3 is temporary storage
+- **Clean Environment**: Automatic cleanup prevents storage bloat
+
+**Tagging Strategy**:
+
+```json
+{
+  "Project": "automated-video-pipeline",
+  "Service": "video-content-generation",
+  "Environment": "production",
+  "CostCenter": "content-creation",
+  "Owner": "video-automation-team",
+  "ManagedBy": "manual",
+  "BackupRequired": "true",
+  "DataClassification": "internal"
+}
+```
+
 ## Architecture
 
 ### High-Level Architecture Diagram
@@ -14,13 +77,13 @@ graph TB
         UI[Topic Definition Interface]
         API[REST API Gateway]
     end
-    
+
     subgraph "Scheduling & Orchestration"
         EB[EventBridge Scheduler]
         SF[Step Functions]
         ORCH[Orchestrator Lambda]
     end
-    
+
     subgraph "AI Agent Layer"
         BA[Bedrock Agents]
         SUPER[Video Production Orchestrator]
@@ -30,7 +93,7 @@ graph TB
         AUDIO[Audio Producer Agent]
         VIDEO[Video Compositor Agent]
     end
-    
+
     subgraph "External APIs"
         GT[Google Trends API]
         TW[Twitter API]
@@ -39,31 +102,31 @@ graph TB
         PX[Pexels API]
         PB[Pixabay API]
     end
-    
+
     subgraph "AWS AI/ML Services"
         BR[Amazon Bedrock]
         POL[Amazon Polly]
         TR[Amazon Transcribe]
         REK[Amazon Rekognition]
     end
-    
+
     subgraph "Compute Services"
         LAM[Lambda Functions]
         FAR[Fargate Tasks]
         ECS[ECS Cluster]
     end
-    
+
     subgraph "Storage & Database"
         S3[S3 Buckets]
         DDB[DynamoDB Tables]
         SM[Secrets Manager]
     end
-    
+
     subgraph "Monitoring & Logging"
         CW[CloudWatch]
         SNS[SNS Notifications]
     end
-    
+
     UI --> API
     API --> ORCH
     EB --> ORCH
@@ -75,28 +138,28 @@ graph TB
     SUPER --> MEDIA
     SUPER --> AUDIO
     SUPER --> VIDEO
-    
+
     TREND --> GT
     TREND --> TW
     TREND --> YT
     TREND --> NEWS
-    
+
     SCRIPT --> BR
     AUDIO --> POL
     VIDEO --> TR
     VIDEO --> REK
-    
+
     MEDIA --> PX
     MEDIA --> PB
-    
+
     LAM --> S3
     LAM --> DDB
     FAR --> S3
-    
+
     VIDEO --> FAR
     ORCH --> CW
     CW --> SNS
-    
+
     LAM --> SM
     FAR --> SM
 ```
@@ -109,7 +172,7 @@ graph LR
         TC[Topic Configuration]
         SCH[Schedule Configuration]
     end
-    
+
     subgraph "Processing Pipeline"
         P1[Topic Processing]
         P2[Trend Analysis]
@@ -119,7 +182,7 @@ graph LR
         P6[Video Assembly]
         P7[YouTube Publishing]
     end
-    
+
     subgraph "Data Flow"
         D1[Raw Trend Data]
         D2[Processed Trends]
@@ -129,7 +192,7 @@ graph LR
         D6[Final Video]
         D7[Published Video]
     end
-    
+
     TC --> P1
     SCH --> P1
     P1 --> P2
@@ -157,20 +220,20 @@ The system uses Amazon Bedrock Agents with a hierarchical multi-agent collaborat
 ```mermaid
 graph TD
     USER[User Request] --> SUPER[Video Production Orchestrator]
-    
+
     SUPER --> TREND[Trend Research Analyst]
     SUPER --> SCRIPT[Content Script Writer]
     SUPER --> MEDIA[Media Curator]
     SUPER --> AUDIO[Audio Producer]
     SUPER --> VIDEO[Video Compositor & Publisher]
-    
+
     TREND --> |Trend Data| SCRIPT
     SCRIPT --> |Script & Requirements| MEDIA
     SCRIPT --> |Script Text| AUDIO
     MEDIA --> |Media Assets| VIDEO
     AUDIO --> |Audio Files| VIDEO
     VIDEO --> |Final Video| YOUTUBE[YouTube]
-    
+
     SUPER -.-> DDB[(DynamoDB State)]
     TREND -.-> S3[(S3 Raw Data)]
     SCRIPT -.-> S3
@@ -186,6 +249,7 @@ graph TD
 **Purpose:** Central coordinator that manages the entire video generation workflow
 
 **Input:**
+
 ```json
 {
   "topicId": "string",
@@ -198,6 +262,7 @@ graph TD
 ```
 
 **Output:**
+
 ```json
 {
   "videoId": "string",
@@ -207,7 +272,7 @@ graph TD
   "totalCost": 1.25,
   "agentResults": {
     "trendAnalysis": "object",
-    "scriptGeneration": "object", 
+    "scriptGeneration": "object",
     "mediaAcquisition": "object",
     "audioProduction": "object",
     "videoComposition": "object"
@@ -216,6 +281,7 @@ graph TD
 ```
 
 **Responsibilities:**
+
 - Receive user-defined topics and initiate video generation
 - Delegate tasks to specialized collaborator agents
 - Monitor progress and handle error recovery
@@ -225,6 +291,7 @@ graph TD
 - Ensure quality gates are met at each stage
 
 **Tools & Action Groups:**
+
 - DynamoDB state management
 - Agent communication orchestration
 - Error handling and retry logic
@@ -238,6 +305,7 @@ graph TD
 **Purpose:** Intelligently analyzes trends and generates specific video concepts from basic topics
 
 **Input:**
+
 ```json
 {
   "baseTopic": "Investing for beginners in the USA",
@@ -251,6 +319,7 @@ graph TD
 ```
 
 **Output:**
+
 ```json
 {
   "trendAnalysis": {
@@ -262,7 +331,14 @@ graph TD
       {
         "specificTopic": "Best Investment Apps for Beginners in 2025",
         "trendScore": 95,
-        "keywords": ["investment apps", "beginners", "2025", "mobile investing", "Robinhood", "Acorns"],
+        "keywords": [
+          "investment apps",
+          "beginners",
+          "2025",
+          "mobile investing",
+          "Robinhood",
+          "Acorns"
+        ],
         "estimatedViews": 50000,
         "competitionLevel": "medium",
         "reasoning": "High search volume for investment apps, trending mobile investing among Gen Z"
@@ -270,39 +346,77 @@ graph TD
       {
         "specificTopic": "How to Start Investing with $100 in the USA",
         "trendScore": 88,
-        "keywords": ["start investing", "$100", "small budget", "fractional shares", "ETFs"],
+        "keywords": [
+          "start investing",
+          "$100",
+          "small budget",
+          "fractional shares",
+          "ETFs"
+        ],
         "estimatedViews": 35000,
         "competitionLevel": "low",
         "reasoning": "Popular search query, low competition, appeals to budget-conscious beginners"
       }
     ],
     "trendingElements": {
-      "hotKeywords": ["2025 investing", "AI stocks", "fractional shares", "mobile apps", "beginner friendly"],
+      "hotKeywords": [
+        "2025 investing",
+        "AI stocks",
+        "fractional shares",
+        "mobile apps",
+        "beginner friendly"
+      ],
       "currentEvents": ["Fed rate decisions", "AI boom", "market volatility"],
-      "popularFormats": ["step-by-step tutorials", "app reviews", "budget challenges"]
+      "popularFormats": [
+        "step-by-step tutorials",
+        "app reviews",
+        "budget challenges"
+      ]
     },
     "sourceInsights": {
       "googleTrends": {
-        "topQueries": ["best investment apps 2025", "how to invest $100", "beginner investing guide"],
+        "topQueries": [
+          "best investment apps 2025",
+          "how to invest $100",
+          "beginner investing guide"
+        ],
         "risingTopics": ["AI investing", "fractional shares", "robo advisors"]
       },
       "youtube": {
-        "trendingVideos": ["Investment Apps Comparison", "Investing for Beginners 2025"],
+        "trendingVideos": [
+          "Investment Apps Comparison",
+          "Investing for Beginners 2025"
+        ],
         "avgViews": 45000,
         "successfulFormats": ["tutorial", "review", "comparison"]
       },
       "news": {
-        "relevantStories": ["New investment app launches", "Market predictions 2025", "Beginner investor trends"],
+        "relevantStories": [
+          "New investment app launches",
+          "Market predictions 2025",
+          "Beginner investor trends"
+        ],
         "sentiment": "optimistic about market accessibility"
       },
       "socialMedia": {
-        "trendingHashtags": ["#InvestingTips", "#BeginnerInvestor", "#FinTech2025"],
-        "popularDiscussions": ["Best apps for small investments", "Investment mistakes to avoid"]
+        "trendingHashtags": [
+          "#InvestingTips",
+          "#BeginnerInvestor",
+          "#FinTech2025"
+        ],
+        "popularDiscussions": [
+          "Best apps for small investments",
+          "Investment mistakes to avoid"
+        ]
       }
     },
     "contentStrategy": {
       "recommendedAngle": "Focus on accessibility and simplicity for beginners",
-      "keyMessages": ["Investing is accessible to everyone", "Start small and grow", "Technology makes it easier"],
+      "keyMessages": [
+        "Investing is accessible to everyone",
+        "Start small and grow",
+        "Technology makes it easier"
+      ],
       "callToAction": "Download recommended apps and start with small amounts"
     }
   }
@@ -310,6 +424,7 @@ graph TD
 ```
 
 **Responsibilities:**
+
 - Take basic topic input (e.g., "Investing for beginners in the USA")
 - Analyze current trends from last 7 days across all sources
 - Use AI to identify specific, trendy video angles and subtopics
@@ -320,6 +435,7 @@ graph TD
 - Store comprehensive trend analysis and generated topics in DynamoDB
 
 **Tools & Action Groups:**
+
 - Google Trends API integration
 - Twitter API v2 integration
 - YouTube Data API v3 integration
@@ -335,6 +451,7 @@ graph TD
 **Purpose:** Creates highly engaging, subscriber-focused video scripts that maximize watch time and channel growth
 
 **Input:**
+
 ```json
 {
   "specificTopic": "Best Investment Apps for Beginners in 2025",
@@ -347,11 +464,17 @@ graph TD
     "subscriberConversionRate": "5%",
     "clickThroughRate": "8%"
   },
-  "contentFormats": ["top_list", "comparison", "secrets_revealed", "mistakes_to_avoid"]
+  "contentFormats": [
+    "top_list",
+    "comparison",
+    "secrets_revealed",
+    "mistakes_to_avoid"
+  ]
 }
 ```
 
 **Output:**
+
 ```json
 {
   "engagingScript": {
@@ -364,9 +487,17 @@ graph TD
         "duration": 15,
         "type": "hook",
         "narration": "What if I told you there's an app that can turn your spare change into thousands of dollars? By the end of this video, you'll know exactly which apps beginners are using to build wealth in 2025, and I'll show you the one mistake that's costing people money.",
-        "visualRequirements": ["money growing animation", "phone with apps", "shocked face reaction"],
-        "engagementTechniques": ["curiosity gap", "promise of value", "mistake revelation"],
-        "timing": {"start": 0, "end": 15},
+        "visualRequirements": [
+          "money growing animation",
+          "phone with apps",
+          "shocked face reaction"
+        ],
+        "engagementTechniques": [
+          "curiosity gap",
+          "promise of value",
+          "mistake revelation"
+        ],
+        "timing": { "start": 0, "end": 15 },
         "notes": "Immediate hook with curiosity and value promise"
       },
       {
@@ -374,9 +505,17 @@ graph TD
         "duration": 45,
         "type": "credibility_story",
         "narration": "Last month, my friend Sarah started with just $50 on one of these apps. Three weeks later, she's already up $127. But here's the crazy part - she's doing something that 90% of beginners get wrong. Stick around because I'm revealing her exact strategy.",
-        "visualRequirements": ["Sarah's portfolio screenshot", "profit graphs", "before/after numbers"],
-        "engagementTechniques": ["social proof", "specific numbers", "teaser for later"],
-        "timing": {"start": 15, "end": 60},
+        "visualRequirements": [
+          "Sarah's portfolio screenshot",
+          "profit graphs",
+          "before/after numbers"
+        ],
+        "engagementTechniques": [
+          "social proof",
+          "specific numbers",
+          "teaser for later"
+        ],
+        "timing": { "start": 15, "end": 60 },
         "notes": "Build credibility with real example and create anticipation"
       },
       {
@@ -384,9 +523,17 @@ graph TD
         "duration": 90,
         "type": "value_delivery",
         "narration": "Alright, let's dive into the top 5 apps that are absolutely crushing it for beginners in 2025. Number 5 will shock you because most people think it's just for saving money, but it's secretly one of the best investing platforms.",
-        "visualRequirements": ["app logos countdown", "user interface demos", "profit comparisons"],
-        "engagementTechniques": ["numbered list", "surprise element", "secret revelation"],
-        "timing": {"start": 60, "end": 150},
+        "visualRequirements": [
+          "app logos countdown",
+          "user interface demos",
+          "profit comparisons"
+        ],
+        "engagementTechniques": [
+          "numbered list",
+          "surprise element",
+          "secret revelation"
+        ],
+        "timing": { "start": 60, "end": 150 },
         "notes": "Deliver promised value with engaging countdown format"
       },
       {
@@ -394,9 +541,17 @@ graph TD
         "duration": 120,
         "type": "detailed_breakdown",
         "narration": "Here's where it gets interesting. Robinhood vs Acorns - everyone's asking which is better. But the real question is: which one fits YOUR investing style? I'm about to show you a simple test that reveals the perfect app for you in under 30 seconds.",
-        "visualRequirements": ["app comparison charts", "user personality types", "decision tree"],
-        "engagementTechniques": ["personalization", "interactive element", "quick solution"],
-        "timing": {"start": 150, "end": 270},
+        "visualRequirements": [
+          "app comparison charts",
+          "user personality types",
+          "decision tree"
+        ],
+        "engagementTechniques": [
+          "personalization",
+          "interactive element",
+          "quick solution"
+        ],
+        "timing": { "start": 150, "end": 270 },
         "notes": "Make it personal and interactive to increase engagement"
       },
       {
@@ -404,9 +559,17 @@ graph TD
         "duration": 90,
         "type": "mistake_revelation",
         "narration": "Now here's that mistake I mentioned earlier - and this is costing beginners hundreds of dollars. 73% of new investors do this wrong, and the apps don't tell you because... well, they make money when you mess up. But I'm going to show you exactly how to avoid it.",
-        "visualRequirements": ["mistake examples", "money loss visualization", "correct method demo"],
-        "engagementTechniques": ["payoff delivery", "insider knowledge", "problem solution"],
-        "timing": {"start": 270, "end": 360},
+        "visualRequirements": [
+          "mistake examples",
+          "money loss visualization",
+          "correct method demo"
+        ],
+        "engagementTechniques": [
+          "payoff delivery",
+          "insider knowledge",
+          "problem solution"
+        ],
+        "timing": { "start": 270, "end": 360 },
         "notes": "Deliver on the promised mistake revelation with specific value"
       },
       {
@@ -414,16 +577,32 @@ graph TD
         "duration": 120,
         "type": "call_to_action_story",
         "narration": "Look, I've been making these videos because I wish someone had told me this stuff when I started. If this helped you avoid even one costly mistake, smash that subscribe button - it literally takes one second and helps me create more content like this. Plus, next week I'm revealing the 3 stocks that every beginner should own in 2025. You won't want to miss that.",
-        "visualRequirements": ["subscribe button animation", "upcoming video preview", "community stats"],
-        "engagementTechniques": ["personal connection", "easy action", "future value promise"],
-        "timing": {"start": 360, "end": 480},
+        "visualRequirements": [
+          "subscribe button animation",
+          "upcoming video preview",
+          "community stats"
+        ],
+        "engagementTechniques": [
+          "personal connection",
+          "easy action",
+          "future value promise"
+        ],
+        "timing": { "start": 360, "end": 480 },
         "notes": "Strong subscribe CTA with personal touch and future value"
       }
     ],
     "engagementElements": {
       "hooks": ["curiosity gap", "specific promise", "mistake teaser"],
-      "retentionTactics": ["numbered countdown", "surprise reveals", "personal stories"],
-      "subscriptionDrivers": ["exclusive future content", "community building", "personal connection"]
+      "retentionTactics": [
+        "numbered countdown",
+        "surprise reveals",
+        "personal stories"
+      ],
+      "subscriptionDrivers": [
+        "exclusive future content",
+        "community building",
+        "personal connection"
+      ]
     }
   },
   "clickWorthyMetadata": {
@@ -445,7 +624,12 @@ graph TD
       "investing with $50"
     ],
     "thumbnail": {
-      "elements": ["shocked face", "$50 → $127 text", "phone with apps", "bright colors"],
+      "elements": [
+        "shocked face",
+        "$50 → $127 text",
+        "phone with apps",
+        "bright colors"
+      ],
       "style": "high_contrast_emotional",
       "textOverlay": "$50 → $127 in 3 WEEKS!"
     }
@@ -461,6 +645,7 @@ graph TD
 ```
 
 **Responsibilities:**
+
 - Create highly engaging scripts with hooks, stories, and curiosity gaps
 - Design content structure for maximum watch time and subscriber conversion
 - Generate click-worthy titles that balance curiosity with honesty
@@ -472,6 +657,7 @@ graph TD
 - Create content that encourages comments, shares, and repeat viewing
 
 **Tools & Action Groups:**
+
 - Amazon Bedrock (Claude 3 Sonnet) for script generation
 - Prompt engineering templates for different content types
 - SEO optimization algorithms
@@ -481,98 +667,237 @@ graph TD
 
 ---
 
-#### 4. Collaborator Agent: Media Curator
+#### 4. Collaborator Agent: Media Curator (Enhanced Content-Relevant)
 
-**Purpose:** Searches and downloads relevant free media assets for video production
+**Purpose:** Intelligently searches, evaluates, and curates high-quality media assets from Pexels and Pixabay that perfectly match script content
 
 **Input:**
+
 ```json
 {
   "script": "object from Content Script Writer",
-  "visualRequirements": [
-    "Canadian cityscape",
-    "real estate charts", 
-    "investment graphics",
-    "Toronto skyline",
-    "market graphs",
-    "property listings"
+  "trendAnalysis": "object with trending keywords",
+  "scenes": [
+    {
+      "sceneId": 1,
+      "duration": 15,
+      "narration": "What if I told you there's an app that can turn your spare change into thousands of dollars?",
+      "visualRequirements": [
+        "money growing animation",
+        "phone with apps",
+        "investment success"
+      ],
+      "keywords": [
+        "investment apps",
+        "money growth",
+        "smartphone",
+        "success",
+        "wealth building"
+      ],
+      "mood": "exciting",
+      "style": "modern"
+    }
   ],
   "videoDuration": 480,
-  "quality": "1080p",
-  "style": "professional"
+  "targetQuality": "1080p",
+  "contentStyle": "professional_engaging"
 }
 ```
 
 **Output:**
+
 ```json
 {
-  "mediaAssets": {
-    "images": [
+  "curatedMediaAssets": {
+    "searchResults": {
+      "pexelsImages": 45,
+      "pixabayImages": 32,
+      "pixabayVideos": 18,
+      "totalSearched": 95
+    },
+    "selectedAssets": [
       {
-        "assetId": "img_001",
+        "assetId": "pexels_img_001",
         "type": "image",
         "source": "pexels",
-        "url": "https://images.pexels.com/photos/123456/...",
-        "s3Location": "s3://bucket/media/video-123/images/img_001.jpg",
-        "keywords": ["toronto", "skyline", "cityscape"],
-        "resolution": "1920x1080",
+        "originalUrl": "https://images.pexels.com/photos/3483098/pexels-photo-3483098.jpeg",
+        "s3Location": "s3://automated-video-pipeline-786673323159-us-east-1/media/images/pexels_img_001.jpg",
+        "searchKeywords": ["investment apps", "smartphone", "money"],
+        "relevanceScore": 94,
+        "qualityScore": 96,
+        "resolution": "1920x1280",
+        "sceneMapping": [1],
+        "displayDuration": 5,
         "license": "free",
-        "sceneMapping": [1, 2],
-        "duration": 5,
-        "metadata": {
-          "photographer": "John Doe",
-          "description": "Toronto skyline at sunset"
+        "attribution": {
+          "photographer": "Karolina Grabowska",
+          "photographerUrl": "https://www.pexels.com/@karolina-grabowska",
+          "photoUrl": "https://www.pexels.com/photo/3483098/"
         }
-      }
-    ],
-    "videos": [
+      },
       {
-        "assetId": "vid_001", 
+        "assetId": "pixabay_vid_001",
         "type": "video",
         "source": "pixabay",
-        "url": "https://pixabay.com/videos/...",
-        "s3Location": "s3://bucket/media/video-123/videos/vid_001.mp4",
-        "keywords": ["real estate", "property", "investment"],
+        "originalUrl": "https://cdn.pixabay.com/video/2019/12/15/30200-380946716_large.mp4",
+        "s3Location": "s3://automated-video-pipeline-786673323159-us-east-1/media/videos/pixabay_vid_001.mp4",
+        "searchKeywords": ["money growth", "investment", "success"],
+        "relevanceScore": 91,
+        "qualityScore": 88,
         "resolution": "1920x1080",
-        "duration": 15,
+        "originalDuration": 12,
+        "sceneMapping": [1, 2],
+        "displayDuration": 8,
         "license": "free",
-        "sceneMapping": [3, 4],
-        "metadata": {
-          "creator": "Jane Smith",
-          "description": "Real estate investment concept"
+        "attribution": {
+          "creator": "Tumisu",
+          "creatorUrl": "https://pixabay.com/users/tumisu-148124/",
+          "videoUrl": "https://pixabay.com/videos/id-30200/"
         }
       }
     ],
-    "totalAssets": 25,
-    "totalDuration": 480,
-    "qualityScore": 92,
-    "coverageAnalysis": {
-      "scenesWithMedia": 8,
-      "totalScenes": 8,
-      "coveragePercentage": 100
+    "mediaTimeline": [
+      {
+        "sceneId": 1,
+        "startTime": 0,
+        "endTime": 15,
+        "primaryAsset": "pexels_img_001",
+        "overlayAssets": ["pixabay_vid_001"],
+        "transitionType": "fade",
+        "visualStyle": "dynamic_zoom"
+      }
+    ],
+    "qualityMetrics": {
+      "averageRelevanceScore": 92,
+      "averageQualityScore": 94,
+      "sceneCoverage": "100%",
+      "contentDiversity": "high",
+      "visualCoherence": 89
+    },
+    "downloadSummary": {
+      "totalAssets": 12,
+      "totalSizeBytes": 45000000,
+      "downloadTime": 23,
+      "successRate": "100%"
     }
   }
 }
 ```
 
 **Responsibilities:**
-- Extract visual requirements from script scenes
-- Search Pexels API for high-quality images
-- Search Pixabay API for relevant videos
-- Evaluate media relevance and quality
-- Download and store assets in S3
-- Organize media by scene and timing requirements
-- Ensure sufficient variety and duration coverage
-- Handle licensing and attribution requirements
-- Implement fallback search strategies
+
+- **Intelligent Keyword Extraction**: Analyze script content and trending keywords to generate optimal search terms
+- **Multi-Source Search**: Query both Pexels and Pixabay APIs with sophisticated filtering (quality, orientation, category)
+- **AI-Powered Relevance Scoring**: Use Amazon Bedrock to evaluate how well each asset matches the script content and scene mood
+- **Quality Assessment**: Analyze resolution, composition, and visual appeal of potential assets
+- **Content Curation**: Select optimal mix of photos and videos ensuring visual variety and narrative flow
+- **Attribution Management**: Track and store proper attribution data for all selected assets
+- **S3 Organization**: Download and organize assets with metadata tagging for efficient retrieval
+- **Fallback Strategies**: Implement multiple search approaches and backup asset selection
+- **Performance Optimization**: Cache popular searches and pre-download trending content
+
+**Enhanced Search Strategy:**
+
+```javascript
+// Example search approach for "investment apps" scene
+const searchTerms = [
+  "smartphone investment app",
+  "mobile banking finance",
+  "money growth success",
+  "financial technology",
+  "investment portfolio phone",
+];
+
+// Multi-API search with quality filters
+const pexelsParams = {
+  query: searchTerms[0],
+  per_page: 20,
+  orientation: "landscape",
+  size: "large",
+};
+
+const pixabayParams = {
+  q: searchTerms[0],
+  image_type: "photo",
+  min_width: 1920,
+  min_height: 1080,
+  safesearch: "true",
+  order: "popular",
+};
+```
+
+**Configurable Media Source Architecture:**
+
+```json
+{
+  "mediaSources": {
+    "pexels": {
+      "enabled": true,
+      "apiKey": "stored_in_secrets_manager",
+      "baseUrl": "https://api.pexels.com/v1/",
+      "mediaTypes": ["photos"],
+      "qualityFilters": {
+        "minWidth": 1920,
+        "minHeight": 1080,
+        "orientation": "landscape"
+      },
+      "rateLimit": {
+        "requestsPerHour": 200,
+        "requestsPerMonth": 20000
+      }
+    },
+    "pixabay": {
+      "enabled": true,
+      "apiKey": "stored_in_secrets_manager",
+      "baseUrl": "https://pixabay.com/api/",
+      "mediaTypes": ["photos", "videos"],
+      "qualityFilters": {
+        "minWidth": 1280,
+        "minHeight": 720,
+        "safeSearch": true
+      },
+      "rateLimit": {
+        "requestsPerHour": 5000,
+        "requestsPerMonth": 100000
+      }
+    },
+    "unsplash": {
+      "enabled": false,
+      "apiKey": "configurable_in_secrets_manager",
+      "baseUrl": "https://api.unsplash.com/",
+      "mediaTypes": ["photos"],
+      "qualityFilters": {
+        "minWidth": 1920,
+        "minHeight": 1080
+      }
+    },
+    "customLibrary": {
+      "enabled": false,
+      "s3Bucket": "custom-media-library-bucket",
+      "mediaTypes": ["photos", "videos", "graphics"],
+      "searchMethod": "metadata_tags"
+    }
+  }
+}
+```
+
+**Dynamic Source Management:**
+
+- **Add New Sources**: Simply add configuration to Secrets Manager
+- **Enable/Disable Sources**: Toggle sources without code changes
+- **Source Prioritization**: Configure search order and fallback strategies
+- **Rate Limit Management**: Automatic throttling and source rotation
+- **Cost Optimization**: Prefer free sources, fallback to paid when needed
 
 **Tools & Action Groups:**
-- Pexels API integration with advanced search
-- Pixabay API integration with filtering
-- Image/video quality assessment algorithms
-- S3 storage operations with metadata tagging
-- Media format validation and conversion
-- Scene-to-media matching algorithms
+
+- **Multi-Source API Manager**: Configurable integration layer for all media sources
+- **Secrets Manager Integration**: Secure storage of all API credentials and configurations
+- **Amazon Bedrock**: Content relevance analysis across all sources
+- **Amazon Rekognition**: Image quality assessment and content moderation
+- **S3 Storage**: Intelligent metadata tagging with source attribution
+- **Rate Limit Manager**: Automatic throttling and source rotation
+- **Attribution Engine**: Dynamic license tracking for all sources
 
 ---
 
@@ -581,6 +906,7 @@ graph TD
 **Purpose:** Converts scripts to high-quality audio using Amazon Polly
 
 **Input:**
+
 ```json
 {
   "script": "object from Content Script Writer",
@@ -600,6 +926,7 @@ graph TD
 ```
 
 **Output:**
+
 ```json
 {
   "audioProduction": {
@@ -618,7 +945,7 @@ graph TD
           },
           {
             "time": 500,
-            "type": "word", 
+            "type": "word",
             "start": 8,
             "end": 10,
             "value": "to"
@@ -643,8 +970,8 @@ graph TD
       "totalCharacters": 3200,
       "wordsPerMinute": 150,
       "pausePoints": [
-        {"time": 59500, "duration": 500},
-        {"time": 149500, "duration": 500}
+        { "time": 59500, "duration": 500 },
+        { "time": 149500, "duration": 500 }
       ]
     }
   }
@@ -652,6 +979,7 @@ graph TD
 ```
 
 **Responsibilities:**
+
 - Convert script text to speech using Amazon Polly
 - Generate speech marks for precise timing synchronization
 - Create scene-based audio segments
@@ -662,6 +990,7 @@ graph TD
 - Handle pronunciation corrections and emphasis
 
 **Tools & Action Groups:**
+
 - Amazon Polly API with neural voices
 - Speech mark generation for timing
 - Audio quality validation algorithms
@@ -676,10 +1005,11 @@ graph TD
 **Purpose:** Assembles final videos with engagement optimization and publishes to YouTube for maximum subscriber growth
 
 **Input:**
+
 ```json
 {
   "script": "object from Content Script Writer",
-  "mediaAssets": "object from Media Curator", 
+  "mediaAssets": "object from Media Curator",
   "audioProduction": "object from Audio Producer",
   "videoSettings": {
     "resolution": "1920x1080",
@@ -691,6 +1021,7 @@ graph TD
 ```
 
 **Output:**
+
 ```json
 {
   "videoComposition": {
@@ -743,6 +1074,7 @@ graph TD
 ```
 
 **Responsibilities:**
+
 - Create engaging video compositions with dynamic pacing and visual variety
 - Add engagement-boosting elements (progress bars, countdown timers, highlight animations)
 - Generate eye-catching thumbnails with emotional expressions and bold text overlays
@@ -755,9 +1087,11 @@ graph TD
 - Generate performance reports focused on subscriber growth and retention metrics
 
 **Tools & Action Groups:**
-- AWS Fargate for FFmpeg video processing
+
+- AWS Fargate for FFmpeg video processing (Node.js 20.x runtime)
 - Amazon Transcribe for subtitle generation
 - Amazon Rekognition for quality validation
+- **Alternative Video Generation**: OpenAI DALL-E 3 + Stable Video Diffusion (no Luma Ray)
 - YouTube Data API v3 for upload and management
 - OAuth 2.0 authentication management
 - SEO metadata optimization
@@ -766,27 +1100,113 @@ graph TD
 ### Agent Communication Patterns
 
 **Concurrent Execution:**
+
 - Trend Research Analyst works independently
 - Media Curator and Audio Producer can work in parallel once script is ready
 
 **Sequential Dependencies:**
+
 - Trend Analysis → Script Writing → Media/Audio → Video Composition → Publishing
 
 **Error Handling:**
+
 - Each agent reports status to supervisor
 - Supervisor implements retry logic and fallback strategies
 - Failed agents don't block other independent agents
 
 **State Management:**
+
 - Shared state stored in DynamoDB
 - Each agent updates progress and results
 - Supervisor tracks overall workflow status
 
+## Runtime and Technology Updates
+
+### Lambda Runtime Specifications
+
+- **Runtime**: Node.js 20.x (latest supported version)
+- **Reason**: AWS ending support for Node.js 18.x on September 1, 2025
+- **Migration**: All Lambda functions upgraded from Node.js 18.x to 20.x
+- **Benefits**: Latest security patches, performance improvements, modern JavaScript features
+
+### Video Generation Technology Stack
+
+**Removed**: Luma Ray API (external dependency, rate limits, costs)
+**Replaced with**:
+
+1. **OpenAI DALL-E 3**: High-quality image generation
+2. **Stable Video Diffusion**: Image-to-video conversion
+3. **FFmpeg**: Video assembly and processing
+4. **Amazon Polly**: Text-to-speech narration
+
+**Advantages**:
+
+- No external API rate limits
+- Better cost control
+- Higher reliability
+- More customization options
+
 ## Components and Interfaces
+
+## Storage Layer - Dedicated S3 Buckets
+
+### S3 Bucket Architecture
+
+**Primary Bucket**: `automated-video-pipeline-{account}-{region}`
+
+- **Purpose**: Main storage for all video pipeline assets
+- **Structure**:
+  ```
+  automated-video-pipeline-786673323159-us-east-1/
+  ├── trends/                    # Raw trend data by date
+  │   ├── 2025-01-15/
+  │   └── google-trends/
+  ├── scripts/                   # Generated video scripts
+  │   ├── video-{id}/
+  │   └── metadata.json
+  ├── media/                     # Downloaded assets
+  │   ├── images/
+  │   ├── videos/
+  │   └── stock-footage/
+  ├── audio/                     # Generated audio files
+  │   ├── narration/
+  │   └── background-music/
+  ├── final-videos/              # Completed videos
+  │   ├── video-{id}/
+  │   └── thumbnails/
+  └── archives/                  # Cost-optimized storage
+  ```
+
+**Backup Bucket**: `automated-video-pipeline-backup-{account}-{region}`
+
+- **Purpose**: Cross-region backup and disaster recovery
+- **Replication**: Automated cross-region replication enabled
+
+**Tagging Strategy**:
+
+```json
+{
+  "Project": "automated-video-pipeline",
+  "Service": "video-content-generation",
+  "Environment": "production",
+  "CostCenter": "content-creation",
+  "Owner": "video-automation-team",
+  "ManagedBy": "CDK",
+  "BackupRequired": "true",
+  "DataClassification": "internal"
+}
+```
+
+**Lifecycle Policies**:
+
+- Standard → IA: 7 days
+- IA → Glacier: 30 days
+- Glacier → Deep Archive: 90 days
+- Delete: 365 days (configurable)
 
 ### 1. Topic Management Service
 
-**AWS Services:** API Gateway, Lambda, DynamoDB, S3
+**AWS Services:** API Gateway, Lambda (Node.js 20.x), DynamoDB, S3
 **External Integrations:** Google Sheets API, CSV files, JSON configs
 **Purpose:** Manages user-defined topics from multiple flexible input sources
 
@@ -806,6 +1226,7 @@ graph TD
 ```
 
 **AI Agent Processing:**
+
 - **Input**: "Investing for beginners in the USA" + Daily Frequency: 2
 - **AI Analysis**: Trend Research Analyst analyzes current trends
 - **Output**: 2 specific video topics per day like:
@@ -813,6 +1234,7 @@ graph TD
   - "How to Start Investing with $100 in the USA"
 
 #### 1.2 REST API Interface
+
 ```json
 POST /topics
 {
@@ -825,6 +1247,7 @@ POST /topics
 ```
 
 #### 1.3 CSV File Upload (S3)
+
 ```csv
 topic,keywords,priority,schedule_times,status,notes
 "crypto investment strategies 2025","crypto,investment,blockchain",1,"09:00,15:00",active,"Focus on regulatory changes"
@@ -832,6 +1255,7 @@ topic,keywords,priority,schedule_times,status,notes
 ```
 
 #### 1.4 JSON Configuration File
+
 ```json
 {
   "topics": [
@@ -848,11 +1272,13 @@ topic,keywords,priority,schedule_times,status,notes
 ```
 
 #### 1.5 Direct Database Entry
+
 - Manual DynamoDB item creation
 - AWS Console interface
 - CLI/SDK direct insertion
 
 **Unified Topic Data Model:**
+
 ```json
 {
   "topicId": "string",
@@ -876,6 +1302,7 @@ topic,keywords,priority,schedule_times,status,notes
 ```
 
 **Topic Sync Architecture:**
+
 ```mermaid
 graph TD
     GS[Google Sheets] --> SYNC[Topic Sync Service]
@@ -883,16 +1310,17 @@ graph TD
     JSON[JSON Config File] --> SYNC
     API[REST API] --> SYNC
     DB[Direct DB Entry] --> SYNC
-    
+
     SYNC --> VALIDATE[Topic Validator]
     VALIDATE --> MERGE[Topic Merger]
     MERGE --> DDB[(DynamoDB)]
-    
+
     SYNC --> NOTIFY[Change Notifications]
     NOTIFY --> PIPELINE[Video Pipeline Trigger]
 ```
 
 **Input Source Priority & Conflict Resolution:**
+
 1. **Direct API calls** - Highest priority (immediate processing)
 2. **Google Sheets** - High priority (business user friendly)
 3. **JSON Config** - Medium priority (developer/automation friendly)
@@ -900,6 +1328,7 @@ graph TD
 5. **Direct DB** - Lowest priority (manual/emergency use)
 
 **Conflict Resolution Rules:**
+
 - Same topic from multiple sources: Use highest priority source
 - Duplicate topics: Merge keywords and use latest schedule
 - Status conflicts: Active > Paused > Completed > Archived
@@ -910,10 +1339,11 @@ graph TD
 **Purpose:** Coordinates multi-agent workflows and manages agent communication
 
 **Agent Hierarchy:**
+
 - **Supervisor Agent:** Video Production Orchestrator
-- **Collaborator Agents:** 
+- **Collaborator Agents:**
   - Trend Research Analyst
-  - Content Script Writer  
+  - Content Script Writer
   - Media Curator
   - Audio Producer
   - Video Compositor & Publisher
@@ -924,6 +1354,7 @@ graph TD
 **External APIs:** Google Trends, Twitter API, YouTube Data API, News APIs
 
 **Data Processing Flow:**
+
 1. Parallel API calls to trend sources
 2. Raw data storage in S3 (partitioned by date/topic)
 3. Structured metrics in DynamoDB
@@ -935,6 +1366,7 @@ graph TD
 **Purpose:** Creates video scripts, narration, and SEO content
 
 **Script Structure:**
+
 ```json
 {
   "scriptId": "string",
@@ -966,6 +1398,7 @@ graph TD
 **External APIs:** Pexels API, Pixabay API
 
 **Media Asset Structure:**
+
 ```json
 {
   "assetId": "string",
@@ -984,6 +1417,7 @@ graph TD
 **AWS Services:** Amazon Polly, Lambda, S3
 
 **Audio Configuration:**
+
 - Voice: Neural voices (Joanna, Matthew, or custom)
 - Format: MP3, 44.1kHz, 128kbps
 - Speech marks for timing synchronization
@@ -994,6 +1428,7 @@ graph TD
 **AWS Services:** ECS Fargate, Lambda, S3, Amazon Transcribe, Amazon Rekognition
 
 **FFmpeg Processing Pipeline:**
+
 1. Asset preparation and validation
 2. Audio-visual synchronization using speech marks
 3. Subtitle generation and embedding
@@ -1006,6 +1441,7 @@ graph TD
 **External API:** YouTube Data API v3
 
 **Publishing Workflow:**
+
 1. OAuth 2.0 authentication
 2. Video upload with metadata
 3. Thumbnail upload (optional)
@@ -1018,6 +1454,7 @@ graph TD
 **Purpose:** Syncs topics from Google Spreadsheet to DynamoDB
 
 **Google Sheets Configuration:**
+
 ```json
 {
   "spreadsheetId": "1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms",
@@ -1025,7 +1462,7 @@ graph TD
   "serviceAccountEmail": "video-pipeline@project.iam.gserviceaccount.com",
   "columns": {
     "topic": "A",
-    "keywords": "B", 
+    "keywords": "B",
     "priority": "C",
     "scheduleTimes": "D",
     "status": "E",
@@ -1035,6 +1472,7 @@ graph TD
 ```
 
 **Sync Process:**
+
 1. **Scheduled Sync** - EventBridge triggers sync every 15 minutes
 2. **Change Detection** - Compare sheet data with DynamoDB records
 3. **Topic Validation** - Validate format and content quality
@@ -1042,6 +1480,7 @@ graph TD
 5. **Error Handling** - Log invalid rows and continue processing valid ones
 
 **Sync Response:**
+
 ```json
 {
   "syncId": "sync_123",
@@ -1068,6 +1507,7 @@ graph TD
 **Purpose:** Tracks detailed costs for each video generation
 
 **Cost Tracking Components:**
+
 ```json
 {
   "costTracker": {
@@ -1264,21 +1704,161 @@ automated-video-pipeline/
     └── {year}/{month}/
 ```
 
+## Updated Architecture for Isolated Deployment
+
+### Project Isolation Strategy
+
+- **Separate S3 Buckets**: No mixing with existing YouTube automation projects
+- **Dedicated DynamoDB Tables**: Independent data storage with project-specific naming
+- **Isolated Lambda Functions**: All functions use Node.js 20.x runtime and tagged for this project only
+- **Independent IAM Roles**: Project-specific permissions and access controls
+
+### Video Generation Pipeline (Content-Relevant Media)
+
+#### Stage 1: Media Asset Discovery (Configurable Multi-Source)
+
+- **Service**: Configurable Media Source Manager
+- **Configuration**: AWS Secrets Manager stores all API credentials
+- **Supported Sources**:
+  - Pexels API (photos)
+  - Pixabay API (photos + videos)
+  - Unsplash API (photos) - configurable
+  - Freepik API (illustrations) - configurable
+  - Videvo API (videos) - configurable
+  - Custom S3 media library - configurable
+- **Input**: Script scene descriptions + keywords from trend analysis
+- **Process**:
+  - Extract keywords from each scene
+  - Query all configured sources in parallel
+  - Apply source-specific quality filters
+  - Aggregate and rank results across sources
+  - Download and curate best matches
+- **Storage**: `s3://automated-video-pipeline-{account}-{region}/media/`
+
+#### Stage 2: Content Curation & Selection
+
+- **Service**: AI-powered relevance scoring
+- **Input**: Downloaded media assets + script context
+- **Process**:
+  - Analyze visual relevance to script content
+  - Score media quality and engagement potential
+  - Select optimal mix of photos and videos
+  - Ensure content diversity and flow
+- **Output**: Curated media timeline matching script scenes
+
+#### Stage 3: Video Assembly & Production
+
+- **Service**: FFmpeg (containerized on ECS Fargate)
+- **Input**: Curated media + Amazon Polly audio + script timing
+- **Process**:
+  - Synchronize media with narration timing
+  - Add smooth transitions and effects
+  - Overlay subtitles and engagement elements
+  - Apply consistent branding and style
+- **Output**: Final MP4 video (1920x1080, 30fps)
+- **Features**: Professional transitions, perfect audio sync, engaging visuals
+
+**Benefits of Configurable Real Content**:
+
+- **Authentic Visuals**: Professional-quality, real-world content
+- **Extensible Sources**: Easy to add new APIs (Shutterstock, Getty Images, etc.)
+- **Cost Flexibility**: Mix free and premium sources based on budget
+- **Quality Control**: Configure quality thresholds per source
+- **Backup Strategy**: Multiple sources ensure content availability
+- **License Management**: Automatic attribution and license tracking
+- **Performance**: Parallel source querying for faster results
+
+**Adding New Media Sources:**
+
+1. **Update Secrets Manager**: Add new API credentials
+2. **Configure Source**: Define API endpoints and parameters
+3. **Enable Source**: Toggle in configuration without code deployment
+4. **Test Integration**: Automatic validation of new source connectivity
+
+### Lambda Runtime Migration
+
+- **Current Issue**: AWS ending Node.js 18.x support on September 1, 2025
+- **Solution**: All Lambda functions upgraded to Node.js 20.x
+- **Benefits**: Latest security patches, performance improvements, modern JavaScript features
+- **Timeline**: Migration completed before September 1, 2025 deadline
+
+### Configurable Media Sources & Secrets Management
+
+**Secrets Manager Structure:**
+
+```json
+{
+  "secretName": "automated-video-pipeline/media-sources",
+  "secretValue": {
+    "pexels": {
+      "apiKey": "user_provided_key",
+      "enabled": true
+    },
+    "pixabay": {
+      "apiKey": "user_provided_key",
+      "enabled": true
+    },
+    "unsplash": {
+      "apiKey": "",
+      "enabled": false
+    },
+    "freepik": {
+      "apiKey": "",
+      "enabled": false
+    },
+    "videvo": {
+      "apiKey": "",
+      "enabled": false
+    },
+    "youtube": {
+      "clientId": "user_provided",
+      "clientSecret": "user_provided",
+      "refreshToken": "user_provided",
+      "apiKey": "user_provided"
+    }
+  }
+}
+```
+
+**Benefits of Configurable Approach:**
+
+- **Extensibility**: Add new media sources without code changes
+- **Flexibility**: Enable/disable sources based on needs and budgets
+- **Security**: All credentials stored securely in AWS Secrets Manager
+- **Cost Control**: Configure rate limits and usage preferences per source
+- **Fallback Strategy**: Automatic failover when sources are unavailable or rate-limited
+
+### Dedicated Resource Naming Convention
+
+```
+automated-video-pipeline-{resource-type}-{account}-{region}
+```
+
+**Examples**:
+
+- S3: `automated-video-pipeline-786673323159-us-east-1`
+- DynamoDB: `automated-video-pipeline-topics`
+- Lambda: `automated-video-pipeline-trend-analyzer`
+- IAM Role: `automated-video-pipeline-lambda-role`
+
 ## Error Handling
 
 ### Retry Strategy
 
 **Lambda Functions:**
+
 - Exponential backoff: 1s, 2s, 4s, 8s, 16s
 - Maximum retries: 3
 - Dead letter queue for failed executions
 
 **External API Calls:**
+
 - Circuit breaker pattern
 - Fallback to cached data when available
 - Rate limiting compliance
 
 **Video Processing:**
+
 - Checkpoint-based recovery for long-running tasks
 - Alternative media asset selection on processing failure
 - Quality validation with automatic re-processing
@@ -1293,24 +1873,28 @@ automated-video-pipeline/
 ## Testing Strategy
 
 ### Unit Testing
+
 - Lambda function logic testing
 - AI agent prompt validation
 - Data model validation
 - API integration mocking
 
 ### Integration Testing
+
 - End-to-end pipeline testing with test topics
 - External API integration validation
 - AWS service integration testing
 - Agent communication testing
 
 ### Performance Testing
+
 - Video processing time benchmarks
 - Concurrent pipeline execution
 - Resource utilization monitoring
 - Cost optimization validation
 
 ### Quality Assurance
+
 - Video output quality validation
 - Audio synchronization testing
 - Subtitle accuracy verification
@@ -1321,6 +1905,7 @@ automated-video-pipeline/
 ### Comprehensive Tagging for Resource Management
 
 All AWS resources are tagged with consistent metadata for:
+
 - **Cost allocation and tracking** - Identify costs by service component
 - **Resource management** - Easy filtering and bulk operations
 - **Environment identification** - Separate dev/staging/production resources
@@ -1330,59 +1915,68 @@ All AWS resources are tagged with consistent metadata for:
 
 ```json
 {
-  "youtube-video-upload": "true",
-  "Project": "youtube-video-upload", 
-  "Service": "automated-video-pipeline",
-  "Environment": "development",
+  "Project": "automated-video-pipeline",
+  "Service": "video-content-generation",
+  "Environment": "production",
+  "CostCenter": "content-creation",
+  "Owner": "video-automation-team",
   "ManagedBy": "CDK",
-  "CostCenter": "video-content-creation"
+  "BackupRequired": "true",
+  "DataClassification": "internal",
+  "RuntimeVersion": "nodejs20.x"
 }
 ```
 
 ### Tag-Based Operations
 
 **Cost Reporting:**
+
 ```bash
-# Get costs for all youtube-video-upload resources
+# Get costs for all automated-video-pipeline resources
 aws ce get-cost-and-usage --time-period Start=2025-01-01,End=2025-01-31 \
   --granularity MONTHLY --metrics BlendedCost \
   --group-by Type=DIMENSION,Key=SERVICE \
-  --filter '{"Tags":{"Key":"youtube-video-upload","Values":["true"]}}'
+  --filter '{"Tags":{"Key":"Project","Values":["automated-video-pipeline"]}}'
 ```
 
 **Resource Cleanup:**
+
 ```bash
-# List all resources with the tag
+# List all resources with the project tag
 aws resourcegroupstaggingapi get-resources \
-  --tag-filters Key=youtube-video-upload,Values=true
+  --tag-filters Key=Project,Values=automated-video-pipeline
 
 # Bulk delete (use with caution)
 aws resourcegroupstaggingapi get-resources \
-  --tag-filters Key=youtube-video-upload,Values=true \
+  --tag-filters Key=Project,Values=automated-video-pipeline \
   --query 'ResourceTagMappingList[].ResourceARN'
 ```
 
 ## Security Considerations
 
 ### Authentication & Authorization
+
 - IAM roles with least privilege access
 - API Gateway with API keys and throttling
 - OAuth 2.0 for YouTube API access
 - Secrets Manager for API credentials
 
 ### Data Protection
+
 - S3 bucket encryption at rest
 - DynamoDB encryption
 - VPC endpoints for internal communication
 - CloudTrail for audit logging
 
 ### Network Security
+
 - Private subnets for compute resources
 - Security groups with minimal required access
 - WAF protection for API Gateway
 - VPC Flow Logs for network monitoring
 
 ### Resource Management
+
 - Consistent tagging across all AWS resources
 - Tag-based cost allocation and reporting
 - Automated resource discovery and cleanup capabilities
@@ -1391,18 +1985,21 @@ aws resourcegroupstaggingapi get-resources \
 ## Scalability & Performance
 
 ### Auto Scaling Configuration
+
 - Lambda concurrent execution limits
 - ECS Fargate auto-scaling based on CPU/memory
 - DynamoDB on-demand scaling
 - S3 request rate optimization
 
 ### Performance Optimizations
+
 - CloudFront for media asset delivery
 - ElastiCache for frequently accessed data
 - Parallel processing for independent tasks
 - Batch processing for bulk operations
 
 ### Cost Optimization
+
 - S3 lifecycle policies (Standard → IA → Glacier)
 - Fargate Spot instances for non-critical tasks
 - Reserved capacity for predictable workloads

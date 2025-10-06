@@ -1,6 +1,6 @@
 # Automated Video Pipeline
 
-An AWS-based serverless system that automatically generates, produces, and publishes highly engaging YouTube videos designed to grow your subscriber base using AI agents, trend analysis, and engagement psychology.
+An AWS-based serverless system that automatically generates, produces, and publishes highly engaging YouTube videos using AI agents, configurable media sources, and engagement psychology. Built with complete project isolation and Node.js 20.x runtime.
 
 ## 🎯 What This System Does
 
@@ -9,52 +9,67 @@ The Automated Video Pipeline creates subscriber-worthy videos by:
 1. **Simple Topic Input** - You specify basic topics like "Investing for beginners" in Google Sheets
 2. **AI Trend Analysis** - Monitors current trends from Google, Twitter, YouTube, and news to find engaging angles
 3. **Engaging Content Creation** - Uses Amazon Bedrock AI to create click-worthy titles, hooks, and subscriber-focused scripts
-4. **Professional Production** - Combines trending media with dynamic audio using FFmpeg on AWS Fargate
-5. **Growth-Optimized Publishing** - Uploads to YouTube with engagement-focused titles, thumbnails, and descriptions
-6. **Fully Automated** - Generates multiple videos per day based on your frequency settings
+4. **Configurable Media Sources** - Uses Pexels, Pixabay, and extensible media APIs for authentic, content-relevant visuals
+5. **Professional Production** - Combines real media with dynamic audio using FFmpeg on AWS Fargate
+6. **Growth-Optimized Publishing** - Uploads to YouTube with engagement-focused titles, thumbnails, and descriptions
+7. **Fully Automated** - Generates multiple videos per day based on your frequency settings
 
 ## 🏗️ Architecture Overview
 
 ### Core AWS Services Used
 
 - **Amazon Bedrock Agents** - AI orchestration and content generation
-- **AWS Lambda** - Serverless functions for API integrations and processing
-- **Amazon S3** - Storage for media assets, videos, and data archives
-- **Amazon DynamoDB** - Database for topics, trends, and video metadata
+- **AWS Lambda (Node.js 20.x)** - Serverless functions for API integrations and processing
+- **Amazon S3** - Dedicated buckets for media assets, videos, and data archives with lifecycle management
+- **Amazon DynamoDB** - Database for topics, trends, video metadata, and cost tracking
 - **AWS Fargate** - Containerized video processing with FFmpeg
 - **Amazon Polly** - Text-to-speech for high-quality audio generation
 - **Amazon EventBridge** - Scheduling and workflow automation
-- **AWS Secrets Manager** - Secure storage of API credentials
+- **AWS Secrets Manager** - Configurable storage of API credentials for multiple media sources
 - **Amazon CloudWatch** - Monitoring, logging, and alerting
+- **AWS Step Functions** - Workflow orchestration for end-to-end pipeline
 
 ### Data Flow
 
 ```
-User Topics → Trend Analysis → Content Generation → Media Acquisition → 
+User Topics → Trend Analysis → Content Generation → Configurable Media Curation → 
 Audio Production → Video Assembly → YouTube Publishing
 ```
+
+### Key Features
+
+- **🔧 Configurable Media Sources** - Easily add/remove Pexels, Pixabay, Unsplash, or custom sources
+- **🏷️ Complete Project Isolation** - Dedicated S3 buckets and resources with comprehensive tagging
+- **⬆️ Node.js 20.x Runtime** - Latest AWS Lambda runtime with security patches
+- **💰 Real-time Cost Tracking** - Monitor costs per video and optimize spending
+- **🎯 Content-Relevant Media** - AI-powered selection of authentic visuals matching script content
 
 ## 📁 Project Structure
 
 ```
 automated-video-pipeline/
-├── bin/                          # CDK entry point
+├── .kiro/specs/                 # Complete feature specifications
+│   └── automated-video-pipeline/
+│       ├── requirements.md      # User stories and acceptance criteria
+│       ├── design.md           # Architecture and component design
+│       └── tasks.md            # 32 actionable implementation tasks
+├── bin/                         # CDK entry point
 │   └── automated-video-pipeline.ts
-├── lib/                          # Infrastructure as Code
+├── lib/                         # Infrastructure as Code
 │   └── automated-video-pipeline-stack.ts
-├── src/                          # Lambda function source code
-│   ├── topic-management/         # Topic CRUD operations
-│   ├── trend-analysis/          # External API integrations
-│   ├── content-generation/      # AI script and SEO generation
-│   ├── media-acquisition/       # Stock media downloading
-│   ├── audio-production/        # Polly integration
-│   ├── video-processing/        # FFmpeg orchestration
-│   ├── youtube-publishing/      # YouTube API integration
-│   └── shared/                  # Common utilities and types
-├── test/                        # Unit and integration tests
-├── docker/                      # Container images for video processing
-├── .kiro/specs/                # Feature specifications and requirements
-└── README.md                   # This file
+├── src/                         # Lambda function source code (Node.js 20.x)
+│   ├── topic-management/        # Topic CRUD operations
+│   ├── trend-analysis/         # External API integrations
+│   ├── content-generation/     # AI script and SEO generation
+│   ├── media-curation/         # Configurable multi-source media acquisition
+│   ├── audio-production/       # Polly integration
+│   ├── video-processing/       # FFmpeg orchestration
+│   ├── youtube-publishing/     # YouTube API integration
+│   └── shared/                 # Common utilities and types
+├── test/                       # Unit and integration tests
+├── docker/                     # Container images for video processing
+├── scripts/                    # Deployment and utility scripts
+└── README.md                  # This file
 ```
 
 ## 🚀 Getting Started
@@ -63,14 +78,12 @@ automated-video-pipeline/
 
 1. **AWS Account** with appropriate permissions
 2. **AWS CLI** configured with credentials
-3. **Node.js** (version 18 or later)
+3. **Node.js** (version 20 or later) - Required for Lambda runtime compatibility
 4. **Docker** for building video processing containers
-5. **API Keys** for external services:
-   - Google Trends API
-   - Twitter API v2
-   - YouTube Data API v3
-   - Pexels API
-   - Pixabay API
+5. **API Keys** for external services (configurable):
+   - **Required**: YouTube Data API v3, Pexels API, Pixabay API
+   - **Optional**: Google Trends API, Twitter API v2, Unsplash API, News API
+   - **Extensible**: Add any media source via Secrets Manager configuration
 
 ### Installation
 
@@ -92,16 +105,26 @@ automated-video-pipeline/
    After deployment, add your API keys to AWS Secrets Manager:
    ```bash
    aws secretsmanager update-secret \
-     --secret-id automated-video-pipeline/api-credentials \
+     --secret-id automated-video-pipeline/media-sources \
      --secret-string '{
-       "googleTrendsApiKey": "your-key-here",
-       "twitterBearerToken": "your-token-here",
-       "youtubeClientId": "your-client-id",
-       "youtubeClientSecret": "your-client-secret",
-       "youtubeRefreshToken": "your-refresh-token",
-       "pexelsApiKey": "your-pexels-key",
-       "pixabayApiKey": "your-pixabay-key",
-       "newsApiKey": "your-news-api-key"
+       "pexels": {
+         "apiKey": "your-pexels-key",
+         "enabled": true
+       },
+       "pixabay": {
+         "apiKey": "your-pixabay-key",
+         "enabled": true
+       },
+       "unsplash": {
+         "apiKey": "your-unsplash-key",
+         "enabled": false
+       },
+       "youtube": {
+         "clientId": "your-client-id",
+         "clientSecret": "your-client-secret",
+         "refreshToken": "your-refresh-token",
+         "apiKey": "your-api-key"
+       }
      }'
    ```
 
