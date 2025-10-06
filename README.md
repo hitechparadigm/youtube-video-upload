@@ -170,7 +170,7 @@ Modify AI prompts and video parameters in the Lambda functions:
 - Adjust FFmpeg parameters for video rendering
 
 ### Cost Optimization
-- Configure S3 lifecycle policies for data archival
+- Configure S3 lifecycle policies for automatic deletion after 7 days
 - Set Lambda reserved concurrency limits
 - Use Fargate Spot instances for non-critical processing
 
@@ -234,7 +234,7 @@ The system tracks the exact cost of generating each video, providing detailed br
 ### Cost Optimization Strategies
 
 1. **Fargate Spot Instances** - Up to 70% savings on video processing
-2. **Aggressive S3 Lifecycle Policies** - Move to cheaper storage classes faster
+2. **S3 Auto-Delete Policy** - Automatic deletion after 7 days (videos published to YouTube)
 3. **Bedrock Prompt Optimization** - Reduce token usage with efficient prompts
 4. **Lambda Memory Optimization** - Right-size function memory allocation
 5. **External API Caching** - Reduce redundant API calls
@@ -244,7 +244,7 @@ The system tracks the exact cost of generating each video, providing detailed br
 **Optimized Configuration:**
 - **Lambda Functions**: ~$8-15
 - **Fargate (with Spot)**: ~$12-25 (70% savings)
-- **S3 Storage**: ~$10-20 (with lifecycle policies)
+- **S3 Storage**: ~$2-5 (auto-delete after 7 days)
 - **DynamoDB**: ~$5-10 (on-demand pricing)
 - **Bedrock**: ~$25-50 (optimized prompts)
 - **Polly**: ~$5-10 (neural voices)

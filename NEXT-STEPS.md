@@ -26,16 +26,40 @@ npm run deploy
 ```
 
 **What this creates:**
-- S3 bucket for video storage
+- S3 bucket for temporary video storage (auto-delete after 7 days)
 - DynamoDB tables for topics and cost tracking
 - Lambda functions for Google Sheets sync and topic management
 - API Gateway endpoints for manual control
 - ECS Fargate setup for video processing
 - EventBridge rules for automatic scheduling
 
-### Step 2: Set Up Google Sheets Access (10 minutes)
+### Step 2: Add API Credentials to AWS Secrets Manager (2 minutes)
 
-1. **Create Google Cloud Service Account**
+**✅ You already have the main credentials! Let's add them to AWS:**
+
+```powershell
+# Run the PowerShell script to add your credentials
+.\scripts\update-secrets.ps1
+```
+
+**Or manually via AWS CLI:**
+```bash
+# Your credentials are ready - just run this command
+.\scripts\update-secrets.sh
+```
+
+**✅ This adds your existing credentials:**
+- YouTube Client ID: `[YOUR_YOUTUBE_CLIENT_ID]`
+- YouTube Client Secret: `[YOUR_YOUTUBE_CLIENT_SECRET]`
+- YouTube Refresh Token: `[YOUR_YOUTUBE_REFRESH_TOKEN]`
+- YouTube API Key: `[YOUR_YOUTUBE_API_KEY]`
+- Pexels API Key: `[YOUR_PEXELS_API_KEY]`
+
+### Step 3: Set Up Google Sheets Access (Optional - 10 minutes)
+
+**Note:** You can start generating videos without Google Sheets by using the REST API directly. Google Sheets is just for easier topic management.
+
+1. **Create Google Cloud Service Account** (if you want Google Sheets sync)
    - Go to [Google Cloud Console](https://console.cloud.google.com/)
    - Create project or use existing
    - Enable Google Sheets API
@@ -46,17 +70,23 @@ npm run deploy
    - Share with service account email (from JSON key)
    - Give "Editor" or "Viewer" permission
 
-3. **Add Credentials to AWS**
+3. **Add Google Sheets Credentials**
    ```bash
+   # Add Google Sheets credentials to existing secret
    aws secretsmanager update-secret \
      --secret-id automated-video-pipeline/api-credentials \
      --secret-string '{
+       "youtubeClientId": "[YOUR_YOUTUBE_CLIENT_ID]",
+       "youtubeClientSecret": "[YOUR_YOUTUBE_CLIENT_SECRET]",
+       "youtubeRefreshToken": "[YOUR_YOUTUBE_REFRESH_TOKEN]",
+       "youtubeApiKey": "[YOUR_YOUTUBE_API_KEY]",
+       "pexelsApiKey": "[YOUR_PEXELS_API_KEY]",
        "googleSheetsServiceAccountEmail": "your-service-account@project.iam.gserviceaccount.com",
        "googleSheetsServiceAccountPrivateKey": "-----BEGIN PRIVATE KEY-----\nYour key here\n-----END PRIVATE KEY-----"
      }'
    ```
 
-### Step 3: Test Google Sheets Integration (5 minutes)
+### Step 4: Test API Integration (5 minutes)
 
 ```bash
 # Test connection to your spreadsheet
@@ -69,7 +99,9 @@ curl -X POST https://your-api-gateway-url/sync/sheets
 curl -X GET https://your-api-gateway-url/sync/sheets/history
 ```
 
-### Step 4: Add Your Topics to Google Sheets (2 minutes)
+### Step 5: Add Your Topics (2 minutes)
+
+**Option A: Google Sheets (Easy)**
 
 Format your spreadsheet like this:
 
@@ -79,8 +111,20 @@ Format your spreadsheet like this:
 | Travel to Mexico | 1 | active | Budget-friendly options |
 | Healthy meal prep ideas | 3 | active | Quick and easy recipes |
 
+**Option B: REST API (Direct)**
+```bash
+# Add topics directly via API
+curl -X POST https://your-api-gateway-url/topics \
+  -H "Content-Type: application/json" \
+  -d '{
+    "topic": "Investing for beginners in the USA",
+    "dailyFrequency": 2,
+    "status": "active"
+  }'
+```
+
 **The system will automatically:**
-- Sync every 15 minutes
+- Sync every 15 minutes (if using Google Sheets)
 - Generate engaging video topics based on current trends
 - Create 2 videos/day for "Investing", 1/day for "Travel", 3/day for "Meal prep"
 
