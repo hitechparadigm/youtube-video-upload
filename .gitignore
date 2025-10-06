@@ -1,0 +1,173 @@
+# Automated Video Pipeline - Git Ignore Configuration
+# 
+# This file excludes sensitive data, build artifacts, and temporary files
+# from version control to maintain security and keep the repository clean.
+
+# ========================================
+# AWS CDK Generated Files
+# ========================================
+# CDK build output directory
+cdk.out/
+# CDK context file (contains account-specific information)
+cdk.context.json
+
+# ========================================
+# Node.js Dependencies and Build Artifacts
+# ========================================
+# Dependencies installed by npm
+node_modules/
+# Build output directory
+dist/
+# TypeScript build info
+*.tsbuildinfo
+# npm package lock file (use yarn.lock if using Yarn)
+package-lock.json
+
+# ========================================
+# Test Coverage and Reports
+# ========================================
+# Jest coverage reports
+coverage/
+# Test result files
+test-results/
+# NYC coverage directory
+.nyc_output/
+
+# ========================================
+# Environment and Configuration Files
+# ========================================
+# Environment variables (may contain sensitive data)
+.env
+.env.local
+.env.development
+.env.test
+.env.production
+
+# Local configuration files
+config/local.json
+config/development.json
+config/production.json
+
+# ========================================
+# IDE and Editor Files
+# ========================================
+# Visual Studio Code settings
+.vscode/
+# IntelliJ IDEA files
+.idea/
+# Sublime Text files
+*.sublime-project
+*.sublime-workspace
+# Vim swap files
+*.swp
+*.swo
+*~
+
+# ========================================
+# Operating System Files
+# ========================================
+# macOS system files
+.DS_Store
+.AppleDouble
+.LSOverride
+# Windows system files
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+# Linux system files
+*~
+
+# ========================================
+# Logs and Temporary Files
+# ========================================
+# Application logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+# Temporary files
+tmp/
+temp/
+.tmp/
+
+# ========================================
+# Docker Files (if using local development)
+# ========================================
+# Docker build context
+.dockerignore
+# Docker volumes
+docker-volumes/
+
+# ========================================
+# AWS and Deployment Files
+# ========================================
+# AWS credentials (should never be committed)
+.aws/
+# Terraform state files (if using Terraform)
+*.tfstate
+*.tfstate.backup
+.terraform/
+
+# ========================================
+# Media and Asset Files
+# ========================================
+# Large media files that shouldn't be in git
+*.mp4
+*.avi
+*.mov
+*.wmv
+*.flv
+*.webm
+# Audio files
+*.mp3
+*.wav
+*.aac
+*.ogg
+# Image files (except small icons/logos)
+*.jpg
+*.jpeg
+*.png
+*.gif
+*.bmp
+*.tiff
+# Exclude sample/test media
+!test/fixtures/**
+!docs/images/**
+
+# ========================================
+# API Keys and Secrets
+# ========================================
+# Any file that might contain API keys
+*api-keys*
+*secrets*
+*credentials*
+# Configuration files with sensitive data
+config.json
+secrets.json
+api-config.json
+
+# ========================================
+# Build and Deployment Artifacts
+# ========================================
+# Webpack build files
+build/
+# Parcel cache
+.cache/
+.parcel-cache/
+# ESBuild output
+esbuild/
+
+# ========================================
+# Miscellaneous
+# ========================================
+# Editor backup files
+*.bak
+*.backup
+# Archive files
+*.zip
+*.tar.gz
+*.rar
+# Lock files for other package managers
+yarn.lock
+pnpm-lock.yaml
