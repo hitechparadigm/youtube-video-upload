@@ -388,7 +388,7 @@ Minimal required permissions:
 
 ### 2. Network Security
 
-- ECS tasks run in private subnets with NAT Gateway
+- ECS tasks run in public subnets (cost optimized - no NAT Gateway)
 - Security groups allow only necessary outbound traffic
 - No inbound access to ECS tasks
 

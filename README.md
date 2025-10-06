@@ -239,9 +239,9 @@ Set up CloudWatch alarms for:
 - VPC isolation for ECS tasks
 
 ### Network Security
-- Private subnets for processing
+- Public subnets with direct internet access (cost optimized)
 - Security groups with minimal access
-- NAT Gateway for outbound connections
+- No inbound access to ECS tasks
 
 ## 🚀 Deployment
 
