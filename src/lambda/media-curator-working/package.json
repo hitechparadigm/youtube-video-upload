@@ -1,0 +1,12 @@
+{
+  "name": "media-curator-working",
+  "version": "1.0.0",
+  "description": "Working media curator with Pexels API",
+  "main": "index.js",
+  "dependencies": {
+    "@aws-sdk/client-secrets-manager": "^3.450.0"
+  },
+  "keywords": ["aws", "lambda", "media", "pexels"],
+  "author": "Automated Video Pipeline",
+  "license": "MIT"
+}

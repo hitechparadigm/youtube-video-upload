@@ -1,0 +1,36 @@
+{
+  "family": "video-processor-task",
+  "networkMode": "awsvpc",
+  "requiresCompatibilities": ["FARGATE"],
+  "cpu": "2048",
+  "memory": "4096",
+  "executionRoleArn": "arn:aws:iam::786673323159:role/ecsTaskExecutionRole",
+  "taskRoleArn": "arn:aws:iam::786673323159:role/ecsTaskRole",
+  "containerDefinitions": [
+    {
+      "name": "video-processor",
+      "image": "786673323159.dkr.ecr.us-east-1.amazonaws.com/automated-video-pipeline/video-processor:latest",
+      "essential": true,
+      "cpu": 2048,
+      "memory": 4096,
+      "logConfiguration": {
+        "logDriver": "awslogs",
+        "options": {
+          "awslogs-group": "/aws/ecs/video-processor",
+          "awslogs-region": "us-east-1",
+          "awslogs-stream-prefix": "video-processor"
+        }
+      },
+      "environment": [
+        { "name": "NODE_ENV", "value": "production" },
+        { "name": "AWS_REGION", "value": "us-east-1" },
+        { "name": "LOG_LEVEL", "value": "info" }
+      ],
+      "workingDirectory": "/var/task"
+    }
+  ],
+  "tags": [
+    { "key": "Project", "value": "AutomatedVideoPipeline" },
+    { "key": "Service", "value": "VideoProcessor" }
+  ]
+}

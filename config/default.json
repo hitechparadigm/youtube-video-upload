@@ -111,6 +111,55 @@
         "title",
         "keywords"
       ]
+    },
+    "processing": {
+      "batchSize": 100,
+      "maxProcessingTime": 300,
+      "retryAttempts": 3,
+      "normalization": {
+        "keywordCleaning": true,
+        "topicCategorization": true,
+        "duplicateRemoval": true,
+        "languageDetection": true
+      },
+      "dataRetention": {
+        "rawDataDays": 30,
+        "processedDataDays": 90,
+        "aggregatedDataDays": 365
+      }
+    },
+    "scoring": {
+      "algorithm": "weighted_composite",
+      "weights": {
+        "volume": 0.3,
+        "engagement": 0.25,
+        "recency": 0.2,
+        "growth": 0.15,
+        "sentiment": 0.1
+      },
+      "thresholds": {
+        "highScore": 80,
+        "mediumScore": 50,
+        "lowScore": 20
+      },
+      "normalization": {
+        "method": "min_max",
+        "scale": [0, 100]
+      }
+    },
+    "enrichment": {
+      "categorization": true,
+      "seasonality": true,
+      "competition": true,
+      "relatedKeywords": true,
+      "sentimentAnalysis": true,
+      "geographicData": true
+    },
+    "aggregation": {
+      "intervals": ["1h", "6h", "24h", "7d", "30d"],
+      "groupings": ["category", "source", "region", "sentiment"],
+      "metrics": ["score", "volume", "engagement", "growth"],
+      "topN": 100
     }
   },
   "media": {
@@ -166,6 +215,12 @@
     "tts": {
       "service": "polly",
       "voice": {
+        "id": "Ruth",
+        "engine": "generative",
+        "languageCode": "en-US",
+        "style": "conversational"
+      },
+      "fallbackVoice": {
         "id": "Joanna",
         "engine": "neural",
         "languageCode": "en-US"
@@ -175,12 +230,21 @@
         "pitch": "medium",
         "volume": "medium",
         "outputFormat": "mp3",
-        "sampleRate": "22050"
+        "sampleRate": "22050",
+        "textType": "text"
       },
       "ssml": {
         "enabled": true,
         "pauseDuration": "500ms",
-        "emphasisLevel": "moderate"
+        "emphasisLevel": "moderate",
+        "breathSounds": true,
+        "conversationalStyle": true
+      },
+      "generativeSettings": {
+        "stability": "balanced",
+        "similarity": "high",
+        "style": "conversational",
+        "useGenerativeEngine": true
       }
     },
     "backgroundMusic": {

@@ -1,0 +1,27 @@
+{
+  "name": "script-generator",
+  "version": "1.0.0",
+  "description": "AI-powered video script generation service",
+  "main": "index.js",
+  "scripts": {
+    "test": "jest"
+  },
+  "dependencies": {
+    "@aws-sdk/client-bedrock-runtime": "^3.450.0",
+    "@aws-sdk/client-dynamodb": "^3.450.0",
+    "@aws-sdk/lib-dynamodb": "^3.450.0"
+  },
+  "devDependencies": {
+    "jest": "^29.0.0"
+  },
+  "keywords": [
+    "aws",
+    "lambda",
+    "ai",
+    "script-generation",
+    "bedrock",
+    "claude"
+  ],
+  "author": "Automated Video Pipeline",
+  "license": "MIT"
+}

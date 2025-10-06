@@ -1,0 +1,28 @@
+{
+  "name": "audio-generator",
+  "version": "1.0.0",
+  "description": "AI-powered audio generation service using Amazon Polly with generative voices",
+  "main": "index.js",
+  "scripts": {
+    "test": "jest"
+  },
+  "dependencies": {
+    "@aws-sdk/client-polly": "^3.450.0",
+    "@aws-sdk/client-s3": "^3.450.0",
+    "@aws-sdk/client-dynamodb": "^3.450.0",
+    "@aws-sdk/lib-dynamodb": "^3.450.0"
+  },
+  "devDependencies": {
+    "jest": "^29.0.0"
+  },
+  "keywords": [
+    "aws",
+    "lambda",
+    "polly",
+    "audio-generation",
+    "text-to-speech",
+    "generative-voice"
+  ],
+  "author": "Automated Video Pipeline",
+  "license": "MIT"
+}

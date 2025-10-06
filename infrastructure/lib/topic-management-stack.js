@@ -22,6 +22,60 @@ export class TopicManagementStack extends Stack {
     const syncHistoryTable = Table.fromTableName(this, 'SyncHistoryTable', 'automated-video-pipeline-sync-history');
     const trendsTable = Table.fromTableName(this, 'TrendsTable', 'automated-video-pipeline-trends');
 
+    // Create Processed Trends Table for normalized and scored data
+    const processedTrendsTable = new Table(this, 'ProcessedTrendsTable', {
+      tableName: 'automated-video-pipeline-processed-trends',
+      partitionKey: {
+        name: 'processedId',
+        type: AttributeType.STRING
+      },
+      sortKey: {
+        name: 'processedAt',
+        type: AttributeType.STRING
+      },
+      billingMode: BillingMode.PAY_PER_REQUEST,
+      removalPolicy: RemovalPolicy.RETAIN,
+      pointInTimeRecoverySpecification: {
+        pointInTimeRecoveryEnabled: true
+      },
+      timeToLiveAttribute: 'ttl',
+      tags: {
+        Project: 'automated-video-pipeline',
+        Service: 'trend-processing',
+        Environment: 'production',
+        CostCenter: 'content-creation',
+        ManagedBy: 'cdk'
+      }
+    });
+
+    // Add GSI for querying by category and score
+    processedTrendsTable.addGlobalSecondaryIndex({
+      indexName: 'CategoryScoreIndex',
+      partitionKey: {
+        name: 'category',
+        type: AttributeType.STRING
+      },
+      sortKey: {
+        name: 'normalizedScore',
+        type: AttributeType.NUMBER
+      },
+      projectionType: ProjectionType.ALL
+    });
+
+    // Add GSI for querying by source and timestamp
+    processedTrendsTable.addGlobalSecondaryIndex({
+      indexName: 'SourceTimeIndex',
+      partitionKey: {
+        name: 'source',
+        type: AttributeType.STRING
+      },
+      sortKey: {
+        name: 'processedAt',
+        type: AttributeType.STRING
+      },
+      projectionType: ProjectionType.ALL
+    });
+
     // Import existing S3 Bucket
     const trendDataBucket = Bucket.fromBucketName(this, 'TrendDataBucket', `automated-video-pipeline-${this.account}-${this.region}`);
 
@@ -187,6 +241,49 @@ export class TopicManagementStack extends Stack {
       ]
     }));
 
+    // IAM Role for Trend Data Processor Lambda
+    const trendDataProcessorRole = new Role(this, 'TrendDataProcessorLambdaRole', {
+      assumedBy: new ServicePrincipal('lambda.amazonaws.com'),
+      description: 'Role for Trend Data Processor Lambda function',
+      managedPolicies: [
+        {
+          managedPolicyArn: 'arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole'
+        }
+      ]
+    });
+
+    // Add permissions for Trend Data Processor Lambda
+    trendDataProcessorRole.addToPolicy(new PolicyStatement({
+      effect: Effect.ALLOW,
+      actions: [
+        'dynamodb:GetItem',
+        'dynamodb:PutItem',
+        'dynamodb:UpdateItem',
+        'dynamodb:DeleteItem',
+        'dynamodb:Query',
+        'dynamodb:Scan',
+        'dynamodb:BatchWriteItem'
+      ],
+      resources: [
+        trendsTable.tableArn,
+        `${trendsTable.tableArn}/index/*`,
+        processedTrendsTable.tableArn,
+        `${processedTrendsTable.tableArn}/index/*`
+      ]
+    }));
+
+    trendDataProcessorRole.addToPolicy(new PolicyStatement({
+      effect: Effect.ALLOW,
+      actions: [
+        's3:GetObject',
+        's3:PutObject',
+        's3:DeleteObject'
+      ],
+      resources: [
+        `${trendDataBucket.bucketArn}/*`
+      ]
+    }));
+
     // CloudWatch Log Group
     const logGroup = new LogGroup(this, 'TopicManagementLogGroup', {
       logGroupName: '/aws/lambda/topic-management',
@@ -333,6 +430,49 @@ export class TopicManagementStack extends Stack {
       }
     });
 
+    // Trend Data Processor Lambda Log Group
+    const trendDataProcessorLogGroup = new LogGroup(this, 'TrendDataProcessorLogGroup', {
+      logGroupName: '/aws/lambda/trend-data-processor',
+      retention: RetentionDays.ONE_MONTH,
+      removalPolicy: RemovalPolicy.DESTROY
+    });
+
+    // Trend Data Processor Lambda Function
+    const trendDataProcessorFunction = new Function(this, 'TrendDataProcessorFunction', {
+      functionName: 'trend-data-processor',
+      runtime: Runtime.NODEJS_20_X,
+      handler: 'index.handler',
+      code: Code.fromAsset('../src/lambda/trend-data-processor'),
+      role: trendDataProcessorRole,
+      timeout: Duration.minutes(10), // Longer timeout for data processing
+      memorySize: 1536, // More memory for data processing operations
+      layers: [configLayer],
+      environment: {
+        TRENDS_TABLE_NAME: trendsTable.tableName,
+        PROCESSED_TRENDS_TABLE_NAME: processedTrendsTable.tableName,
+        S3_BUCKET_NAME: trendDataBucket.bucketName,
+        NODE_ENV: process.env.NODE_ENV || 'production',
+        CONFIG_SECRET_NAME: process.env.CONFIG_SECRET_NAME || '',
+        // Processing settings
+        PROCESSING_BATCH_SIZE: process.env.PROCESSING_BATCH_SIZE || '100',
+        MAX_PROCESSING_TIME: process.env.MAX_PROCESSING_TIME || '300',
+        // Scoring settings
+        SCORING_ALGORITHM: process.env.SCORING_ALGORITHM || 'weighted_composite',
+        HIGH_SCORE_THRESHOLD: process.env.HIGH_SCORE_THRESHOLD || '80',
+        // Monitoring settings
+        LOG_LEVEL: process.env.LOG_LEVEL || 'info'
+      },
+      description: 'Processes and normalizes trend data with scoring and aggregation capabilities',
+      logGroup: trendDataProcessorLogGroup,
+      // reservedConcurrentExecutions: 3, // Removed due to account limits
+      tags: {
+        Project: 'automated-video-pipeline',
+        Service: 'trend-data-processor',
+        Environment: process.env.NODE_ENV || 'production',
+        Runtime: 'nodejs20.x'
+      }
+    });
+
     // API Gateway
     const api = new RestApi(this, 'TopicManagementApi', {
       restApiName: 'Topic Management API',
@@ -450,6 +590,39 @@ export class TopicManagementStack extends Stack {
       apiKeyRequired: true
     });
 
+    // Trend Data Processing endpoints
+    const trendProcessingIntegration = new LambdaIntegration(trendDataProcessorFunction);
+
+    // POST /trends/process - Process raw trend data
+    const processResource = trendsResource.addResource('process');
+    processResource.addMethod('POST', trendProcessingIntegration, {
+      apiKeyRequired: true
+    });
+
+    // POST /trends/aggregate - Aggregate processed trend data
+    const aggregateResource = trendsResource.addResource('aggregate');
+    aggregateResource.addMethod('POST', trendProcessingIntegration, {
+      apiKeyRequired: true
+    });
+
+    // GET /trends/processed - Get processed trends with filtering
+    const processedResource = trendsResource.addResource('processed');
+    processedResource.addMethod('GET', trendProcessingIntegration, {
+      apiKeyRequired: true
+    });
+
+    // POST /trends/score - Score/rescore trend data
+    const scoreResource = trendsResource.addResource('score');
+    scoreResource.addMethod('POST', trendProcessingIntegration, {
+      apiKeyRequired: true
+    });
+
+    // GET /trends/analytics - Get trend analytics and insights
+    const analyticsResource = trendsResource.addResource('analytics');
+    analyticsResource.addMethod('GET', trendProcessingIntegration, {
+      apiKeyRequired: true
+    });
+
     // API Key for authentication
     const apiKey = api.addApiKey('TopicManagementApiKey', {
       apiKeyName: 'topic-management-api-key',
@@ -519,6 +692,16 @@ export class TopicManagementStack extends Stack {
     new CfnOutput(this, 'AITopicGeneratorFunctionName', {
       value: aiTopicGeneratorFunction.functionName,
       description: 'Name of the AI Topic Generator Lambda function'
+    });
+
+    new CfnOutput(this, 'TrendDataProcessorFunctionName', {
+      value: trendDataProcessorFunction.functionName,
+      description: 'Name of the Trend Data Processor Lambda function'
+    });
+
+    new CfnOutput(this, 'ProcessedTrendsTableName', {
+      value: processedTrendsTable.tableName,
+      description: 'Name of the Processed Trends DynamoDB table'
     });
 
     // Export values for other stacks
