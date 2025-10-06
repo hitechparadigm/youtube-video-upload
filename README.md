@@ -28,17 +28,18 @@ The system uses **Amazon Bedrock Agents** with hierarchical multi-agent collabor
 
 ## Current Status
 
-### ✅ Production Ready (Phase 1)
+### ✅ Production Ready (Phase 1 & 2A)
 
-- **Topic Management System**: Complete CRUD operations with validation
+- **Topic Management System**: Complete CRUD operations with validation and priority scheduling
 - **Google Sheets Integration**: Simplified sync (no API keys required)
-- **REST API Gateway**: Authentication and rate limiting
-- **AWS Infrastructure**: Serverless, cost-optimized deployment
+- **Multi-Source Trend Collection**: Google Trends, YouTube, Twitter, and News API integration
+- **REST API Gateway**: Authentication, rate limiting, and comprehensive endpoints
+- **AWS Infrastructure**: Serverless, cost-optimized deployment with monitoring
 
-### 🚧 In Development (Phase 2)
+### 🚧 In Development (Phase 2B)
 
-- **AI Trend Analysis**: Multi-source trend data collection
-- **Content Generation**: AI-powered script and title creation
+- **AI Topic Generation**: Amazon Bedrock integration for intelligent topic creation
+- **Content Script Generation**: AI-powered script and title creation
 - **Media Pipeline**: Automated video production and publishing
 
 ## Features
@@ -59,13 +60,22 @@ The system uses **Amazon Bedrock Agents** with hierarchical multi-agent collabor
 - **Audit Trail**: Complete sync history and error tracking
 - **Validation**: Pre-sync structure validation with detailed error reporting
 
+### Trend Data Collection
+- **Multi-Source Integration**: Google Trends, YouTube Data API v3, Twitter API v2, News API
+- **Real-Time Analysis**: Collects trending data from the last 7 days across all sources
+- **Smart Processing**: Trend scoring algorithms and keyword extraction
+- **Data Storage**: Raw data in S3, processed summaries in DynamoDB with TTL
+- **Cost Optimized**: Rate limiting, graceful degradation, and reserved concurrency
+- **Comprehensive Analytics**: Engagement metrics, sentiment analysis, and content opportunities
+
 ### Infrastructure
 
 - **Serverless**: AWS Lambda (Node.js 20.x) with auto-scaling
 - **Database**: DynamoDB with optimized GSI indexes for fast queries
+- **Storage**: S3 buckets with lifecycle policies for cost optimization
+- **Security**: Secrets Manager for API credentials, IAM least privilege access
 - **API**: REST endpoints with authentication and rate limiting
 - **Monitoring**: CloudWatch logging, metrics, and cost tracking
-- **Security**: IAM least privilege access and comprehensive input validation
 
 ## Quick Start
 
@@ -86,6 +96,27 @@ cd infrastructure && npm install
 npx cdk bootstrap  # First time only
 npx cdk deploy TopicManagementStack
 ```
+
+### Configure Trend Data Collection (Optional)
+
+1. **Get API Keys** (see [`docs/trend-data-collection.md`](docs/trend-data-collection.md) for details):
+   - YouTube Data API v3 key
+   - Twitter API v2 Bearer Token  
+   - News API key
+
+2. **Update Secrets Manager**:
+   ```bash
+   aws secretsmanager update-secret \
+     --secret-id automated-video-pipeline/api-credentials \
+     --secret-string '{"youtube":{"apiKey":"your-key"},"twitter":{"bearerToken":"your-token"},"news":{"apiKey":"your-key"}}'
+   ```
+
+3. **Test Trend Collection**:
+   ```bash
+   curl -X POST https://your-api-url/trends/collect \
+     -H "x-api-key: your-key" \
+     -d '{"action":"collect","topic":"investing for beginners","sources":["google-trends","youtube"]}'
+   ```
 
 ### Add Topics via Google Sheets
 
@@ -122,6 +153,9 @@ curl -X POST https://your-api-url/topics \
 | POST                   | `/sync`          | Sync from sheets   | `{action: "sync", spreadsheetUrl, syncMode}`                                      |
 | POST                   | `/sync/validate` | Validate structure | `{action: "validate", spreadsheetUrl}`                                            |
 | GET                    | `/sync/history`  | Sync history       | `?limit=10`                                                                       |
+| **Trend Data Collection** |
+| POST                   | `/trends/collect` | Collect trend data | `{action: "collect", topic, sources, timeframe}`                                 |
+| GET                    | `/trends`        | Get trend data     | `?topic=investing&limit=10`                                                      |
 
 ### Data Model
 
@@ -146,16 +180,21 @@ curl -X POST https://your-api-url/topics \
 
 ## Architecture
 
-### Current System (Phase 1)
+### Current System (Phase 1 & 2A)
 
 ```
-Google Sheets ──→ API Gateway ──→ Lambda Functions ──→ DynamoDB
+Google Sheets ──→ API Gateway ──→ Lambda Functions ──→ DynamoDB + S3
     │                  │              │                    │
     │                  │              ├─ Topic Management  │
-    │                  │              └─ Sheets Sync       │
+    │                  │              ├─ Sheets Sync       │
+    │                  │              └─ Trend Collection  │
+    │                  │                     │             │
+External APIs ─────────┼─────────────────────┘             │
+(YouTube, Twitter,     │                                   │
+News, Google Trends)   │                                   │
     │                  │                                   │
-    └─ Public URLs     └─ Auth/Rate    └─ Node.js 20.x     └─ Topics & History
-                          Limiting
+    └─ Rate Limited    └─ Auth/Rate    └─ Node.js 20.x     └─ Topics, Trends,
+       API Calls          Limiting                            History & Raw Data
 ```
 
 ### Future System (Phase 2)
@@ -174,9 +213,11 @@ Topics ──→ AI Agents ──→ Content Pipeline ──→ YouTube
 
 ### AWS Services
 
-- **Lambda**: Serverless functions (Node.js 20.x)
-- **DynamoDB**: NoSQL database with GSI indexes
-- **API Gateway**: REST API with authentication
+- **Lambda**: Serverless functions (Node.js 20.x) - 3 functions deployed
+- **DynamoDB**: NoSQL database with GSI indexes - 3 tables (topics, sync history, trends)
+- **S3**: Object storage with lifecycle policies - trend data and media assets
+- **Secrets Manager**: Secure API credential storage for external services
+- **API Gateway**: REST API with authentication and rate limiting
 - **CloudWatch**: Logging and monitoring
 - **Bedrock**: AI agents and LLM integration (planned)
 - **Polly**: Text-to-speech (planned)
@@ -267,7 +308,7 @@ curl -X POST https://your-api-url/sync \
 
 ### Phase 2: AI Video Generation 🚧 In Progress
 
-- [ ] **Task 3.1**: Multi-source trend data collection (Google, Twitter, YouTube, News)
+- [x] **Task 3.1**: Multi-source trend data collection (Google, Twitter, YouTube, News)
 - [ ] **Task 3.2**: AI-powered topic generation using Amazon Bedrock
 - [ ] **Task 3.3**: Trend data processing and scoring algorithms
 
@@ -313,7 +354,8 @@ npm test
 ```
 ├── src/lambda/                 # Lambda function source code
 │   ├── topic-management/       # Topic CRUD operations
-│   └── google-sheets-sync/     # Google Sheets integration
+│   ├── google-sheets-sync/     # Google Sheets integration
+│   └── trend-data-collection/  # Multi-source trend data collection
 ├── infrastructure/             # AWS CDK infrastructure code
 ├── test/                      # Test suites
 ├── docs/                      # Documentation
@@ -331,6 +373,7 @@ npm test
 ### Guides
 
 - [`docs/google-sheets-template.md`](docs/google-sheets-template.md) - Google Sheets setup and format
+- [`docs/trend-data-collection.md`](docs/trend-data-collection.md) - Multi-source trend data collection setup
 - [`docs/implementation-updates.md`](docs/implementation-updates.md) - Technical implementation details
 - [`.kiro/specs/`](.kiro/specs/) - Complete technical specifications and design documents
 
