@@ -41,9 +41,11 @@ new AutomatedVideoPipelineStack(app, 'AutomatedVideoPipelineStack', {
   
   // Add tags to all resources in this stack for cost tracking and organization
   tags: {
-    Project: 'AutomatedVideoPipeline',
+    Project: 'youtube-video-upload',
+    Service: 'youtube-video-upload', // Main service identifier for easy resource filtering
     Environment: 'Development', // Change to 'Production' for prod deployment
     Owner: 'VideoContentTeam',
-    CostCenter: 'ContentCreation'
+    CostCenter: 'ContentCreation',
+    ManagedBy: 'CDK'
   }
 });

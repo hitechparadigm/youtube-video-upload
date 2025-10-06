@@ -1,53 +1,84 @@
 # Implementation Plan
 
 - [x] 1. Set up AWS infrastructure and core project structure
-
-
-
   - Create AWS CDK or Terraform infrastructure as code templates
   - Set up S3 buckets with proper lifecycle policies and encryption
   - Configure DynamoDB tables with GSIs for topic and video queries
   - Set up IAM roles and policies with least privilege access
   - Create Secrets Manager entries for API credentials
-  - _Requirements: 9.1, 9.5, 11.2_
+  - Implement comprehensive resource tagging with "youtube-video-upload" tag for all AWS resources
+  - Add cost allocation tags for detailed cost tracking and resource management
+  - Apply consistent tagging strategy across S3, DynamoDB, Lambda, ECS, API Gateway, SNS, and IAM resources
+  - _Requirements: 9.1, 9.5, 9.6, 11.2, 11.6, 11.7_
 
-- [ ] 2. Implement topic management service
-  - [ ] 2.1 Create topic configuration API using API Gateway and Lambda
+
+
+
+
+
+- [x] 2. Implement flexible topic management service
+  - [x] 2.1 Create topic configuration API using API Gateway and Lambda
     - Build REST endpoints for CRUD operations on topics
     - Implement topic validation and keyword extraction logic
     - Add scheduling configuration support
     - _Requirements: 1.1, 1.2, 1.3_
-  - [ ] 2.2 Build topic storage and retrieval functions
+  - [x] 2.2 Build topic storage and retrieval functions
     - Implement DynamoDB operations for topic persistence
     - Create topic priority and scheduling logic
     - Add topic status tracking and updates
     - _Requirements: 1.3, 1.4, 1.5_
+  - [x] 2.3 Write unit tests for topic management
+    - Test API endpoint validation and error handling
+    - Test DynamoDB operations and data consistency
+    - _Requirements: 1.1, 1.2, 1.3_
+
+- [x] 2.4 Implement simplified Google Sheets integration
+  - [x] 2.4.1 Build Google Sheets sync service
+    - Create Google Sheets API client with service account authentication
+    - Implement simplified sheet reading (Topic, Daily Frequency, Status, Notes)
+    - Add automatic sync scheduling and change detection
+    - Handle Google Sheets API rate limits and errors
+    - _Requirements: 1.2, 1.3, 1.6_
+  - [x] 2.4.2 Create sync Lambda function and API endpoints
+    - Build Lambda handler for manual and scheduled sync
+    - Add API Gateway endpoints for sync testing and history
+    - Implement sync reporting and error handling
+    - Add EventBridge rule for automatic 15-minute sync
+    - _Requirements: 1.3, 1.5, 1.8_
+  - [x] 2.4.3 Write integration tests for Google Sheets sync
+    - Test Google Sheets API connection and authentication
+    - Validate simplified sheet format parsing
+    - Test sync scheduling and change detection
+    - _Requirements: 1.2, 1.3, 1.6_
   - [ ] 2.3 Write unit tests for topic management
     - Test API endpoint validation and error handling
     - Test DynamoDB operations and data consistency
     - _Requirements: 1.1, 1.2, 1.3_
 
-- [ ] 3. Build trend analysis service
-  - [ ] 3.1 Implement external API integration functions
-    - Create Lambda functions for Google Trends API integration
-    - Build Twitter API data collection with rate limiting
-    - Implement YouTube Data API trend collection
-    - Add news API aggregation from multiple sources
-    - _Requirements: 2.1, 2.4_
-  - [ ] 3.2 Create trend data processing and storage
-    - Build S3 data partitioning and storage logic
-    - Implement DynamoDB trend metrics storage
-    - Add data validation and error handling
-    - _Requirements: 2.2, 2.5_
-  - [ ] 3.3 Integrate Amazon Bedrock for trend analysis
-    - Create Bedrock client and prompt templates
-    - Implement trend summarization and sentiment analysis
-    - Add keyword extraction and relevance scoring
-    - _Requirements: 2.3, 2.4_
+- [ ] 3. Build intelligent trend analysis service
+  - [ ] 3.1 Implement AI-driven trend research agent
+    - Create Lambda functions for Google Trends, Twitter, YouTube, and news API integration
+    - Build Amazon Bedrock integration for intelligent trend analysis
+    - Implement trend-to-video-topic generation logic
+    - Add engagement potential scoring for generated topics
+    - _Requirements: 2.1, 2.2, 2.3_
+  - [ ] 3.2 Create engaging video topic generation
+    - Build AI prompts for click-worthy title generation
+    - Implement subscriber-focused content angle discovery
+    - Add trending keyword integration and SEO optimization
+    - Create daily frequency-based topic distribution
+    - _Requirements: 2.4, 2.5, 2.6_
+  - [ ] 3.3 Add trend data storage and analytics
+    - Build S3 storage for raw trend data with cost optimization
+    - Implement DynamoDB storage for generated video topics
+    - Add trend analysis history and performance tracking
+    - Create trend-based content recommendation engine
+    - _Requirements: 2.2, 2.7_
   - [ ] 3.4 Write integration tests for trend analysis
     - Test external API integrations with mock responses
-    - Validate data processing and storage operations
-    - _Requirements: 2.1, 2.2, 2.3_
+    - Validate AI-generated topic quality and engagement potential
+    - Test daily frequency distribution and topic uniqueness
+    - _Requirements: 2.1, 2.2, 2.5_
 
 - [ ] 4. Implement AI agent orchestration system
   - [ ] 4.1 Set up Amazon Bedrock Agents infrastructure
@@ -72,26 +103,30 @@
     - Validate shared state management in DynamoDB
     - _Requirements: 8.2, 8.4_
 
-- [ ] 5. Build content generation service
-  - [ ] 5.1 Create script generation using Amazon Bedrock
-    - Implement prompt engineering for video script creation
-    - Build scene-by-scene content structuring
-    - Add timing and duration calculations for 5-10 minute videos
-    - _Requirements: 3.1, 3.2, 3.3_
-  - [ ] 5.2 Implement SEO content generation
-    - Create YouTube title optimization using AI
-    - Build description and tag generation logic
-    - Add keyword integration for search optimization
-    - _Requirements: 3.4, 6.1_
-  - [ ] 5.3 Add script validation and storage
-    - Implement script quality validation
-    - Create S3 storage with versioning for scripts
-    - Add script metadata and tracking
-    - _Requirements: 3.1, 3.5_
-  - [ ] 5.4 Write content generation tests
-    - Test script structure and timing validation
-    - Validate SEO content quality and keyword integration
-    - _Requirements: 3.1, 3.2, 3.4_
+- [ ] 5. Build engaging content generation service
+  - [ ] 5.1 Create subscriber-focused script generation
+    - Implement engagement-optimized prompt engineering for Amazon Bedrock
+    - Build hook-driven script structure with curiosity gaps and retention tactics
+    - Add scene-by-scene content with engagement elements (countdowns, reveals, stories)
+    - Create dynamic pacing and call-to-action optimization for subscriber growth
+    - _Requirements: 3.1, 3.2, 3.7_
+  - [ ] 5.2 Implement click-worthy SEO content generation
+    - Create psychology-driven YouTube title generation (curiosity, social proof, urgency)
+    - Build compelling description generation with subscriber-focused CTAs
+    - Add engagement-optimized tag generation and thumbnail text suggestions
+    - Implement A/B testing framework for title and thumbnail variations
+    - _Requirements: 3.4, 6.1, 6.4_
+  - [ ] 5.3 Add engagement analytics and optimization
+    - Implement script engagement scoring and optimization suggestions
+    - Create content performance prediction based on engagement elements
+    - Add subscriber conversion rate optimization for scripts and metadata
+    - Build content strategy recommendations based on trend analysis
+    - _Requirements: 3.7, 6.5_
+  - [ ] 5.4 Write engagement-focused content tests
+    - Test script engagement elements and subscriber conversion optimization
+    - Validate click-worthy title generation and psychology triggers
+    - Test content performance prediction accuracy
+    - _Requirements: 3.1, 3.2, 3.7_
 
 - [ ] 6. Implement media acquisition service
   - [ ] 6.1 Build stock media API integrations

@@ -23,6 +23,8 @@
   "dependencies": {
     "aws-cdk-lib": "^2.110.0",
     "aws-lambda": "^1.0.7",
-    "constructs": "^10.3.0"
+    "constructs": "^10.3.0",
+    "googleapis": "^128.0.0",
+    "google-auth-library": "^9.4.1"
   }
 }

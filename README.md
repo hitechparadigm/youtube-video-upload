@@ -1,17 +1,17 @@
 # Automated Video Pipeline
 
-An AWS-based serverless system that automatically generates, produces, and publishes high-quality videos to YouTube using AI agents, trend analysis, and automated content creation.
+An AWS-based serverless system that automatically generates, produces, and publishes highly engaging YouTube videos designed to grow your subscriber base using AI agents, trend analysis, and engagement psychology.
 
 ## 🎯 What This System Does
 
-The Automated Video Pipeline creates professional videos by:
+The Automated Video Pipeline creates subscriber-worthy videos by:
 
-1. **Analyzing Trends** - Monitors Google Trends, Twitter, YouTube, and news APIs for trending topics
-2. **Generating Content** - Uses Amazon Bedrock AI to create detailed video scripts and SEO metadata
-3. **Acquiring Media** - Downloads relevant free images and videos from Pexels and Pixabay
-4. **Producing Videos** - Combines media with AI-generated audio using FFmpeg on AWS Fargate
-5. **Publishing Content** - Uploads finished videos to YouTube with optimized titles, descriptions, and tags
-6. **Automating Everything** - Runs on a schedule (2-3 times daily) without manual intervention
+1. **Simple Topic Input** - You specify basic topics like "Investing for beginners" in Google Sheets
+2. **AI Trend Analysis** - Monitors current trends from Google, Twitter, YouTube, and news to find engaging angles
+3. **Engaging Content Creation** - Uses Amazon Bedrock AI to create click-worthy titles, hooks, and subscriber-focused scripts
+4. **Professional Production** - Combines trending media with dynamic audio using FFmpeg on AWS Fargate
+5. **Growth-Optimized Publishing** - Uploads to YouTube with engagement-focused titles, thumbnails, and descriptions
+6. **Fully Automated** - Generates multiple videos per day based on your frequency settings
 
 ## 🏗️ Architecture Overview
 
@@ -132,22 +132,16 @@ npm run destroy
 
 ## 🎬 How to Use
 
-### 1. Define Video Topics
+### 1. Define Video Topics (Super Simple!)
 
-Create topics for video generation through the API or directly in DynamoDB:
+Add topics to your Google Sheets (https://docs.google.com/spreadsheets/d/1WnUJredElhFEgXAhnnNtcbjmJ1l9t3i1YNnYblVOaao):
 
-```json
-{
-  "topicId": "real-estate-canada-2025",
-  "topic": "investing in real estate in Canada",
-  "keywords": ["real estate", "Canada", "investment", "property", "housing market"],
-  "priority": 1,
-  "schedule": {
-    "frequency": "daily",
-    "times": ["14:00", "18:00", "22:00"]
-  }
-}
-```
+| Topic | Daily Frequency | Status | Notes |
+|-------|----------------|--------|-------|
+| Investing for beginners in the USA | 2 | active | Simple steps to start |
+| Travel to Mexico | 1 | active | Budget-friendly options |
+
+**That's it!** The AI handles everything else - trend analysis, engaging titles, keywords, and content creation.
 
 ### 2. Monitor Pipeline Execution
 
