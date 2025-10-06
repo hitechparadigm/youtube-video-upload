@@ -2,7 +2,7 @@
 
 ## Introduction
 
-The Automated Video Pipeline is a comprehensive AWS-based solution that automatically generates, produces, and publishes high-quality videos to YouTube based on trending topics. The system leverages AI agents, trend analysis, and automated content creation to produce 5-10 minute videos with professional audio, subtitles, and SEO optimization, running on a scheduled basis 2-3 times daily.
+The Automated YouTube Video Pipeline is a comprehensive AWS-based solution that automatically generates, produces, and publishes high-quality videos to YouTube based on trending topics. The system leverages AI agents, trend analysis, and automated content creation to produce 5-10 minute videos with professional audio, subtitles, and SEO optimization, running on a scheduled basis 2-3 times daily.
 
 ## Requirements
 

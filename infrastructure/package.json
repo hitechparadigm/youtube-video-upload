@@ -1,7 +1,7 @@
 {
-  "name": "automated-video-pipeline-infrastructure",
+  "name": "automated-youtube-video-pipeline-infrastructure",
   "version": "1.0.0",
-  "description": "AWS CDK infrastructure for Automated Video Pipeline",
+  "description": "AWS CDK infrastructure for Automated YouTube Video Pipeline",
   "type": "module",
   "main": "app.js",
   "engines": {
@@ -34,6 +34,6 @@
     "dynamodb",
     "api-gateway"
   ],
-  "author": "Automated Video Pipeline Team",
+  "author": "Automated YouTube Video Pipeline Team",
   "license": "MIT"
 }

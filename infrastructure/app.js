@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 /**
- * AWS CDK App for Automated Video Pipeline
+ * AWS CDK App for Automated YouTube Video Pipeline
  * Entry point for deploying infrastructure
  */
 
@@ -21,7 +21,7 @@ const topicManagementStack = new TopicManagementStack(app, 'TopicManagementStack
     account,
     region
   },
-  description: 'Topic Management infrastructure for Automated Video Pipeline',
+  description: 'Topic Management infrastructure for Automated YouTube Video Pipeline',
   tags: {
     Project: 'automated-video-pipeline',
     Environment: environment,

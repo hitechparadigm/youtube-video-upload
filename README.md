@@ -1,10 +1,10 @@
-# Automated Video Pipeline
+# Automated YouTube Video Pipeline
 
 > **AI-powered serverless system that automatically generates, produces, and publishes high-quality YouTube videos from simple topic inputs using multi-agent orchestration and AWS services.**
 
 ## Overview
 
-The Automated Video Pipeline transforms basic topic ideas (like "Investing for beginners in the USA") into complete, published YouTube videos through an intelligent multi-agent system. The platform leverages AI agents for trend analysis, content creation, media curation, and video production, running entirely on AWS serverless infrastructure.
+The Automated YouTube Video Pipeline transforms basic topic ideas (like "Investing for beginners in the USA") into complete, published YouTube videos through an intelligent multi-agent system. The platform leverages AI agents for trend analysis, content creation, media curation, and video production, running entirely on AWS serverless infrastructure.
 
 ### How It Works
 
@@ -295,8 +295,8 @@ curl -X POST https://your-api-url/sync \
 
 ```bash
 # Clone repository
-git clone https://github.com/your-org/automated-video-pipeline.git
-cd automated-video-pipeline
+git clone https://github.com/your-org/automated-youtube-video-pipeline.git
+cd automated-youtube-video-pipeline
 
 # Install dependencies
 npm install

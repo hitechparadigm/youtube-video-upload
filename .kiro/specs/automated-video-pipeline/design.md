@@ -2,7 +2,7 @@
 
 ## Overview
 
-The Automated Video Pipeline is a serverless, event-driven architecture built on AWS that leverages AI agents and GenAI services to create, produce, and publish high-quality videos automatically. The system uses a multi-agent orchestration pattern with Amazon Bedrock Agents coordinating specialized AI agents for trend analysis, content creation, media curation, and video production.
+The Automated YouTube Video Pipeline is a serverless, event-driven architecture built on AWS that leverages AI agents and GenAI services to create, produce, and publish high-quality YouTube videos automatically. The system uses a multi-agent orchestration pattern with Amazon Bedrock Agents coordinating specialized AI agents for trend analysis, content creation, media curation, and video production.
 
 ## Storage Configuration
 

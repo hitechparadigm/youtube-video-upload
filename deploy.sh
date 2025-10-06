@@ -1,11 +1,11 @@
 #!/bin/bash
 
 # Deployment script for Topic Management Lambda Function
-# Automated Video Pipeline - Task 2.1
+# Automated YouTube Video Pipeline - Task 2.1
 
 set -e
 
-echo "🚀 Starting deployment of Topic Management Lambda Function..."
+echo "🚀 Starting deployment of Automated YouTube Video Pipeline - Topic Management..."
 
 # Check if Node.js 20.x is available
 NODE_VERSION=$(node --version)
