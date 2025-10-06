@@ -1,204 +1,217 @@
-# Automated Video Pipeline - Topic Management System
+# Automated Video Pipeline
 
-## 🎯 Project Status
+> **AI-powered serverless system that automatically generates, produces, and publishes high-quality YouTube videos from simple topic inputs using multi-agent orchestration and AWS services.**
 
-### ✅ Completed Tasks (Ready for Production)
+## Overview
 
-- **✅ Task 2.1**: Topic Management Lambda Function (Node.js 20.x)
-- **✅ Task 2.2**: Google Sheets Integration Service
-- **✅ Task 2.3**: REST API Gateway with Authentication (Partially Complete)
+The Automated Video Pipeline transforms basic topic ideas (like "Investing for beginners in the USA") into complete, published YouTube videos through an intelligent multi-agent system. The platform leverages AI agents for trend analysis, content creation, media curation, and video production, running entirely on AWS serverless infrastructure.
 
-### 🚧 What's Been Delivered
+### How It Works
 
-**Complete Topic Management System** with:
+1. **Topic Input**: Define topics via Google Sheets or REST API
+2. **AI Analysis**: Trend Research Agent analyzes current trends and generates specific video concepts
+3. **Content Creation**: Script Writer Agent creates engaging, subscriber-focused content
+4. **Media Production**: Media Curator and Audio Producer agents handle visuals and narration
+5. **Video Assembly**: Video Compositor assembles and publishes to YouTube
+6. **Monitoring**: Complete cost tracking and performance analytics
 
-- Full CRUD operations for video topics
-- Google Sheets integration (simplified, no API keys needed!)
-- REST API with authentication
-- Production-ready AWS infrastructure
-- Comprehensive monitoring and error handling
+### AI Agent Architecture
 
-### 🎯 Next Up: Video Generation Pipeline
+The system uses **Amazon Bedrock Agents** with hierarchical multi-agent collaboration:
 
-**Ready to implement:**
+- **🎯 Video Production Orchestrator** (Supervisor): Coordinates the entire workflow
+- **📊 Trend Research Analyst**: Analyzes trends from Google, YouTube, Twitter, and news
+- **✍️ Content Script Writer**: Creates engaging scripts optimized for subscriber growth
+- **🎨 Media Curator**: Sources relevant images/videos from multiple APIs
+- **🎵 Audio Producer**: Generates professional narration using Amazon Polly
+- **🎬 Video Compositor**: Assembles final videos and publishes to YouTube
 
-- **Task 3.1**: Trend Data Collection Lambda Function
-- **Task 3.2**: AI-Powered Topic Generation Service
-- **Task 3.3**: Trend Data Processing and Storage
+## Current Status
 
-## 🚀 What You Can Do Right Now
+### ✅ Production Ready (Phase 1)
 
-### 1. Manage Video Topics via API
+- **Topic Management System**: Complete CRUD operations with validation
+- **Google Sheets Integration**: Simplified sync (no API keys required)
+- **REST API Gateway**: Authentication and rate limiting
+- **AWS Infrastructure**: Serverless, cost-optimized deployment
 
-Create, update, and organize your video topics with full validation and priority scheduling.
+### 🚧 In Development (Phase 2)
 
-### 2. Sync Topics from Google Sheets
+- **AI Trend Analysis**: Multi-source trend data collection
+- **Content Generation**: AI-powered script and title creation
+- **Media Pipeline**: Automated video production and publishing
 
-Simply share a Google Sheets document and sync topics automatically - no complex setup required!
+## Features
 
-### 3. Monitor Everything
+### Topic Management
 
-Complete audit trails, sync history, and CloudWatch monitoring built-in.
-
-## 🎉 Key Features Delivered
-
-### 📊 Topic Management System
-
-- **Smart CRUD Operations**: Create, read, update, delete topics with validation
+- **CRUD Operations**: Full create, read, update, delete with validation
 - **Priority Scheduling**: 1-10 priority levels for video generation order
 - **Keyword Extraction**: Automatic keyword generation from topic text
-- **Multi-Region Support**: US, CA, UK, AU, EU targeting
+- **Multi-Region Support**: US, CA, UK, AU, EU content targeting
 - **Content Styles**: Educational, entertainment, professional, casual modes
-
-### 📋 Google Sheets Integration (Revolutionary Simplification!)
-
-- **🔥 No API Keys Required**: Just share your Google Sheets link - that's it!
-- **Universal Access**: Works with any Google account, no setup needed
-- **Smart Sync Modes**: Incremental, overwrite, and merge strategies
-- **Conflict Resolution**: Handles concurrent updates intelligently
-- **Complete Audit Trail**: Every sync operation logged and tracked
-- **Pre-Sync Validation**: Checks sheet structure before processing
-
-### 🔐 Production-Ready Infrastructure
-
-- **API Gateway**: RESTful endpoints with API key authentication
-- **DynamoDB**: Optimized schema with GSI indexes for fast queries
-- **Lambda Functions**: Node.js 20.x runtime with cost optimization
-- **CloudWatch**: Comprehensive logging and monitoring
-- **IAM Security**: Least privilege access controls
-
-## 🚀 Quick Start Guide
-
-### Option 1: Google Sheets (Recommended - 2 minutes)
-
-1. **Create a Google Sheets document** with this format:
-
-   ```
-   Topic                              | Daily Frequency | Priority | Status | Target Audience | Region | Content Style        | Tags
-   Investing for beginners in the USA | 2              | 1        | active | beginners       | US     | engaging_educational | investing,finance
-   Travel tips for Europe             | 1              | 3        | active | travelers       | EU     | entertainment        | travel,europe
-   ```
-
-2. **Share the sheet**: Click "Share" → "Anyone with the link" → "Viewer"
-
-3. **Sync to the system**:
-   ```bash
-   curl -X POST https://your-api-url/sync \
-     -H "x-api-key: your-key" \
-     -d '{"action": "sync", "spreadsheetUrl": "YOUR_GOOGLE_SHEETS_URL", "syncMode": "incremental"}'
-   ```
-
-### Option 2: Direct API (For Developers)
-
-```bash
-# Create a topic
-curl -X POST https://your-api-url/topics \
-  -H "Content-Type: application/json" \
-  -H "x-api-key: your-key" \
-  -d '{
-    "topic": "Investing for beginners in the USA",
-    "dailyFrequency": 2,
-    "priority": 1,
-    "status": "active",
-    "targetAudience": "beginners",
-    "region": "US",
-    "contentStyle": "engaging_educational"
-  }'
-```
-
-## 📡 API Reference
-
-### Topic Management Endpoints
-
-| Method | Endpoint       | Description                    | Status   |
-| ------ | -------------- | ------------------------------ | -------- |
-| GET    | `/topics`      | List all topics with filtering | ✅ Ready |
-| POST   | `/topics`      | Create new topic               | ✅ Ready |
-| GET    | `/topics/{id}` | Get specific topic             | ✅ Ready |
-| PUT    | `/topics/{id}` | Update topic                   | ✅ Ready |
-| DELETE | `/topics/{id}` | Delete topic                   | ✅ Ready |
 
 ### Google Sheets Integration
 
-| Method | Endpoint         | Description              | Status   |
-| ------ | ---------------- | ------------------------ | -------- |
-| POST   | `/sync`          | Sync from Google Sheets  | ✅ Ready |
-| POST   | `/sync/validate` | Validate sheet structure | ✅ Ready |
-| GET    | `/sync/history`  | Get sync history         | ✅ Ready |
+- **Zero Setup**: No API keys or Google Cloud configuration required
+- **Universal Access**: Works with any Google account via public sharing
+- **Smart Sync**: Incremental, overwrite, and merge strategies with conflict resolution
+- **Audit Trail**: Complete sync history and error tracking
+- **Validation**: Pre-sync structure validation with detailed error reporting
 
-### Query Options
+### Infrastructure
 
-- **Filtering**: `?status=active&priority=1&limit=10`
-- **Sync Modes**: `incremental`, `overwrite`, `merge`
-- **Regions**: `US`, `CA`, `UK`, `AU`, `EU`
+- **Serverless**: AWS Lambda (Node.js 20.x) with auto-scaling
+- **Database**: DynamoDB with optimized GSI indexes for fast queries
+- **API**: REST endpoints with authentication and rate limiting
+- **Monitoring**: CloudWatch logging, metrics, and cost tracking
+- **Security**: IAM least privilege access and comprehensive input validation
 
-## 🏗️ System Architecture
-
-### Current Infrastructure (Production Ready)
-
-```
-┌─────────────────┐    ┌──────────────────┐    ┌─────────────────┐
-│  Google Sheets  │───▶│   API Gateway    │───▶│ Lambda Functions│
-│  (Public URLs)  │    │ (Authentication) │    │  (Node.js 20.x) │
-└─────────────────┘    └──────────────────┘    └─────────────────┘
-                                                         │
-                       ┌──────────────────┐             │
-                       │   CloudWatch     │◀────────────┘
-                       │ (Logs & Metrics) │             │
-                       └──────────────────┘             ▼
-                                                ┌─────────────────┐
-                                                │   DynamoDB      │
-                                                │ (Topics & Sync) │
-                                                └─────────────────┘
-```
-
-### AWS Services Deployed
-
-- **✅ Lambda Functions**: 2 functions (topic management + Google Sheets sync)
-- **✅ DynamoDB Tables**: 2 tables (topics + sync history) with GSI indexes
-- **✅ API Gateway**: REST API with authentication and rate limiting
-- **✅ CloudWatch**: Complete logging and monitoring setup
-- **✅ IAM Roles**: Least privilege security policies
-
-## 🚀 Deployment Guide
+## Quick Start
 
 ### Prerequisites
 
 - Node.js 20.x or later
 - AWS CLI configured with deployment permissions
-- AWS CDK v2 installed globally (`npm install -g aws-cdk`)
+- AWS CDK v2 (`npm install -g aws-cdk`)
 
-### One-Command Deploy
+### Deploy Infrastructure
 
 ```bash
-# Deploy everything
+# One-command deployment
 chmod +x deploy.sh && ./deploy.sh
+
+# Or manual deployment
+cd infrastructure && npm install
+npx cdk bootstrap  # First time only
+npx cdk deploy TopicManagementStack
 ```
 
-### Manual Deployment Steps
+### Add Topics via Google Sheets
+
+1. Create a Google Sheets document:
+   ```
+   Topic                              | Daily Frequency | Priority | Status | Target Audience | Region | Content Style        | Tags
+   Investing for beginners in the USA | 2              | 1        | active | beginners       | US     | engaging_educational | investing,finance
+   ```
+2. Share: "Anyone with the link" → "Viewer"
+3. Sync: `POST /sync` with your sheet URL
+
+### Add Topics via API
 
 ```bash
-# 1. Install dependencies
-cd src/lambda/topic-management && npm install && cd ../../../
-cd src/lambda/google-sheets-sync && npm install && cd ../../../
-cd infrastructure && npm install
-
-# 2. Bootstrap CDK (first time only)
-npx cdk bootstrap
-
-# 3. Deploy infrastructure
-npx cdk deploy TopicManagementStack --require-approval never
+curl -X POST https://your-api-url/topics \
+  -H "Content-Type: application/json" \
+  -H "x-api-key: your-key" \
+  -d '{"topic": "Investing for beginners", "priority": 1, "dailyFrequency": 2}'
 ```
 
-### Post-Deployment
+## API Reference
 
-1. **Get API Gateway URL** from CDK output
-2. **Get API Key** from AWS Console → API Gateway → API Keys
-3. **Test the system** with provided examples
+### Endpoints
 
-## 🧪 Testing & Validation
+| Method                 | Endpoint         | Description        | Parameters                                                                        |
+| ---------------------- | ---------------- | ------------------ | --------------------------------------------------------------------------------- |
+| **Topic Management**   |
+| GET                    | `/topics`        | List topics        | `?status=active&priority=1&limit=10`                                              |
+| POST                   | `/topics`        | Create topic       | `{topic, priority, dailyFrequency, status, targetAudience, region, contentStyle}` |
+| GET                    | `/topics/{id}`   | Get topic          | -                                                                                 |
+| PUT                    | `/topics/{id}`   | Update topic       | `{priority, status, ...}`                                                         |
+| DELETE                 | `/topics/{id}`   | Delete topic       | -                                                                                 |
+| **Google Sheets Sync** |
+| POST                   | `/sync`          | Sync from sheets   | `{action: "sync", spreadsheetUrl, syncMode}`                                      |
+| POST                   | `/sync/validate` | Validate structure | `{action: "validate", spreadsheetUrl}`                                            |
+| GET                    | `/sync/history`  | Sync history       | `?limit=10`                                                                       |
 
-### Quick Health Check
+### Data Model
+
+```json
+{
+  "topicId": "uuid",
+  "topic": "Investing for beginners in the USA",
+  "keywords": ["investing", "beginners", "usa"],
+  "dailyFrequency": 2,
+  "priority": 1,
+  "status": "active",
+  "targetAudience": "beginners",
+  "region": "US",
+  "contentStyle": "engaging_educational",
+  "metadata": {
+    "createdBy": "google-sheets-sync",
+    "source": "google-sheets",
+    "tags": ["investing", "finance"]
+  }
+}
+```
+
+## Architecture
+
+### Current System (Phase 1)
+
+```
+Google Sheets ──→ API Gateway ──→ Lambda Functions ──→ DynamoDB
+    │                  │              │                    │
+    │                  │              ├─ Topic Management  │
+    │                  │              └─ Sheets Sync       │
+    │                  │                                   │
+    └─ Public URLs     └─ Auth/Rate    └─ Node.js 20.x     └─ Topics & History
+                          Limiting
+```
+
+### Future System (Phase 2)
+
+```
+Topics ──→ AI Agents ──→ Content Pipeline ──→ YouTube
+   │         │              │                   │
+   │         ├─ Trend Analysis (Bedrock)        │
+   │         ├─ Script Generation (Claude)      │
+   │         ├─ Media Curation (APIs)           │
+   │         ├─ Audio Production (Polly)        │
+   │         └─ Video Assembly (Fargate)        │
+   │                                            │
+   └─ Priority Queue                            └─ Published Videos
+```
+
+### AWS Services
+
+- **Lambda**: Serverless functions (Node.js 20.x)
+- **DynamoDB**: NoSQL database with GSI indexes
+- **API Gateway**: REST API with authentication
+- **CloudWatch**: Logging and monitoring
+- **Bedrock**: AI agents and LLM integration (planned)
+- **Polly**: Text-to-speech (planned)
+- **Fargate**: Video processing (planned)
+
+## Configuration
+
+### Topic Fields
+
+| Field            | Required | Type    | Rules                                                     | Default              |
+| ---------------- | -------- | ------- | --------------------------------------------------------- | -------------------- |
+| `topic`          | ✅       | String  | 1-200 chars                                               | -                    |
+| `dailyFrequency` | ❌       | Integer | 1-10 videos/day                                           | 1                    |
+| `priority`       | ❌       | Integer | 1-10 (1=highest)                                          | 5                    |
+| `status`         | ❌       | String  | active, paused, archived                                  | active               |
+| `targetAudience` | ❌       | String  | Max 100 chars                                             | general              |
+| `region`         | ❌       | String  | US, CA, UK, AU, EU                                        | US                   |
+| `contentStyle`   | ❌       | String  | engaging_educational, entertainment, professional, casual | engaging_educational |
+
+### Google Sheets Format
+
+```
+Topic (Required) | Daily Frequency | Priority | Status | Target Audience | Region | Content Style | Tags
+Your topic here  | 2              | 1        | active | beginners       | US     | engaging_educational | tag1,tag2
+```
+
+### Sync Modes
+
+- **incremental**: Only sync changes since last update
+- **overwrite**: Replace all data with sheet contents
+- **merge**: Smart field-by-field comparison and updates
+
+## Testing
+
+### Health Check
 
 ```bash
 # Test topic creation
@@ -214,124 +227,124 @@ curl -X POST https://your-api-url/sync \
   -d '{"action": "sync", "spreadsheetUrl": "YOUR_SHEET_URL", "syncMode": "incremental"}'
 ```
 
-### Test Files Included
+### Test Resources
 
-- `src/lambda/topic-management/test-events.json` - Lambda test events
-- `src/lambda/google-sheets-sync/test-events.json` - Sync test scenarios
-- `docs/google-sheets-template.md` - Complete setup guide
+- `src/lambda/*/test-events.json` - Lambda test events
+- `test/infrastructure/` - Infrastructure validation tests
+- `docs/google-sheets-template.md` - Setup guide with examples
 
-## 📋 Data Validation & Rules
+## Monitoring & Security
 
-### Topic Fields
+### Security
 
-| Field            | Required | Type    | Rules                                                     | Default              |
-| ---------------- | -------- | ------- | --------------------------------------------------------- | -------------------- |
-| `topic`          | ✅ Yes   | String  | 1-200 chars, non-empty                                    | -                    |
-| `dailyFrequency` | ❌ No    | Integer | 1-10 videos per day                                       | 1                    |
-| `priority`       | ❌ No    | Integer | 1-10 (1=highest)                                          | 5                    |
-| `status`         | ❌ No    | String  | active, paused, archived                                  | active               |
-| `targetAudience` | ❌ No    | String  | Max 100 chars                                             | general              |
-| `region`         | ❌ No    | String  | US, CA, UK, AU, EU                                        | US                   |
-| `contentStyle`   | ❌ No    | String  | engaging_educational, entertainment, professional, casual | engaging_educational |
+- **Authentication**: API key required for all endpoints
+- **Authorization**: IAM roles with least privilege access
+- **Validation**: Comprehensive input sanitization and validation
+- **Audit**: Complete operation logging and sync history tracking
 
-### Google Sheets Format
+### Monitoring
 
-```
-Topic (Required) | Daily Frequency | Priority | Status | Target Audience | Region | Content Style | Tags
-Your topic here  | 2              | 1        | active | beginners       | US     | engaging_educational | tag1,tag2
-```
-
-## 🔒 Security & Monitoring
-
-### Security Features
-
-- **🔐 API Key Authentication**: All endpoints protected
-- **🛡️ IAM Least Privilege**: Minimal required permissions
-- **🔍 Input Validation**: Comprehensive data sanitization
-- **🚫 Error Sanitization**: No sensitive data in responses
-
-### Monitoring & Observability
-
-- **📊 CloudWatch Logs**: Detailed request/response logging
-- **📈 Performance Metrics**: Lambda execution times and success rates
-- **💰 Cost Tracking**: Per-operation cost monitoring ready
-- **🔍 Audit Trail**: Complete sync history in DynamoDB
+- **Logs**: CloudWatch detailed request/response logging
+- **Metrics**: Lambda performance and success rates
+- **Costs**: Per-operation cost tracking and optimization
+- **Alerts**: Configurable thresholds for errors and performance
 
 ### Cost Optimization
 
-- **⚡ Reserved Concurrency**: Limited to prevent runaway costs
-- **💾 Memory Optimization**: Right-sized for performance vs cost
-- **💸 Pay-per-Request**: DynamoDB scales to zero when not used
-- **🎯 Rate Limiting**: API Gateway usage plans prevent abuse
+- **Serverless**: Pay only for actual usage, scales to zero
+- **Reserved Concurrency**: Prevents runaway costs
+- **Memory Optimization**: Right-sized for performance vs cost
+- **DynamoDB**: Pay-per-request billing with automatic scaling
 
-## 🎯 What's Next: Video Generation Pipeline
+## Roadmap
 
-### 🚧 Ready to Build (Next Sprint)
+### Phase 1: Topic Management ✅ Complete
 
-**Task 3.1: Trend Data Collection Lambda Function**
+- [x] Topic CRUD operations with validation
+- [x] Google Sheets integration (no API keys required)
+- [x] REST API with authentication
+- [x] Production-ready AWS infrastructure
 
-- Google Trends API integration
-- Twitter API v2 integration
-- YouTube Data API integration
-- News API integration for current events
-- Rate limiting and error handling
+### Phase 2: AI Video Generation 🚧 In Progress
 
-**Task 3.2: AI-Powered Topic Generation Service**
+- [ ] **Task 3.1**: Multi-source trend data collection (Google, Twitter, YouTube, News)
+- [ ] **Task 3.2**: AI-powered topic generation using Amazon Bedrock
+- [ ] **Task 3.3**: Trend data processing and scoring algorithms
 
-- Amazon Bedrock integration for trend analysis
-- Topic scoring based on engagement potential
-- Keyword extraction and SEO optimization
-- Content strategy recommendations
+### Phase 3: Content Creation 📋 Planned
 
-**Task 3.3: Trend Data Processing and Storage**
+- [ ] **Task 4.1**: AI script generation with engagement optimization
+- [ ] **Task 4.2**: Click-worthy title and thumbnail generation
+- [ ] **Task 4.3**: Scene-by-scene breakdown with timing
 
-- Data normalization for different API formats
-- Trend scoring algorithms
-- Data partitioning by date and source
-- Trend aggregation and reporting
+### Phase 4: Media Production 📋 Planned
 
-### 🔮 Future Pipeline Components
+- [ ] **Task 5.1**: Multi-source media curation (Pexels, Pixabay, etc.)
+- [ ] **Task 6.1**: Amazon Polly audio production with speech marks
+- [ ] **Task 7.1**: FFmpeg video assembly on ECS Fargate
 
-**Content Generation (Tasks 4.x)**
+### Phase 5: Publishing & Analytics 📋 Planned
 
-- AI script generation with engagement optimization
-- Click-worthy title and thumbnail generation
-- Scene-by-scene breakdown with timing
+- [ ] **Task 8.1**: YouTube publishing with SEO optimization
+- [ ] **Task 9.1**: Workflow orchestration with Step Functions
+- [ ] **Task 10.1**: Production deployment and monitoring
 
-**Media & Production (Tasks 5.x-7.x)**
+## Contributing
 
-- Multi-source media curation (Pexels, Pixabay, etc.)
-- Amazon Polly audio production
-- FFmpeg video assembly on ECS Fargate
+### Development Setup
 
-**Publishing & Analytics (Tasks 8.x-10.x)**
+```bash
+# Clone repository
+git clone https://github.com/your-org/automated-video-pipeline.git
+cd automated-video-pipeline
 
-- YouTube publishing with SEO optimization
-- Performance tracking and analytics
-- Cost monitoring and optimization
+# Install dependencies
+npm install
+cd infrastructure && npm install && cd ..
+cd src/lambda/topic-management && npm install && cd ../../..
+cd src/lambda/google-sheets-sync && npm install && cd ../../..
 
-## 📚 Documentation & Support
+# Run tests
+npm test
+```
 
-### Available Guides
+### Project Structure
 
-- **📖 `docs/google-sheets-template.md`** - Complete Google Sheets setup guide
-- **🔧 `docs/implementation-updates.md`** - Technical implementation details
-- **📋 `.kiro/specs/`** - Complete technical specifications
-- **🧪 Test Events** - Ready-to-use test scenarios in each Lambda folder
+```
+├── src/lambda/                 # Lambda function source code
+│   ├── topic-management/       # Topic CRUD operations
+│   └── google-sheets-sync/     # Google Sheets integration
+├── infrastructure/             # AWS CDK infrastructure code
+├── test/                      # Test suites
+├── docs/                      # Documentation
+└── .kiro/specs/               # Technical specifications
+```
 
-### Getting Help
+### Next Development Priorities
 
-- **CloudWatch Logs**: Detailed error information and request tracking
-- **Sync History API**: Complete audit trail of all operations
-- **Validation Endpoints**: Pre-flight checks for data integrity
-- **Comprehensive Error Messages**: Specific guidance for fixing issues
+1. **Trend Data Collection** (Task 3.1) - Multi-source API integration
+2. **AI Topic Generation** (Task 3.2) - Amazon Bedrock integration
+3. **Content Pipeline** (Tasks 4.x) - Script and media generation
 
-### Current System Status
+## Documentation
 
-✅ **Production Ready**: Topic management and Google Sheets sync  
-🚧 **In Development**: Video generation pipeline  
-📋 **Planned**: Full end-to-end automation
+### Guides
+
+- [`docs/google-sheets-template.md`](docs/google-sheets-template.md) - Google Sheets setup and format
+- [`docs/implementation-updates.md`](docs/implementation-updates.md) - Technical implementation details
+- [`.kiro/specs/`](.kiro/specs/) - Complete technical specifications and design documents
+
+### Support
+
+- **Issues**: Use GitHub Issues for bug reports and feature requests
+- **Logs**: CloudWatch provides detailed error information and request tracking
+- **API**: Use `/sync/history` and validation endpoints for troubleshooting
+- **Community**: Discussions and questions welcome in GitHub Discussions
+
+## License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
 ---
 
-**Ready to continue building?** The foundation is solid - let's add the video generation capabilities! 🚀
+**🚀 Ready to build the future of automated video content?** The foundation is production-ready - let's add AI-powered video generation!
