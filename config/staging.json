@@ -1,0 +1,27 @@
+{
+  "publishing": {
+    "youtube": {
+      "defaultPrivacy": "unlisted"
+    }
+  },
+  "cost": {
+    "optimization": {
+      "budgetLimits": {
+        "daily": 20.00,
+        "monthly": 400.00,
+        "perVideo": 1.00
+      }
+    }
+  },
+  "monitoring": {
+    "logging": {
+      "level": "info"
+    }
+  },
+  "content": {
+    "generation": {
+      "defaultFrequency": 1,
+      "maxTopicsPerGeneration": 8
+    }
+  }
+}

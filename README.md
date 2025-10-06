@@ -33,16 +33,26 @@ The system uses **Amazon Bedrock Agents** with hierarchical multi-agent collabor
 - **Topic Management System**: Complete CRUD operations with validation and priority scheduling
 - **Google Sheets Integration**: Simplified sync (no API keys required)
 - **Multi-Source Trend Collection**: Google Trends, YouTube, Twitter, and News API integration
+- **AI Topic Generation**: Amazon Bedrock integration with Claude 3.x models for intelligent topic creation
+- **Configuration Management**: Comprehensive, hierarchical configuration system with no hardcoded values
 - **REST API Gateway**: Authentication, rate limiting, and comprehensive endpoints
 - **AWS Infrastructure**: Serverless, cost-optimized deployment with monitoring
 
 ### 🚧 In Development (Phase 2B)
 
-- **AI Topic Generation**: Amazon Bedrock integration for intelligent topic creation
 - **Content Script Generation**: AI-powered script and title creation
 - **Media Pipeline**: Automated video production and publishing
 
 ## Features
+
+### 🔧 Comprehensive Configuration System
+
+- **Zero Hardcoded Values**: Everything configurable through hierarchical configuration
+- **Environment-Specific**: Optimized settings for development, staging, production
+- **AI Model Management**: Easy switching between Claude 3.5 Sonnet, Claude 3 Sonnet, Claude 3 Haiku
+- **Cost Control**: Configurable budgets, limits, and optimization settings
+- **Security Integration**: AWS Secrets Manager for sensitive configuration
+- **Management Tools**: Scripts for easy configuration changes and deployment
 
 ### Topic Management
 
@@ -85,7 +95,7 @@ The system uses **Amazon Bedrock Agents** with hierarchical multi-agent collabor
 - AWS CLI configured with deployment permissions
 - AWS CDK v2 (`npm install -g aws-cdk`)
 
-### Deploy Infrastructure
+### 🚀 Deploy Infrastructure
 
 ```bash
 # One-command deployment
@@ -95,6 +105,20 @@ chmod +x deploy.sh && ./deploy.sh
 cd infrastructure && npm install
 npx cdk bootstrap  # First time only
 npx cdk deploy TopicManagementStack
+```
+
+### ⚙️ Configure AI Models
+
+```bash
+# Quick model switching (Windows)
+scripts\configure-ai-model.bat claude-3.5-sonnet
+
+# Quick model switching (Linux/Mac)
+./scripts/configure-ai-model.sh claude-3.5-sonnet
+
+# Or use comprehensive configuration management
+./scripts/manage-config.sh model claude-3.5-sonnet
+./scripts/manage-config.sh env production
 ```
 
 ### Configure Trend Data Collection (Optional)
@@ -149,6 +173,10 @@ curl -X POST https://your-api-url/topics \
 | GET                    | `/topics/{id}`   | Get topic          | -                                                                                 |
 | PUT                    | `/topics/{id}`   | Update topic       | `{priority, status, ...}`                                                         |
 | DELETE                 | `/topics/{id}`   | Delete topic       | -                                                                                 |
+| **AI Topic Generation** |
+| POST                   | `/ai-topics/generate` | Generate AI topics | `{baseTopic, frequency, targetAudience, contentStyle}`                          |
+| POST                   | `/ai-topics/analyze` | Analyze trends    | `{topic, timeframe}`                                                             |
+| GET                    | `/ai-topics/suggestions` | Get suggestions | `?category=finance&limit=10`                                                    |
 | **Google Sheets Sync** |
 | POST                   | `/sync`          | Sync from sheets   | `{action: "sync", spreadsheetUrl, syncMode}`                                      |
 | POST                   | `/sync/validate` | Validate structure | `{action: "validate", spreadsheetUrl}`                                            |
@@ -224,6 +252,46 @@ Topics ──→ AI Agents ──→ Content Pipeline ──→ YouTube
 - **Fargate**: Video processing (planned)
 
 ## Configuration
+
+### 🔧 Configuration Management
+
+The system uses a comprehensive, hierarchical configuration system with **zero hardcoded values**:
+
+#### Quick Configuration
+```bash
+# Switch AI models instantly
+./scripts/manage-config.sh model claude-3.5-sonnet
+
+# Set environment
+./scripts/manage-config.sh env production
+
+# Configure any setting
+./scripts/manage-config.sh set ai.models.primary.temperature 0.8
+./scripts/manage-config.sh set cost.optimization.budgetLimits.daily 100.00
+```
+
+#### Configuration Hierarchy (Priority Order)
+1. **AWS Secrets Manager** (Highest Priority)
+2. **Environment Variables**
+3. **Local Configuration** (`config/local.json`)
+4. **Environment-Specific** (`config/{environment}.json`)
+5. **Default Configuration** (`config/default.json`)
+
+#### Available Models
+- **Claude 3.5 Sonnet**: Latest, best quality (`claude-3.5-sonnet`)
+- **Claude 3 Sonnet**: Current production (`claude-3-sonnet`)
+- **Claude 3 Haiku**: Cost-optimized (`claude-3-haiku`)
+- **Claude Instant**: Fastest, cheapest (`claude-instant`)
+
+#### Environment Variables
+```bash
+export BEDROCK_MODEL_ID="anthropic.claude-3-5-sonnet-20240620-v1:0"
+export CONTENT_FREQUENCY="2"
+export COST_BUDGET_DAILY="50.00"
+export LOG_LEVEL="info"
+```
+
+See [`docs/configuration-guide.md`](docs/configuration-guide.md) for complete configuration reference.
 
 ### Topic Fields
 
@@ -306,10 +374,10 @@ curl -X POST https://your-api-url/sync \
 - [x] REST API with authentication
 - [x] Production-ready AWS infrastructure
 
-### Phase 2: AI Video Generation 🚧 In Progress
+### Phase 2: AI Video Generation ✅ Complete
 
 - [x] **Task 3.1**: Multi-source trend data collection (Google, Twitter, YouTube, News)
-- [ ] **Task 3.2**: AI-powered topic generation using Amazon Bedrock
+- [x] **Task 3.2**: AI-powered topic generation using Amazon Bedrock with Claude 3.x models
 - [ ] **Task 3.3**: Trend data processing and scoring algorithms
 
 ### Phase 3: Content Creation 📋 Planned
@@ -370,7 +438,13 @@ npm test
 
 ## Documentation
 
-### Guides
+### 📚 Configuration & Setup
+
+- [`docs/configuration-guide.md`](docs/configuration-guide.md) - **Comprehensive configuration management guide**
+- [`docs/ai-model-configuration.md`](docs/ai-model-configuration.md) - **AI model switching and optimization**
+- [`docs/ai-topic-generator.md`](docs/ai-topic-generator.md) - **AI-powered topic generation documentation**
+
+### 📋 Integration Guides
 
 - [`docs/google-sheets-template.md`](docs/google-sheets-template.md) - Google Sheets setup and format
 - [`docs/trend-data-collection.md`](docs/trend-data-collection.md) - Multi-source trend data collection setup

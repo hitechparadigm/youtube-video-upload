@@ -3,8 +3,8 @@
  * Deploys Lambda function, DynamoDB table, and API Gateway
  */
 
-import { Stack, Duration, RemovalPolicy } from 'aws-cdk-lib';
-import { Function, Runtime, Code } from 'aws-cdk-lib/aws-lambda';
+import { Stack, Duration, RemovalPolicy, CfnOutput } from 'aws-cdk-lib';
+import { Function, Runtime, Code, LayerVersion } from 'aws-cdk-lib/aws-lambda';
 import { Table, AttributeType, BillingMode, ProjectionType } from 'aws-cdk-lib/aws-dynamodb';
 import { RestApi, LambdaIntegration, Cors, ApiKeySourceType } from 'aws-cdk-lib/aws-apigateway';
 import { Role, ServicePrincipal, PolicyStatement, Effect } from 'aws-cdk-lib/aws-iam';
@@ -17,198 +17,24 @@ export class TopicManagementStack extends Stack {
   constructor(scope, id, props) {
     super(scope, id, props);
 
-    // DynamoDB Table for Topics
-    const topicsTable = new Table(this, 'TopicsTable', {
-      tableName: 'automated-video-pipeline-topics',
-      partitionKey: {
-        name: 'topicId',
-        type: AttributeType.STRING
-      },
-      billingMode: BillingMode.PAY_PER_REQUEST,
-      removalPolicy: RemovalPolicy.RETAIN, // Protect data in production
-      pointInTimeRecovery: true,
-      tags: {
-        Project: 'automated-video-pipeline',
-        Service: 'topic-management',
-        Environment: 'production',
-        CostCenter: 'content-creation',
-        ManagedBy: 'cdk'
-      }
-    });
+    // Import existing DynamoDB Tables
+    const topicsTable = Table.fromTableName(this, 'TopicsTable', 'automated-video-pipeline-topics');
+    const syncHistoryTable = Table.fromTableName(this, 'SyncHistoryTable', 'automated-video-pipeline-sync-history');
+    const trendsTable = Table.fromTableName(this, 'TrendsTable', 'automated-video-pipeline-trends');
 
-    // Global Secondary Index for querying by status
-    topicsTable.addGlobalSecondaryIndex({
-      indexName: 'StatusIndex',
-      partitionKey: {
-        name: 'status',
-        type: AttributeType.STRING
-      },
-      sortKey: {
-        name: 'priority',
-        type: AttributeType.NUMBER
-      },
-      projectionType: ProjectionType.ALL
-    });
+    // Import existing S3 Bucket
+    const trendDataBucket = Bucket.fromBucketName(this, 'TrendDataBucket', `automated-video-pipeline-${this.account}-${this.region}`);
 
-    // Global Secondary Index for querying by priority
-    topicsTable.addGlobalSecondaryIndex({
-      indexName: 'PriorityIndex',
-      partitionKey: {
-        name: 'priority',
-        type: AttributeType.NUMBER
-      },
-      sortKey: {
-        name: 'updatedAt',
-        type: AttributeType.STRING
-      },
-      projectionType: ProjectionType.ALL
-    });
+    // Import existing API Credentials Secret
+    const apiCredentialsSecret = Secret.fromSecretNameV2(this, 'APICredentialsSecret', 'automated-video-pipeline/api-credentials');
 
-    // Global Secondary Index for querying by topic text (for Google Sheets sync)
-    topicsTable.addGlobalSecondaryIndex({
-      indexName: 'TopicTextIndex',
-      partitionKey: {
-        name: 'topic',
-        type: AttributeType.STRING
-      },
-      projectionType: ProjectionType.ALL
-    });
-
-    // DynamoDB Table for Sync History
-    const syncHistoryTable = new Table(this, 'SyncHistoryTable', {
-      tableName: 'automated-video-pipeline-sync-history',
-      partitionKey: {
-        name: 'partitionKey',
-        type: AttributeType.STRING
-      },
-      sortKey: {
-        name: 'timestamp',
-        type: AttributeType.STRING
-      },
-      billingMode: BillingMode.PAY_PER_REQUEST,
-      removalPolicy: RemovalPolicy.RETAIN,
-      pointInTimeRecovery: true,
-      tags: {
-        Project: 'automated-video-pipeline',
-        Service: 'sync-history',
-        Environment: 'production',
-        CostCenter: 'content-creation',
-        ManagedBy: 'cdk'
-      }
-    });
-
-    // DynamoDB Table for Trend Data
-    const trendsTable = new Table(this, 'TrendsTable', {
-      tableName: 'automated-video-pipeline-trends',
-      partitionKey: {
-        name: 'partitionKey',
-        type: AttributeType.STRING
-      },
-      sortKey: {
-        name: 'sortKey',
-        type: AttributeType.STRING
-      },
-      billingMode: BillingMode.PAY_PER_REQUEST,
-      removalPolicy: RemovalPolicy.RETAIN,
-      pointInTimeRecovery: true,
-      timeToLiveAttribute: 'ttl',
-      tags: {
-        Project: 'automated-video-pipeline',
-        Service: 'trend-analysis',
-        Environment: 'production',
-        CostCenter: 'content-creation',
-        ManagedBy: 'cdk'
-      }
-    });
-
-    // GSI for querying trends by topic
-    trendsTable.addGlobalSecondaryIndex({
-      indexName: 'TopicIndex',
-      partitionKey: {
-        name: 'topic',
-        type: AttributeType.STRING
-      },
-      sortKey: {
-        name: 'collectedAt',
-        type: AttributeType.STRING
-      },
-      projectionType: ProjectionType.ALL
-    });
-
-    // GSI for querying trends by collection date
-    trendsTable.addGlobalSecondaryIndex({
-      indexName: 'DateIndex',
-      partitionKey: {
-        name: 'partitionKey',
-        type: AttributeType.STRING
-      },
-      sortKey: {
-        name: 'collectedAt',
-        type: AttributeType.STRING
-      },
-      projectionType: ProjectionType.ALL
-    });
-
-    // GSI for querying sync history by timestamp
-    syncHistoryTable.addGlobalSecondaryIndex({
-      indexName: 'TimestampIndex',
-      partitionKey: {
-        name: 'partitionKey',
-        type: AttributeType.STRING
-      },
-      sortKey: {
-        name: 'timestamp',
-        type: AttributeType.STRING
-      },
-      projectionType: ProjectionType.ALL
-    });
-
-    // S3 Bucket for storing raw trend data
-    const trendDataBucket = new Bucket(this, 'TrendDataBucket', {
-      bucketName: `automated-video-pipeline-trends-${this.account}-${this.region}`,
-      encryption: BucketEncryption.S3_MANAGED,
-      blockPublicAccess: BlockPublicAccess.BLOCK_ALL,
-      removalPolicy: RemovalPolicy.RETAIN,
-      lifecycleRules: [
-        {
-          id: 'DeleteOldTrendData',
-          enabled: true,
-          expiration: Duration.days(30) // Keep trend data for 30 days
-        }
-      ],
-      tags: {
-        Project: 'automated-video-pipeline',
-        Service: 'trend-data-storage',
-        Environment: 'production',
-        CostCenter: 'content-creation',
-        ManagedBy: 'cdk'
-      }
-    });
-
-    // API Credentials Secret for external APIs
-    const apiCredentialsSecret = new Secret(this, 'APICredentialsSecret', {
-      secretName: 'automated-video-pipeline/api-credentials',
-      description: 'API credentials for external services (YouTube, Twitter, News)',
-      generateSecretString: {
-        secretStringTemplate: JSON.stringify({
-          youtube: {
-            apiKey: 'your-youtube-api-key'
-          },
-          twitter: {
-            bearerToken: 'your-twitter-bearer-token'
-          },
-          news: {
-            apiKey: 'your-news-api-key'
-          }
-        }),
-        generateStringKey: 'placeholder',
-        excludeCharacters: '"\\/'
-      },
-      tags: {
-        Project: 'automated-video-pipeline',
-        Service: 'api-credentials',
-        Environment: 'production'
-      }
+    // Configuration Layer for shared configuration management
+    const configLayer = new LayerVersion(this, 'ConfigLayer', {
+      layerVersionName: 'automated-video-pipeline-config',
+      code: Code.fromAsset('../src/layers/config-layer'),
+      compatibleRuntimes: [Runtime.NODEJS_20_X],
+      description: 'Shared configuration management layer',
+      removalPolicy: RemovalPolicy.RETAIN
     });
 
     // IAM Role for Lambda function
@@ -316,6 +142,51 @@ export class TopicManagementStack extends Stack {
       ]
     }));
 
+    // IAM Role for AI Topic Generator Lambda
+    const aiTopicGeneratorRole = new Role(this, 'AITopicGeneratorLambdaRole', {
+      assumedBy: new ServicePrincipal('lambda.amazonaws.com'),
+      description: 'Role for AI Topic Generator Lambda function',
+      managedPolicies: [
+        {
+          managedPolicyArn: 'arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole'
+        }
+      ]
+    });
+
+    // Add permissions for AI Topic Generator Lambda
+    aiTopicGeneratorRole.addToPolicy(new PolicyStatement({
+      effect: Effect.ALLOW,
+      actions: [
+        'dynamodb:GetItem',
+        'dynamodb:PutItem',
+        'dynamodb:Query',
+        'dynamodb:Scan'
+      ],
+      resources: [
+        topicsTable.tableArn,
+        `${topicsTable.tableArn}/index/*`,
+        trendsTable.tableArn,
+        `${trendsTable.tableArn}/index/*`
+      ]
+    }));
+
+    aiTopicGeneratorRole.addToPolicy(new PolicyStatement({
+      effect: Effect.ALLOW,
+      actions: [
+        'bedrock:InvokeModel'
+      ],
+      resources: [
+        // Support multiple Claude models
+        'arn:aws:bedrock:*::foundation-model/anthropic.claude-3-sonnet-20240229-v1:0',
+        'arn:aws:bedrock:*::foundation-model/anthropic.claude-3-5-sonnet-20240620-v1:0',
+        'arn:aws:bedrock:*::foundation-model/anthropic.claude-3-haiku-20240307-v1:0',
+        'arn:aws:bedrock:*::foundation-model/anthropic.claude-instant-v1',
+        // Support other model families if needed
+        'arn:aws:bedrock:*::foundation-model/amazon.titan-text-*',
+        'arn:aws:bedrock:*::foundation-model/ai21.j2-*'
+      ]
+    }));
+
     // CloudWatch Log Group
     const logGroup = new LogGroup(this, 'TopicManagementLogGroup', {
       logGroupName: '/aws/lambda/topic-management',
@@ -328,22 +199,27 @@ export class TopicManagementStack extends Stack {
       functionName: 'topic-management',
       runtime: Runtime.NODEJS_20_X, // Using Node.js 20.x as required
       handler: 'index.handler',
-      code: Code.fromAsset('src/lambda/topic-management'),
+      code: Code.fromAsset('../src/lambda/topic-management'),
       role: lambdaRole,
       timeout: Duration.seconds(30),
       memorySize: 256,
+      layers: [configLayer],
       environment: {
         TOPICS_TABLE_NAME: topicsTable.tableName,
-        AWS_REGION: this.region,
-        NODE_ENV: 'production'
+        NODE_ENV: process.env.NODE_ENV || 'production',
+        CONFIG_SECRET_NAME: process.env.CONFIG_SECRET_NAME || '',
+        // Configurable environment variables
+        BEDROCK_MODEL_ID: process.env.BEDROCK_MODEL_ID || 'anthropic.claude-3-sonnet-20240229-v1:0',
+        BEDROCK_MODEL_REGION: process.env.BEDROCK_MODEL_REGION || 'us-east-1',
+        LOG_LEVEL: process.env.LOG_LEVEL || 'info'
       },
       description: 'Handles CRUD operations for video topics with validation and priority scheduling',
       logGroup: logGroup,
-      reservedConcurrentExecutions: 10, // Cost optimization
+      // reservedConcurrentExecutions: 10, // Removed due to account limits
       tags: {
         Project: 'automated-video-pipeline',
         Service: 'topic-management',
-        Environment: 'production',
+        Environment: process.env.NODE_ENV || 'production',
         Runtime: 'nodejs20.x'
       }
     });
@@ -360,19 +236,18 @@ export class TopicManagementStack extends Stack {
       functionName: 'google-sheets-sync',
       runtime: Runtime.NODEJS_20_X,
       handler: 'index.handler',
-      code: Code.fromAsset('src/lambda/google-sheets-sync'),
+      code: Code.fromAsset('../src/lambda/google-sheets-sync'),
       role: googleSheetsSyncRole,
       timeout: Duration.minutes(5), // Longer timeout for sync operations
       memorySize: 512, // More memory for Google Sheets API operations
       environment: {
         TOPICS_TABLE_NAME: topicsTable.tableName,
         SYNC_HISTORY_TABLE_NAME: syncHistoryTable.tableName,
-        AWS_REGION: this.region,
         NODE_ENV: 'production'
       },
       description: 'Syncs topics from Google Sheets to DynamoDB with conflict resolution',
       logGroup: googleSheetsSyncLogGroup,
-      reservedConcurrentExecutions: 5, // Limit concurrent executions
+      // reservedConcurrentExecutions: 5, // Removed due to account limits
       tags: {
         Project: 'automated-video-pipeline',
         Service: 'google-sheets-sync',
@@ -393,7 +268,7 @@ export class TopicManagementStack extends Stack {
       functionName: 'trend-data-collection',
       runtime: Runtime.NODEJS_20_X,
       handler: 'index.handler',
-      code: Code.fromAsset('src/lambda/trend-data-collection'),
+      code: Code.fromAsset('../src/lambda/trend-data-collection'),
       role: trendCollectionRole,
       timeout: Duration.minutes(10), // Longer timeout for API calls
       memorySize: 1024, // More memory for data processing
@@ -401,16 +276,59 @@ export class TopicManagementStack extends Stack {
         TRENDS_TABLE_NAME: trendsTable.tableName,
         S3_BUCKET_NAME: trendDataBucket.bucketName,
         API_CREDENTIALS_SECRET_NAME: apiCredentialsSecret.secretName,
-        AWS_REGION: this.region,
         NODE_ENV: 'production'
       },
       description: 'Collects trend data from multiple sources (Google Trends, YouTube, Twitter, News)',
       logGroup: trendCollectionLogGroup,
-      reservedConcurrentExecutions: 3, // Limit concurrent executions to manage API rate limits
+      // reservedConcurrentExecutions: 3, // Removed due to account limits
       tags: {
         Project: 'automated-video-pipeline',
         Service: 'trend-data-collection',
         Environment: 'production',
+        Runtime: 'nodejs20.x'
+      }
+    });
+
+    // AI Topic Generator Lambda Log Group
+    const aiTopicGeneratorLogGroup = new LogGroup(this, 'AITopicGeneratorLogGroup', {
+      logGroupName: '/aws/lambda/ai-topic-generator',
+      retention: RetentionDays.ONE_MONTH,
+      removalPolicy: RemovalPolicy.DESTROY
+    });
+
+    // AI Topic Generator Lambda Function
+    const aiTopicGeneratorFunction = new Function(this, 'AITopicGeneratorFunction', {
+      functionName: 'ai-topic-generator',
+      runtime: Runtime.NODEJS_20_X,
+      handler: 'index.handler',
+      code: Code.fromAsset('../src/lambda/ai-topic-generator'),
+      role: aiTopicGeneratorRole,
+      timeout: Duration.minutes(5), // Longer timeout for AI processing
+      memorySize: 1024, // More memory for AI model invocation
+      layers: [configLayer],
+      environment: {
+        TOPICS_TABLE_NAME: topicsTable.tableName,
+        TRENDS_TABLE_NAME: trendsTable.tableName,
+        NODE_ENV: process.env.NODE_ENV || 'production',
+        CONFIG_SECRET_NAME: process.env.CONFIG_SECRET_NAME || '',
+        // Configurable AI settings
+        BEDROCK_MODEL_ID: process.env.BEDROCK_MODEL_ID || 'anthropic.claude-3-sonnet-20240229-v1:0',
+        BEDROCK_MODEL_REGION: process.env.BEDROCK_MODEL_REGION || 'us-east-1',
+        BEDROCK_MODEL_TEMPERATURE: process.env.BEDROCK_MODEL_TEMPERATURE || '0.7',
+        BEDROCK_MODEL_MAX_TOKENS: process.env.BEDROCK_MODEL_MAX_TOKENS || '4000',
+        // Content generation settings
+        CONTENT_FREQUENCY: process.env.CONTENT_FREQUENCY || '2',
+        MIN_ENGAGEMENT_SCORE: process.env.MIN_ENGAGEMENT_SCORE || '6.0',
+        // Monitoring settings
+        LOG_LEVEL: process.env.LOG_LEVEL || 'info'
+      },
+      description: 'AI-powered topic generation using Amazon Bedrock for trend analysis and content creation',
+      logGroup: aiTopicGeneratorLogGroup,
+      // reservedConcurrentExecutions: 2, // Removed due to account limits
+      tags: {
+        Project: 'automated-video-pipeline',
+        Service: 'ai-topic-generator',
+        Environment: process.env.NODE_ENV || 'production',
         Runtime: 'nodejs20.x'
       }
     });
@@ -445,12 +363,12 @@ export class TopicManagementStack extends Stack {
 
     // API Resources and Methods
     const topicsResource = api.root.addResource('topics');
-    
+
     // GET /topics - List all topics
     topicsResource.addMethod('GET', lambdaIntegration, {
       apiKeyRequired: true
     });
-    
+
     // POST /topics - Create new topic
     topicsResource.addMethod('POST', lambdaIntegration, {
       apiKeyRequired: true
@@ -458,17 +376,17 @@ export class TopicManagementStack extends Stack {
 
     // Single topic resource
     const singleTopicResource = topicsResource.addResource('{topicId}');
-    
+
     // GET /topics/{topicId} - Get specific topic
     singleTopicResource.addMethod('GET', lambdaIntegration, {
       apiKeyRequired: true
     });
-    
+
     // PUT /topics/{topicId} - Update topic
     singleTopicResource.addMethod('PUT', lambdaIntegration, {
       apiKeyRequired: true
     });
-    
+
     // DELETE /topics/{topicId} - Delete topic
     singleTopicResource.addMethod('DELETE', lambdaIntegration, {
       apiKeyRequired: true
@@ -477,18 +395,18 @@ export class TopicManagementStack extends Stack {
     // Google Sheets sync endpoints
     const syncResource = api.root.addResource('sync');
     const googleSheetsSyncIntegration = new LambdaIntegration(googleSheetsSyncFunction);
-    
+
     // POST /sync - Trigger Google Sheets sync
     syncResource.addMethod('POST', googleSheetsSyncIntegration, {
       apiKeyRequired: true
     });
-    
+
     // GET /sync/history - Get sync history
     const syncHistoryResource = syncResource.addResource('history');
     syncHistoryResource.addMethod('GET', googleSheetsSyncIntegration, {
       apiKeyRequired: true
     });
-    
+
     // POST /sync/validate - Validate Google Sheets structure
     const syncValidateResource = syncResource.addResource('validate');
     syncValidateResource.addMethod('POST', googleSheetsSyncIntegration, {
@@ -498,15 +416,37 @@ export class TopicManagementStack extends Stack {
     // Trend data collection endpoints
     const trendsResource = api.root.addResource('trends');
     const trendCollectionIntegration = new LambdaIntegration(trendCollectionFunction);
-    
+
     // POST /trends/collect - Trigger trend data collection
     const collectResource = trendsResource.addResource('collect');
     collectResource.addMethod('POST', trendCollectionIntegration, {
       apiKeyRequired: true
     });
-    
+
     // GET /trends - Get trend data
     trendsResource.addMethod('GET', trendCollectionIntegration, {
+      apiKeyRequired: true
+    });
+
+    // AI Topic Generator endpoints
+    const aiTopicsResource = api.root.addResource('ai-topics');
+    const aiTopicGeneratorIntegration = new LambdaIntegration(aiTopicGeneratorFunction);
+
+    // POST /ai-topics/generate - Generate AI-powered topics
+    const generateResource = aiTopicsResource.addResource('generate');
+    generateResource.addMethod('POST', aiTopicGeneratorIntegration, {
+      apiKeyRequired: true
+    });
+
+    // POST /ai-topics/analyze - Analyze trends with AI
+    const analyzeResource = aiTopicsResource.addResource('analyze');
+    analyzeResource.addMethod('POST', aiTopicGeneratorIntegration, {
+      apiKeyRequired: true
+    });
+
+    // GET /ai-topics/suggestions - Get topic suggestions
+    const suggestionsResource = aiTopicsResource.addResource('suggestions');
+    suggestionsResource.addMethod('GET', aiTopicGeneratorIntegration, {
       apiKeyRequired: true
     });
 
@@ -536,44 +476,49 @@ export class TopicManagementStack extends Stack {
     });
 
     // Outputs
-    this.addOutput('TopicsTableName', {
+    new CfnOutput(this, 'TopicsTableName', {
       value: topicsTable.tableName,
       description: 'Name of the Topics DynamoDB table'
     });
 
-    this.addOutput('TopicManagementFunctionName', {
+    new CfnOutput(this, 'TopicManagementFunctionName', {
       value: topicManagementFunction.functionName,
       description: 'Name of the Topic Management Lambda function'
     });
 
-    this.addOutput('ApiGatewayUrl', {
+    new CfnOutput(this, 'ApiGatewayUrl', {
       value: api.url,
       description: 'URL of the Topic Management API Gateway'
     });
 
-    this.addOutput('ApiKeyId', {
+    new CfnOutput(this, 'ApiKeyId', {
       value: apiKey.keyId,
       description: 'ID of the API key for authentication'
     });
 
-    this.addOutput('TrendsTableName', {
+    new CfnOutput(this, 'TrendsTableName', {
       value: trendsTable.tableName,
       description: 'Name of the Trends DynamoDB table'
     });
 
-    this.addOutput('TrendDataBucketName', {
+    new CfnOutput(this, 'TrendDataBucketName', {
       value: trendDataBucket.bucketName,
       description: 'Name of the S3 bucket for trend data storage'
     });
 
-    this.addOutput('TrendCollectionFunctionName', {
+    new CfnOutput(this, 'TrendCollectionFunctionName', {
       value: trendCollectionFunction.functionName,
       description: 'Name of the Trend Data Collection Lambda function'
     });
 
-    this.addOutput('APICredentialsSecretName', {
+    new CfnOutput(this, 'APICredentialsSecretName', {
       value: apiCredentialsSecret.secretName,
       description: 'Name of the API credentials secret'
+    });
+
+    new CfnOutput(this, 'AITopicGeneratorFunctionName', {
+      value: aiTopicGeneratorFunction.functionName,
+      description: 'Name of the AI Topic Generator Lambda function'
     });
 
     // Export values for other stacks

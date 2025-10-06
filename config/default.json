@@ -1,0 +1,322 @@
+{
+  "ai": {
+    "models": {
+      "primary": {
+        "id": "anthropic.claude-3-sonnet-20240229-v1:0",
+        "region": "us-east-1",
+        "maxTokens": 4000,
+        "temperature": 0.7,
+        "timeout": 300000
+      },
+      "fallback": {
+        "id": "anthropic.claude-3-haiku-20240307-v1:0",
+        "region": "us-east-1",
+        "maxTokens": 2000,
+        "temperature": 0.5,
+        "timeout": 180000
+      }
+    },
+    "prompts": {
+      "topicGeneration": {
+        "systemPrompt": "You are an expert YouTube content strategist specializing in viral, engaging content that drives subscriptions and high watch time.",
+        "maxTopicsMultiplier": 3,
+        "formats": [
+          "The Shocking Truth About...",
+          "5 Secrets [Experts] Don't Want You to Know",
+          "I Tried [Trend] for 30 Days - Here's What Happened",
+          "Why Everyone is Wrong About...",
+          "The [Number] Mistakes That Are Costing You...",
+          "[Number] Things Nobody Tells You About..."
+        ],
+        "engagementElements": [
+          "Hook viewers in the first 5 seconds",
+          "Drive high watch time and engagement",
+          "Encourage subscriptions and return viewers",
+          "Incorporate current trends naturally",
+          "Use proven viral formats"
+        ]
+      },
+      "trendAnalysis": {
+        "systemPrompt": "You are a trend analysis expert who synthesizes data from multiple sources to provide actionable insights.",
+        "maxTokens": 1500,
+        "temperature": 0.3,
+        "analysisAspects": [
+          "Current momentum and direction",
+          "Audience interest patterns",
+          "Content opportunities",
+          "Timing recommendations",
+          "Keyword optimization suggestions"
+        ]
+      }
+    }
+  },
+  "video": {
+    "processing": {
+      "defaultDuration": {
+        "min": 300,
+        "max": 600,
+        "target": 480
+      },
+      "quality": {
+        "resolution": "1920x1080",
+        "fps": 30,
+        "bitrate": "5000k",
+        "audioSampleRate": 44100,
+        "audioBitrate": "192k"
+      },
+      "formats": {
+        "output": "mp4",
+        "codec": "h264",
+        "audioCodec": "aac"
+      }
+    },
+    "branding": {
+      "watermark": {
+        "enabled": true,
+        "position": "bottom-right",
+        "opacity": 0.7,
+        "size": "10%"
+      },
+      "intro": {
+        "enabled": true,
+        "duration": 3,
+        "fadeIn": 1
+      },
+      "outro": {
+        "enabled": true,
+        "duration": 5,
+        "fadeOut": 2
+      }
+    }
+  },
+  "content": {
+    "generation": {
+      "defaultFrequency": 2,
+      "maxTopicsPerGeneration": 10,
+      "minEngagementScore": 6.0,
+      "trendDataMaxAge": 7,
+      "keywordDensity": {
+        "min": 0.02,
+        "max": 0.05,
+        "target": 0.03
+      }
+    },
+    "validation": {
+      "minTitleLength": 30,
+      "maxTitleLength": 100,
+      "minDescriptionLength": 100,
+      "maxDescriptionLength": 5000,
+      "requiredElements": [
+        "hook",
+        "title",
+        "keywords"
+      ]
+    }
+  },
+  "media": {
+    "sources": {
+      "pexels": {
+        "enabled": true,
+        "priority": 1,
+        "rateLimit": {
+          "requestsPerMinute": 200,
+          "requestsPerHour": 20000
+        },
+        "quality": {
+          "minWidth": 1920,
+          "minHeight": 1080,
+          "orientation": "landscape"
+        }
+      },
+      "pixabay": {
+        "enabled": true,
+        "priority": 2,
+        "rateLimit": {
+          "requestsPerMinute": 100,
+          "requestsPerHour": 5000
+        },
+        "quality": {
+          "minWidth": 1920,
+          "minHeight": 1080,
+          "category": "all"
+        }
+      },
+      "unsplash": {
+        "enabled": false,
+        "priority": 3,
+        "rateLimit": {
+          "requestsPerMinute": 50,
+          "requestsPerHour": 5000
+        }
+      }
+    },
+    "processing": {
+      "downloadTimeout": 30000,
+      "maxFileSize": "50MB",
+      "allowedFormats": ["jpg", "jpeg", "png", "mp4", "mov", "avi"],
+      "thumbnailGeneration": {
+        "enabled": true,
+        "width": 1280,
+        "height": 720,
+        "quality": 85
+      }
+    }
+  },
+  "audio": {
+    "tts": {
+      "service": "polly",
+      "voice": {
+        "id": "Joanna",
+        "engine": "neural",
+        "languageCode": "en-US"
+      },
+      "settings": {
+        "rate": "medium",
+        "pitch": "medium",
+        "volume": "medium",
+        "outputFormat": "mp3",
+        "sampleRate": "22050"
+      },
+      "ssml": {
+        "enabled": true,
+        "pauseDuration": "500ms",
+        "emphasisLevel": "moderate"
+      }
+    },
+    "backgroundMusic": {
+      "enabled": false,
+      "volume": 0.2,
+      "fadeIn": 2,
+      "fadeOut": 3,
+      "sources": ["royalty-free", "creative-commons"]
+    }
+  },
+  "publishing": {
+    "youtube": {
+      "defaultPrivacy": "public",
+      "defaultCategory": "22",
+      "defaultLanguage": "en",
+      "scheduling": {
+        "enabled": false,
+        "timezone": "UTC",
+        "optimalTimes": ["14:00", "18:00", "20:00"]
+      },
+      "seo": {
+        "maxTags": 15,
+        "tagSeparator": ",",
+        "includeHashtags": true,
+        "maxHashtags": 3
+      }
+    },
+    "thumbnails": {
+      "uploadCustom": true,
+      "generateVariations": 3,
+      "testingEnabled": false
+    }
+  },
+  "monitoring": {
+    "metrics": {
+      "enabled": true,
+      "retentionDays": 90,
+      "alertThresholds": {
+        "errorRate": 0.05,
+        "latency": 30000,
+        "costPerVideo": 2.00
+      }
+    },
+    "logging": {
+      "level": "info",
+      "structured": true,
+      "includeRequestId": true,
+      "sensitiveFields": ["apiKey", "token", "password"]
+    }
+  },
+  "cost": {
+    "optimization": {
+      "enabled": true,
+      "budgetLimits": {
+        "daily": 50.00,
+        "monthly": 1000.00,
+        "perVideo": 2.00
+      },
+      "autoScaling": {
+        "enabled": true,
+        "minInstances": 0,
+        "maxInstances": 10,
+        "targetUtilization": 70
+      }
+    },
+    "tracking": {
+      "granularity": "service",
+      "currency": "USD",
+      "reportingFrequency": "daily"
+    }
+  },
+  "security": {
+    "encryption": {
+      "atRest": true,
+      "inTransit": true,
+      "keyRotation": true
+    },
+    "access": {
+      "apiKeyRequired": true,
+      "rateLimiting": {
+        "enabled": true,
+        "requestsPerMinute": 100,
+        "burstLimit": 200
+      },
+      "ipWhitelist": {
+        "enabled": false,
+        "allowedIPs": []
+      }
+    }
+  },
+  "environments": {
+    "development": {
+      "ai": {
+        "models": {
+          "primary": {
+            "id": "anthropic.claude-3-haiku-20240307-v1:0"
+          }
+        }
+      },
+      "cost": {
+        "optimization": {
+          "budgetLimits": {
+            "daily": 5.00,
+            "monthly": 100.00,
+            "perVideo": 0.50
+          }
+        }
+      },
+      "monitoring": {
+        "logging": {
+          "level": "debug"
+        }
+      }
+    },
+    "staging": {
+      "publishing": {
+        "youtube": {
+          "defaultPrivacy": "unlisted"
+        }
+      },
+      "cost": {
+        "optimization": {
+          "budgetLimits": {
+            "daily": 20.00,
+            "monthly": 400.00,
+            "perVideo": 1.00
+          }
+        }
+      }
+    },
+    "production": {
+      "monitoring": {
+        "metrics": {
+          "retentionDays": 365
+        }
+      }
+    }
+  }
+}
