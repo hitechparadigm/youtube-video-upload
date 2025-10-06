@@ -52,7 +52,7 @@ process.env.API_CREDENTIALS_SECRET_ARN = 'arn:aws:secretsmanager:us-east-1:12345
 jest.setTimeout(30000);
 
 // Mock external API responses for consistent testing
-global.mockApiResponses = {
+(global as any).mockApiResponses = {
   googleTrends: {
     default: {
       timelineData: [

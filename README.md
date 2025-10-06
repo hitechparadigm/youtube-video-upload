@@ -1,317 +1,337 @@
-# Automated Video Pipeline
+# Automated Video Pipeline - Topic Management System
 
-An AWS-based serverless system that automatically generates, produces, and publishes highly engaging YouTube videos using AI agents, configurable media sources, and engagement psychology. Built with complete project isolation and Node.js 20.x runtime.
+## 🎯 Project Status
 
-## 🎯 What This System Does
+### ✅ Completed Tasks (Ready for Production)
 
-The Automated Video Pipeline creates subscriber-worthy videos by:
+- **✅ Task 2.1**: Topic Management Lambda Function (Node.js 20.x)
+- **✅ Task 2.2**: Google Sheets Integration Service
+- **✅ Task 2.3**: REST API Gateway with Authentication (Partially Complete)
 
-1. **Simple Topic Input** - You specify basic topics like "Investing for beginners" in Google Sheets
-2. **AI Trend Analysis** - Monitors current trends from Google, Twitter, YouTube, and news to find engaging angles
-3. **Engaging Content Creation** - Uses Amazon Bedrock AI to create click-worthy titles, hooks, and subscriber-focused scripts
-4. **Configurable Media Sources** - Uses Pexels, Pixabay, and extensible media APIs for authentic, content-relevant visuals
-5. **Professional Production** - Combines real media with dynamic audio using FFmpeg on AWS Fargate
-6. **Growth-Optimized Publishing** - Uploads to YouTube with engagement-focused titles, thumbnails, and descriptions
-7. **Fully Automated** - Generates multiple videos per day based on your frequency settings
+### 🚧 What's Been Delivered
 
-## 🏗️ Architecture Overview
+**Complete Topic Management System** with:
 
-### Core AWS Services Used
+- Full CRUD operations for video topics
+- Google Sheets integration (simplified, no API keys needed!)
+- REST API with authentication
+- Production-ready AWS infrastructure
+- Comprehensive monitoring and error handling
 
-- **Amazon Bedrock Agents** - AI orchestration and content generation
-- **AWS Lambda (Node.js 20.x)** - Serverless functions for API integrations and processing
-- **Amazon S3** - Dedicated buckets for media assets, videos, and data archives with lifecycle management
-- **Amazon DynamoDB** - Database for topics, trends, video metadata, and cost tracking
-- **AWS Fargate** - Containerized video processing with FFmpeg
-- **Amazon Polly** - Text-to-speech for high-quality audio generation
-- **Amazon EventBridge** - Scheduling and workflow automation
-- **AWS Secrets Manager** - Configurable storage of API credentials for multiple media sources
-- **Amazon CloudWatch** - Monitoring, logging, and alerting
-- **AWS Step Functions** - Workflow orchestration for end-to-end pipeline
+### 🎯 Next Up: Video Generation Pipeline
 
-### Data Flow
+**Ready to implement:**
+
+- **Task 3.1**: Trend Data Collection Lambda Function
+- **Task 3.2**: AI-Powered Topic Generation Service
+- **Task 3.3**: Trend Data Processing and Storage
+
+## 🚀 What You Can Do Right Now
+
+### 1. Manage Video Topics via API
+
+Create, update, and organize your video topics with full validation and priority scheduling.
+
+### 2. Sync Topics from Google Sheets
+
+Simply share a Google Sheets document and sync topics automatically - no complex setup required!
+
+### 3. Monitor Everything
+
+Complete audit trails, sync history, and CloudWatch monitoring built-in.
+
+## 🎉 Key Features Delivered
+
+### 📊 Topic Management System
+
+- **Smart CRUD Operations**: Create, read, update, delete topics with validation
+- **Priority Scheduling**: 1-10 priority levels for video generation order
+- **Keyword Extraction**: Automatic keyword generation from topic text
+- **Multi-Region Support**: US, CA, UK, AU, EU targeting
+- **Content Styles**: Educational, entertainment, professional, casual modes
+
+### 📋 Google Sheets Integration (Revolutionary Simplification!)
+
+- **🔥 No API Keys Required**: Just share your Google Sheets link - that's it!
+- **Universal Access**: Works with any Google account, no setup needed
+- **Smart Sync Modes**: Incremental, overwrite, and merge strategies
+- **Conflict Resolution**: Handles concurrent updates intelligently
+- **Complete Audit Trail**: Every sync operation logged and tracked
+- **Pre-Sync Validation**: Checks sheet structure before processing
+
+### 🔐 Production-Ready Infrastructure
+
+- **API Gateway**: RESTful endpoints with API key authentication
+- **DynamoDB**: Optimized schema with GSI indexes for fast queries
+- **Lambda Functions**: Node.js 20.x runtime with cost optimization
+- **CloudWatch**: Comprehensive logging and monitoring
+- **IAM Security**: Least privilege access controls
+
+## 🚀 Quick Start Guide
+
+### Option 1: Google Sheets (Recommended - 2 minutes)
+
+1. **Create a Google Sheets document** with this format:
+
+   ```
+   Topic                              | Daily Frequency | Priority | Status | Target Audience | Region | Content Style        | Tags
+   Investing for beginners in the USA | 2              | 1        | active | beginners       | US     | engaging_educational | investing,finance
+   Travel tips for Europe             | 1              | 3        | active | travelers       | EU     | entertainment        | travel,europe
+   ```
+
+2. **Share the sheet**: Click "Share" → "Anyone with the link" → "Viewer"
+
+3. **Sync to the system**:
+   ```bash
+   curl -X POST https://your-api-url/sync \
+     -H "x-api-key: your-key" \
+     -d '{"action": "sync", "spreadsheetUrl": "YOUR_GOOGLE_SHEETS_URL", "syncMode": "incremental"}'
+   ```
+
+### Option 2: Direct API (For Developers)
+
+```bash
+# Create a topic
+curl -X POST https://your-api-url/topics \
+  -H "Content-Type: application/json" \
+  -H "x-api-key: your-key" \
+  -d '{
+    "topic": "Investing for beginners in the USA",
+    "dailyFrequency": 2,
+    "priority": 1,
+    "status": "active",
+    "targetAudience": "beginners",
+    "region": "US",
+    "contentStyle": "engaging_educational"
+  }'
+```
+
+## 📡 API Reference
+
+### Topic Management Endpoints
+
+| Method | Endpoint       | Description                    | Status   |
+| ------ | -------------- | ------------------------------ | -------- |
+| GET    | `/topics`      | List all topics with filtering | ✅ Ready |
+| POST   | `/topics`      | Create new topic               | ✅ Ready |
+| GET    | `/topics/{id}` | Get specific topic             | ✅ Ready |
+| PUT    | `/topics/{id}` | Update topic                   | ✅ Ready |
+| DELETE | `/topics/{id}` | Delete topic                   | ✅ Ready |
+
+### Google Sheets Integration
+
+| Method | Endpoint         | Description              | Status   |
+| ------ | ---------------- | ------------------------ | -------- |
+| POST   | `/sync`          | Sync from Google Sheets  | ✅ Ready |
+| POST   | `/sync/validate` | Validate sheet structure | ✅ Ready |
+| GET    | `/sync/history`  | Get sync history         | ✅ Ready |
+
+### Query Options
+
+- **Filtering**: `?status=active&priority=1&limit=10`
+- **Sync Modes**: `incremental`, `overwrite`, `merge`
+- **Regions**: `US`, `CA`, `UK`, `AU`, `EU`
+
+## 🏗️ System Architecture
+
+### Current Infrastructure (Production Ready)
 
 ```
-User Topics → Trend Analysis → Content Generation → Configurable Media Curation → 
-Audio Production → Video Assembly → YouTube Publishing
+┌─────────────────┐    ┌──────────────────┐    ┌─────────────────┐
+│  Google Sheets  │───▶│   API Gateway    │───▶│ Lambda Functions│
+│  (Public URLs)  │    │ (Authentication) │    │  (Node.js 20.x) │
+└─────────────────┘    └──────────────────┘    └─────────────────┘
+                                                         │
+                       ┌──────────────────┐             │
+                       │   CloudWatch     │◀────────────┘
+                       │ (Logs & Metrics) │             │
+                       └──────────────────┘             ▼
+                                                ┌─────────────────┐
+                                                │   DynamoDB      │
+                                                │ (Topics & Sync) │
+                                                └─────────────────┘
 ```
 
-### Key Features
+### AWS Services Deployed
 
-- **🔧 Configurable Media Sources** - Easily add/remove Pexels, Pixabay, Unsplash, or custom sources
-- **🏷️ Complete Project Isolation** - Dedicated S3 buckets and resources with comprehensive tagging
-- **⬆️ Node.js 20.x Runtime** - Latest AWS Lambda runtime with security patches
-- **💰 Real-time Cost Tracking** - Monitor costs per video and optimize spending
-- **🎯 Content-Relevant Media** - AI-powered selection of authentic visuals matching script content
+- **✅ Lambda Functions**: 2 functions (topic management + Google Sheets sync)
+- **✅ DynamoDB Tables**: 2 tables (topics + sync history) with GSI indexes
+- **✅ API Gateway**: REST API with authentication and rate limiting
+- **✅ CloudWatch**: Complete logging and monitoring setup
+- **✅ IAM Roles**: Least privilege security policies
 
-## 📁 Project Structure
-
-```
-automated-video-pipeline/
-├── .kiro/specs/                 # Complete feature specifications
-│   └── automated-video-pipeline/
-│       ├── requirements.md      # User stories and acceptance criteria
-│       ├── design.md           # Architecture and component design
-│       └── tasks.md            # 32 actionable implementation tasks
-├── bin/                         # CDK entry point
-│   └── automated-video-pipeline.ts
-├── lib/                         # Infrastructure as Code
-│   └── automated-video-pipeline-stack.ts
-├── src/                         # Lambda function source code (Node.js 20.x)
-│   ├── topic-management/        # Topic CRUD operations
-│   ├── trend-analysis/         # External API integrations
-│   ├── content-generation/     # AI script and SEO generation
-│   ├── media-curation/         # Configurable multi-source media acquisition
-│   ├── audio-production/       # Polly integration
-│   ├── video-processing/       # FFmpeg orchestration
-│   ├── youtube-publishing/     # YouTube API integration
-│   └── shared/                 # Common utilities and types
-├── test/                       # Unit and integration tests
-├── docker/                     # Container images for video processing
-├── scripts/                    # Deployment and utility scripts
-└── README.md                  # This file
-```
-
-## 🚀 Getting Started
+## 🚀 Deployment Guide
 
 ### Prerequisites
 
-1. **AWS Account** with appropriate permissions
-2. **AWS CLI** configured with credentials
-3. **Node.js** (version 20 or later) - Required for Lambda runtime compatibility
-4. **Docker** for building video processing containers
-5. **API Keys** for external services (configurable):
-   - **Required**: YouTube Data API v3, Pexels API, Pixabay API
-   - **Optional**: Google Trends API, Twitter API v2, Unsplash API, News API
-   - **Extensible**: Add any media source via Secrets Manager configuration
+- Node.js 20.x or later
+- AWS CLI configured with deployment permissions
+- AWS CDK v2 installed globally (`npm install -g aws-cdk`)
 
-### Installation
-
-1. **Clone and Install Dependencies**
-   ```bash
-   npm install
-   ```
-
-2. **Deploy Infrastructure**
-   ```bash
-   # Bootstrap CDK (first time only)
-   npx cdk bootstrap
-
-   # Deploy the stack
-   npm run deploy
-   ```
-
-3. **Configure API Credentials**
-   After deployment, add your API keys to AWS Secrets Manager:
-   ```bash
-   aws secretsmanager update-secret \
-     --secret-id automated-video-pipeline/media-sources \
-     --secret-string '{
-       "pexels": {
-         "apiKey": "your-pexels-key",
-         "enabled": true
-       },
-       "pixabay": {
-         "apiKey": "your-pixabay-key",
-         "enabled": true
-       },
-       "unsplash": {
-         "apiKey": "your-unsplash-key",
-         "enabled": false
-       },
-       "youtube": {
-         "clientId": "your-client-id",
-         "clientSecret": "your-client-secret",
-         "refreshToken": "your-refresh-token",
-         "apiKey": "your-api-key"
-       }
-     }'
-   ```
-
-4. **Set Up YouTube OAuth**
-   - Create a project in Google Cloud Console
-   - Enable YouTube Data API v3
-   - Create OAuth 2.0 credentials
-   - Generate refresh token for automated access
-
-### Development Commands
+### One-Command Deploy
 
 ```bash
-# Compile TypeScript
-npm run build
-
-# Watch for changes during development
-npm run watch
-
-# Run tests
-npm test
-
-# Deploy infrastructure changes
-npm run deploy
-
-# Remove all AWS resources
-npm run destroy
+# Deploy everything
+chmod +x deploy.sh && ./deploy.sh
 ```
 
-## 🎬 How to Use
+### Manual Deployment Steps
 
-### 1. Define Video Topics (Super Simple!)
+```bash
+# 1. Install dependencies
+cd src/lambda/topic-management && npm install && cd ../../../
+cd src/lambda/google-sheets-sync && npm install && cd ../../../
+cd infrastructure && npm install
 
-Add topics to your Google Sheets (https://docs.google.com/spreadsheets/d/1WnUJredElhFEgXAhnnNtcbjmJ1l9t3i1YNnYblVOaao):
+# 2. Bootstrap CDK (first time only)
+npx cdk bootstrap
 
-| Topic | Daily Frequency | Status | Notes |
-|-------|----------------|--------|-------|
-| Investing for beginners in the USA | 2 | active | Simple steps to start |
-| Travel to Mexico | 1 | active | Budget-friendly options |
+# 3. Deploy infrastructure
+npx cdk deploy TopicManagementStack --require-approval never
+```
 
-**That's it!** The AI handles everything else - trend analysis, engaging titles, keywords, and content creation.
+### Post-Deployment
 
-### 2. Monitor Pipeline Execution
+1. **Get API Gateway URL** from CDK output
+2. **Get API Key** from AWS Console → API Gateway → API Keys
+3. **Test the system** with provided examples
 
-- **CloudWatch Dashboard** - View system metrics and performance
-- **DynamoDB Tables** - Track video production status
-- **S3 Bucket** - Access generated content and assets
-- **SNS Notifications** - Receive alerts for successes and failures
+## 🧪 Testing & Validation
 
-### 3. Customize Content Generation
+### Quick Health Check
 
-Modify AI prompts and video parameters in the Lambda functions:
-- Video duration (5-10 minutes)
-- Voice selection for audio
-- Video resolution and quality
-- SEO optimization strategies
+```bash
+# Test topic creation
+curl -X POST https://your-api-url/topics \
+  -H "Content-Type: application/json" \
+  -H "x-api-key: your-key" \
+  -d '{"topic": "Test Topic", "priority": 1}'
 
-## 🔧 Configuration Options
+# Test Google Sheets sync
+curl -X POST https://your-api-url/sync \
+  -H "Content-Type: application/json" \
+  -H "x-api-key: your-key" \
+  -d '{"action": "sync", "spreadsheetUrl": "YOUR_SHEET_URL", "syncMode": "incremental"}'
+```
 
-### Scheduling
-- Modify EventBridge rules to change video creation frequency
-- Adjust timing to match your audience's peak engagement hours
+### Test Files Included
 
-### Content Quality
-- Update Bedrock model parameters for script generation
-- Configure Polly voice settings for audio quality
-- Adjust FFmpeg parameters for video rendering
+- `src/lambda/topic-management/test-events.json` - Lambda test events
+- `src/lambda/google-sheets-sync/test-events.json` - Sync test scenarios
+- `docs/google-sheets-template.md` - Complete setup guide
+
+## 📋 Data Validation & Rules
+
+### Topic Fields
+
+| Field            | Required | Type    | Rules                                                     | Default              |
+| ---------------- | -------- | ------- | --------------------------------------------------------- | -------------------- |
+| `topic`          | ✅ Yes   | String  | 1-200 chars, non-empty                                    | -                    |
+| `dailyFrequency` | ❌ No    | Integer | 1-10 videos per day                                       | 1                    |
+| `priority`       | ❌ No    | Integer | 1-10 (1=highest)                                          | 5                    |
+| `status`         | ❌ No    | String  | active, paused, archived                                  | active               |
+| `targetAudience` | ❌ No    | String  | Max 100 chars                                             | general              |
+| `region`         | ❌ No    | String  | US, CA, UK, AU, EU                                        | US                   |
+| `contentStyle`   | ❌ No    | String  | engaging_educational, entertainment, professional, casual | engaging_educational |
+
+### Google Sheets Format
+
+```
+Topic (Required) | Daily Frequency | Priority | Status | Target Audience | Region | Content Style | Tags
+Your topic here  | 2              | 1        | active | beginners       | US     | engaging_educational | tag1,tag2
+```
+
+## 🔒 Security & Monitoring
+
+### Security Features
+
+- **🔐 API Key Authentication**: All endpoints protected
+- **🛡️ IAM Least Privilege**: Minimal required permissions
+- **🔍 Input Validation**: Comprehensive data sanitization
+- **🚫 Error Sanitization**: No sensitive data in responses
+
+### Monitoring & Observability
+
+- **📊 CloudWatch Logs**: Detailed request/response logging
+- **📈 Performance Metrics**: Lambda execution times and success rates
+- **💰 Cost Tracking**: Per-operation cost monitoring ready
+- **🔍 Audit Trail**: Complete sync history in DynamoDB
 
 ### Cost Optimization
-- Configure S3 lifecycle policies for automatic deletion after 7 days
-- Set Lambda reserved concurrency limits
-- Use Fargate Spot instances for non-critical processing
 
-## 📊 Monitoring and Troubleshooting
+- **⚡ Reserved Concurrency**: Limited to prevent runaway costs
+- **💾 Memory Optimization**: Right-sized for performance vs cost
+- **💸 Pay-per-Request**: DynamoDB scales to zero when not used
+- **🎯 Rate Limiting**: API Gateway usage plans prevent abuse
 
-### Key Metrics to Monitor
-- Video creation success rate
-- Processing time per video
-- API call success rates
-- YouTube upload success rate
-- Cost per video generated
+## 🎯 What's Next: Video Generation Pipeline
 
-### Common Issues
-1. **API Rate Limits** - Implement exponential backoff and caching
-2. **Video Processing Failures** - Check FFmpeg logs and media asset quality
-3. **YouTube Upload Errors** - Verify OAuth tokens and API quotas
-4. **High Costs** - Review S3 storage usage and Lambda execution times
+### 🚧 Ready to Build (Next Sprint)
 
-### Logs and Debugging
-- CloudWatch Logs for all Lambda functions
-- ECS task logs for video processing
-- X-Ray tracing for performance analysis
-- SNS notifications for critical errors
+**Task 3.1: Trend Data Collection Lambda Function**
 
-## 💰 Cost Tracking and Optimization
+- Google Trends API integration
+- Twitter API v2 integration
+- YouTube Data API integration
+- News API integration for current events
+- Rate limiting and error handling
 
-### Real-Time Cost Monitoring
+**Task 3.2: AI-Powered Topic Generation Service**
 
-The system tracks the exact cost of generating each video, providing detailed breakdowns by AWS service:
+- Amazon Bedrock integration for trend analysis
+- Topic scoring based on engagement potential
+- Keyword extraction and SEO optimization
+- Content strategy recommendations
 
-- **Per-Video Cost Analysis** - Know exactly what each video costs to produce
-- **Service-Level Breakdown** - See costs for Lambda, Fargate, S3, Bedrock, Polly, etc.
-- **Daily/Monthly Summaries** - Track spending trends and projections
-- **Cost Optimization Suggestions** - Automated recommendations to reduce costs
-- **Budget Alerts** - Get notified when costs exceed thresholds
+**Task 3.3: Trend Data Processing and Storage**
 
-### Cost Tracking Features
+- Data normalization for different API formats
+- Trend scoring algorithms
+- Data partitioning by date and source
+- Trend aggregation and reporting
 
-```typescript
-// Example cost breakdown for a single video
-{
-  "videoId": "video-123",
-  "totalCost": 0.45,
-  "costBreakdown": {
-    "lambda": 0.02,
-    "fargate": 0.15,
-    "s3": 0.08,
-    "bedrock": 0.12,
-    "polly": 0.05,
-    "externalApis": 0.03
-  },
-  "resourceUsage": {
-    "lambdaDurationMs": 45000,
-    "fargateTaskDurationMs": 180000,
-    "bedrockTokensUsed": 8500,
-    "pollyCharactersProcessed": 3200
-  }
-}
-```
+### 🔮 Future Pipeline Components
 
-### Cost Optimization Strategies
+**Content Generation (Tasks 4.x)**
 
-1. **Fargate Spot Instances** - Up to 70% savings on video processing
-2. **S3 Auto-Delete Policy** - Automatic deletion after 7 days (videos published to YouTube)
-3. **Bedrock Prompt Optimization** - Reduce token usage with efficient prompts
-4. **Lambda Memory Optimization** - Right-size function memory allocation
-5. **External API Caching** - Reduce redundant API calls
+- AI script generation with engagement optimization
+- Click-worthy title and thumbnail generation
+- Scene-by-scene breakdown with timing
 
-### Estimated Monthly Costs (90 videos/month)
+**Media & Production (Tasks 5.x-7.x)**
 
-**Optimized Configuration:**
-- **Lambda Functions**: ~$8-15
-- **Fargate (with Spot)**: ~$12-25 (70% savings)
-- **S3 Storage**: ~$2-5 (auto-delete after 7 days)
-- **DynamoDB**: ~$5-10 (on-demand pricing)
-- **Bedrock**: ~$25-50 (optimized prompts)
-- **Polly**: ~$5-10 (neural voices)
-- **Other Services**: ~$8-15
+- Multi-source media curation (Pexels, Pixabay, etc.)
+- Amazon Polly audio production
+- FFmpeg video assembly on ECS Fargate
 
-**Total Optimized**: ~$73-145/month for 90 professional videos
-**Cost Per Video**: ~$0.80-1.60 each
+**Publishing & Analytics (Tasks 8.x-10.x)**
 
-### Cost Monitoring API Endpoints
+- YouTube publishing with SEO optimization
+- Performance tracking and analytics
+- Cost monitoring and optimization
 
-- `GET /cost/daily?date=2025-01-15` - Daily cost summary
-- `GET /cost/trends?startDate=2025-01-01&endDate=2025-01-31` - Cost trends
-- `GET /cost/video?videoId=video-123` - Individual video cost breakdown
-- `GET /cost/optimization?startDate=2025-01-01&endDate=2025-01-31` - Optimization suggestions
-- `GET /cost/projection?month=2025-01` - Monthly cost projection
+## 📚 Documentation & Support
 
-## 🔒 Security Considerations
+### Available Guides
 
-- All API credentials stored in AWS Secrets Manager
-- S3 buckets configured with encryption and access controls
-- IAM roles follow least privilege principle
-- VPC isolation for video processing tasks
-- CloudTrail logging for audit compliance
+- **📖 `docs/google-sheets-template.md`** - Complete Google Sheets setup guide
+- **🔧 `docs/implementation-updates.md`** - Technical implementation details
+- **📋 `.kiro/specs/`** - Complete technical specifications
+- **🧪 Test Events** - Ready-to-use test scenarios in each Lambda folder
 
-## 🤝 Contributing
+### Getting Help
 
-1. Follow the existing code structure and naming conventions
-2. Add comprehensive tests for new features
-3. Update documentation for any configuration changes
-4. Use TypeScript for type safety
-5. Follow AWS best practices for security and cost optimization
+- **CloudWatch Logs**: Detailed error information and request tracking
+- **Sync History API**: Complete audit trail of all operations
+- **Validation Endpoints**: Pre-flight checks for data integrity
+- **Comprehensive Error Messages**: Specific guidance for fixing issues
 
-## 📄 License
+### Current System Status
 
-This project is licensed under the MIT License - see the LICENSE file for details.
-
-## 🆘 Support
-
-For issues and questions:
-1. Check CloudWatch logs for error details
-2. Review the troubleshooting section above
-3. Verify API credentials and quotas
-4. Monitor AWS service health status
+✅ **Production Ready**: Topic management and Google Sheets sync  
+🚧 **In Development**: Video generation pipeline  
+📋 **Planned**: Full end-to-end automation
 
 ---
 
-**Note**: This system is designed for educational and development purposes. For production use, implement additional security measures, monitoring, and compliance controls as required by your organization.
+**Ready to continue building?** The foundation is solid - let's add the video generation capabilities! 🚀

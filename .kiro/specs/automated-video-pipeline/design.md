@@ -209,6 +209,204 @@ graph LR
     P7 --> D7
 ```
 
+## Topic Management System
+
+### Overview
+
+The Topic Management System provides a comprehensive solution for defining, organizing, and synchronizing video topics. It supports both direct API management and Google Sheets integration for user-friendly topic configuration.
+
+### Architecture Components
+
+#### 1. Topic Management Lambda Function
+
+**Purpose**: Handles CRUD operations for video topics with validation and priority-based scheduling.
+
+**Key Features**:
+- **Node.js 20.x Runtime**: AWS compliant runtime for optimal performance
+- **Comprehensive Validation**: Input validation with detailed error messages
+- **Keyword Extraction**: Automatic keyword generation from topic text
+- **Priority Scheduling**: Support for priority levels 1-10 for execution order
+- **Error Handling**: Detailed error responses with request tracking
+
+**Data Model**:
+```json
+{
+  "topicId": "uuid",
+  "topic": "Investing for beginners in the USA",
+  "keywords": ["investing", "beginners", "usa"],
+  "dailyFrequency": 2,
+  "priority": 1,
+  "status": "active",
+  "targetAudience": "beginners",
+  "region": "US",
+  "contentStyle": "engaging_educational",
+  "createdAt": "2025-01-15T10:00:00.000Z",
+  "updatedAt": "2025-01-15T10:00:00.000Z",
+  "lastProcessed": null,
+  "totalVideosGenerated": 0,
+  "averageEngagement": 0,
+  "metadata": {
+    "createdBy": "user",
+    "source": "api",
+    "tags": ["investing", "finance"]
+  }
+}
+```
+
+#### 2. Google Sheets Integration Service
+
+**Purpose**: Syncs topics from Google Sheets to DynamoDB with conflict resolution and audit trails.
+
+**Simplified Architecture**:
+- **No API Keys Required**: Uses Google's public CSV export feature
+- **Direct URL Access**: Works with any publicly shared Google Sheets link
+- **HTTP Fetch**: Simple HTTPS requests to Google's CSV export endpoint
+- **Universal Compatibility**: No Google Cloud project or service account needed
+
+**Integration Flow**:
+```mermaid
+graph LR
+    GS[Google Sheets] --> CSV[CSV Export URL]
+    CSV --> FETCH[HTTP Fetch]
+    FETCH --> PARSE[CSV Parser]
+    PARSE --> VALIDATE[Data Validation]
+    VALIDATE --> CONFLICT[Conflict Resolution]
+    CONFLICT --> DDB[DynamoDB]
+    DDB --> HISTORY[Sync History]
+```
+
+**Sync Modes**:
+- **Incremental**: Only updates topics that have changed since last sync
+- **Overwrite**: Updates all topics from the sheet, overwrites local changes
+- **Merge**: Only updates fields that have actually changed (field-by-field comparison)
+
+**Conflict Resolution Strategy**:
+```javascript
+// Incremental Mode
+if (sheetModifiedTime > existingTopicUpdatedTime) {
+  updateTopic();
+}
+
+// Merge Mode
+if (hasSignificantChanges(existingTopic, sheetTopic)) {
+  updateChangedFields();
+}
+
+// Overwrite Mode
+updateTopic(); // Always update
+```
+
+#### 3. DynamoDB Schema Design
+
+**Topics Table**: `automated-video-pipeline-topics`
+- **Primary Key**: `topicId` (String)
+- **GSI 1**: `StatusIndex` - Query by status and priority
+- **GSI 2**: `PriorityIndex` - Query by priority and updatedAt
+- **GSI 3**: `TopicTextIndex` - Query by topic text (for Google Sheets sync)
+
+**Sync History Table**: `automated-video-pipeline-sync-history`
+- **Primary Key**: `partitionKey` (String) + `timestamp` (String)
+- **GSI 1**: `TimestampIndex` - Query sync history chronologically
+- **Purpose**: Complete audit trail of all sync operations
+
+#### 4. REST API Design
+
+**Topic Management Endpoints**:
+```
+GET    /topics              # List topics with filtering
+POST   /topics              # Create new topic
+GET    /topics/{topicId}    # Get specific topic
+PUT    /topics/{topicId}    # Update topic
+DELETE /topics/{topicId}    # Delete topic
+```
+
+**Google Sheets Integration Endpoints**:
+```
+POST   /sync                # Sync from Google Sheets
+POST   /sync/validate       # Validate sheet structure
+GET    /sync/history        # Get sync operation history
+```
+
+**Authentication**: API Key authentication with usage plans and rate limiting.
+
+### Google Sheets Template Format
+
+**Required Headers** (Row 1):
+| Column | Header | Required | Description |
+|--------|--------|----------|-------------|
+| A | Topic | ✅ Yes | The main topic for video generation |
+| B | Daily Frequency | ❌ No | Number of videos per day (1-10) |
+| C | Priority | ❌ No | Priority level (1-10, 1=highest) |
+| D | Status | ❌ No | active, paused, or archived |
+| E | Target Audience | ❌ No | Target audience description |
+| F | Region | ❌ No | Target region (US, CA, UK, AU, EU) |
+| G | Content Style | ❌ No | Content style preference |
+| H | Tags | ❌ No | Comma-separated tags |
+
+**Sample Data**:
+```
+Topic                              | Daily Frequency | Priority | Status | Target Audience | Region | Content Style        | Tags
+Investing for beginners in the USA | 2              | 1        | active | beginners       | US     | engaging_educational | investing,finance
+Travel tips for Europe             | 1              | 3        | active | travelers       | EU     | entertainment        | travel,europe
+```
+
+### URL Conversion Process
+
+**Google Sheets URL Formats Supported**:
+- `https://docs.google.com/spreadsheets/d/{ID}/edit#gid=0`
+- `https://docs.google.com/spreadsheets/d/{ID}/edit#gid={SHEET_ID}`
+
+**Automatic CSV Export URL Generation**:
+```javascript
+// Input: https://docs.google.com/spreadsheets/d/ABC123/edit#gid=0
+// Output: https://docs.google.com/spreadsheets/d/ABC123/export?format=csv&gid=0
+```
+
+### Error Handling and Monitoring
+
+**Comprehensive Error Tracking**:
+- **Validation Errors**: Detailed field-level validation with specific error messages
+- **Sync Errors**: Complete error logging with stack traces and event context
+- **HTTP Errors**: Proper handling of Google Sheets access issues
+- **Conflict Resolution**: Detailed logging of conflict resolution decisions
+
+**Monitoring and Observability**:
+- **CloudWatch Logs**: Detailed logging for all operations
+- **Sync History**: Complete audit trail in DynamoDB
+- **Performance Metrics**: Lambda execution times and success rates
+- **Cost Tracking**: Per-operation cost monitoring
+
+### Security and Access Control
+
+**API Security**:
+- **API Key Authentication**: Required for all endpoints
+- **Rate Limiting**: Configurable throttling and burst limits
+- **CORS Configuration**: Proper cross-origin resource sharing setup
+- **Input Sanitization**: Comprehensive input validation and sanitization
+
+**Google Sheets Access**:
+- **Public Access**: Requires "Anyone with the link" viewer permission
+- **No Credentials**: No API keys or service accounts required
+- **Read-Only**: Only reads data, never modifies Google Sheets
+- **Privacy**: No sensitive data stored or transmitted
+
+### Cost Optimization
+
+**Lambda Optimization**:
+- **Reserved Concurrency**: Limited concurrent executions (10 for topic management, 5 for sync)
+- **Memory Allocation**: Optimized memory settings (256MB for topic management, 512MB for sync)
+- **Timeout Configuration**: Appropriate timeouts (30s for topic management, 5min for sync)
+
+**DynamoDB Optimization**:
+- **Pay-per-Request**: No provisioned capacity, only pay for actual usage
+- **Efficient Indexing**: Strategic GSI design for query patterns
+- **Data Lifecycle**: Automatic cleanup of old sync history
+
+**API Gateway Optimization**:
+- **Usage Plans**: Quota and throttling limits to control costs
+- **Caching**: Response caching for frequently accessed data
+- **Regional Endpoints**: Cost-optimized regional deployment
+
 ## AI Agent Architecture
 
 ### Overview

@@ -1,0 +1,39 @@
+{
+  "name": "automated-video-pipeline-infrastructure",
+  "version": "1.0.0",
+  "description": "AWS CDK infrastructure for Automated Video Pipeline",
+  "type": "module",
+  "main": "app.js",
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "scripts": {
+    "build": "echo 'No build step required for JavaScript'",
+    "watch": "echo 'No watch step required for JavaScript'",
+    "test": "echo 'No tests configured'",
+    "cdk": "cdk",
+    "deploy": "cdk deploy --all",
+    "destroy": "cdk destroy --all",
+    "diff": "cdk diff",
+    "synth": "cdk synth"
+  },
+  "devDependencies": {
+    "aws-cdk": "^2.120.0"
+  },
+  "dependencies": {
+    "aws-cdk-lib": "^2.120.0",
+    "constructs": "^10.3.0"
+  },
+  "keywords": [
+    "aws",
+    "cdk",
+    "infrastructure",
+    "video",
+    "automation",
+    "lambda",
+    "dynamodb",
+    "api-gateway"
+  ],
+  "author": "Automated Video Pipeline Team",
+  "license": "MIT"
+}

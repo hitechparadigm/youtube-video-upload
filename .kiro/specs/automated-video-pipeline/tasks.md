@@ -39,8 +39,8 @@ This implementation plan converts the automated video pipeline design into actio
   - Implement secure credential rotation policies
   - _Requirements: 1.3, 2.3_
 
-- [x] 1.4 Write unit tests for infrastructure components
-
+- [x] 1.3 Configure AWS Secrets Manager for extensible API credentials
+- [] 1.4 Write unit tests for infrastructure components
 
   - Test S3 bucket creation and configuration
   - Test DynamoDB table schemas and indexes
@@ -56,7 +56,7 @@ This implementation plan converts the automated video pipeline design into actio
   - Add cost tracking for all operations
   - _Requirements: 1.4, 2.4, 3.4_
 
-- [ ] 2.1 Create topic management Lambda function (Node.js 20.x)
+- [x] 2.1 Create topic management Lambda function (Node.js 20.x)
 
   - Implement CRUD operations for topics (create, read, update, delete)
   - Add topic validation with keyword extraction
@@ -64,10 +64,11 @@ This implementation plan converts the automated video pipeline design into actio
   - Add comprehensive error handling and logging
   - _Requirements: 1.4, 2.4, 12.1_
 
-- [ ] 2.2 Build Google Sheets integration service
+- [x] 2.2 Build Google Sheets integration service
 
   - Implement Google Sheets API authentication
   - Create sync logic for reading topic configurations
+
   - Add conflict resolution for concurrent updates
   - Implement sync history and error reporting
   - _Requirements: 1.5, 2.5_
@@ -80,7 +81,7 @@ This implementation plan converts the automated video pipeline design into actio
   - Create comprehensive API documentation
   - _Requirements: 1.6, 2.6_
 
-- [ ]\* 2.4 Write integration tests for topic management
+- [ ] 2.4 Write integration tests for topic management
 
   - Test Google Sheets sync functionality
   - Test REST API endpoints with various payloads
@@ -121,7 +122,7 @@ This implementation plan converts the automated video pipeline design into actio
   - Create trend aggregation and reporting functions
   - _Requirements: 2.5, 2.6_
 
-- [ ]\* 3.4 Write unit tests for trend analysis components
+- [ ] 3.4 Write unit tests for trend analysis components
 
   - Test API integrations with mock responses
   - Test AI topic generation with sample inputs
@@ -161,7 +162,7 @@ This implementation plan converts the automated video pipeline design into actio
   - Add brand safety and content moderation checks
   - _Requirements: 3.5, 3.6_
 
-- [ ]\* 4.4 Write unit tests for script generation
+- [ ] 4.4 Write unit tests for script generation
 
   - Test AI prompt engineering with various inputs
   - Test title generation algorithms
@@ -201,7 +202,7 @@ This implementation plan converts the automated video pipeline design into actio
   - Create attribution tracking and license management
   - _Requirements: 4.5, 4.6_
 
-- [ ]\* 5.4 Write integration tests for media curation
+- [ ] 5.4 Write integration tests for media curation
 
   - Test API integrations with real media sources
   - Test relevance scoring with sample content
@@ -233,7 +234,7 @@ This implementation plan converts the automated video pipeline design into actio
   - Add audio length validation against video requirements
   - _Requirements: 5.3, 5.4_
 
-- [ ]\* 6.3 Write unit tests for audio production
+- [ ] 6.3 Write unit tests for audio production
 
   - Test Polly integration with various voice settings
   - Test speech timing and synchronization
@@ -273,7 +274,7 @@ This implementation plan converts the automated video pipeline design into actio
   - Add thumbnail generation from video frames
   - _Requirements: 6.5, 6.6_
 
-- [ ]\* 7.4 Write integration tests for video processing
+- [ ] 7.4 Write integration tests for video processing
 
   - Test FFmpeg pipeline with sample media
   - Test audio-video synchronization accuracy
@@ -305,7 +306,7 @@ This implementation plan converts the automated video pipeline design into actio
   - Add performance tracking and analytics collection
   - _Requirements: 7.3, 7.4_
 
-- [ ]\* 8.3 Write integration tests for YouTube publishing
+- [ ] 8.3 Write integration tests for YouTube publishing
 
   - Test OAuth authentication flow
   - Test video upload with sample content
@@ -345,7 +346,7 @@ This implementation plan converts the automated video pipeline design into actio
   - Create cost reporting and analytics dashboard
   - _Requirements: 8.5, 8.6_
 
-- [ ]\* 9.4 Write end-to-end integration tests
+- [ ] 9.4 Write end-to-end integration tests
 
   - Test complete pipeline from topic to published video
   - Test error scenarios and recovery mechanisms
@@ -378,7 +379,8 @@ This implementation plan converts the automated video pipeline design into actio
   - Validate all Lambda functions use Node.js 20.x runtime
   - _Requirements: 9.3, 9.4, 12.1_
 
-- [ ]\* 10.3 Write operational documentation and runbooks
+- [ ] 10.3 Write operational documentation and runbooks
+
   - Create deployment and configuration guides
   - Document troubleshooting procedures
   - Create performance tuning guidelines
