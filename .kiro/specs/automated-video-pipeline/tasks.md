@@ -76,7 +76,6 @@ This implementation plan converts the automated video pipeline design into actio
 
 - [x] 2.3 Create REST API Gateway with authentication
 
-
   - Set up API Gateway with regional endpoints for cost optimization
   - Implement API key authentication and rate limiting
   - Add CORS configuration for web interface access
@@ -84,8 +83,6 @@ This implementation plan converts the automated video pipeline design into actio
   - _Requirements: 1.6, 2.6_
 
 - [x] 2.4 Write integration tests for topic management
-
-
 
   - Test Google Sheets sync functionality
   - Test REST API endpoints with various payloads
@@ -101,8 +98,7 @@ This implementation plan converts the automated video pipeline design into actio
   - Store processed trend data with cost tracking
   - _Requirements: 2.1, 2.2, 2.3_
 
-- [x] 3.1 Create trend data collection Lambda function
-
+- [-] 3.1 Create trend data collection Lambda function
 
 
   - Implement Google Trends API integration

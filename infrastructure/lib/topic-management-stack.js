@@ -9,6 +9,8 @@ import { Table, AttributeType, BillingMode, ProjectionType } from 'aws-cdk-lib/a
 import { RestApi, LambdaIntegration, Cors, ApiKeySourceType } from 'aws-cdk-lib/aws-apigateway';
 import { Role, ServicePrincipal, PolicyStatement, Effect } from 'aws-cdk-lib/aws-iam';
 import { LogGroup, RetentionDays } from 'aws-cdk-lib/aws-logs';
+import { Bucket, BucketEncryption, BlockPublicAccess } from 'aws-cdk-lib/aws-s3';
+import { Secret } from 'aws-cdk-lib/aws-secretsmanager';
 import { Construct } from 'constructs';
 
 export class TopicManagementStack extends Stack {
@@ -95,6 +97,58 @@ export class TopicManagementStack extends Stack {
       }
     });
 
+    // DynamoDB Table for Trend Data
+    const trendsTable = new Table(this, 'TrendsTable', {
+      tableName: 'automated-video-pipeline-trends',
+      partitionKey: {
+        name: 'partitionKey',
+        type: AttributeType.STRING
+      },
+      sortKey: {
+        name: 'sortKey',
+        type: AttributeType.STRING
+      },
+      billingMode: BillingMode.PAY_PER_REQUEST,
+      removalPolicy: RemovalPolicy.RETAIN,
+      pointInTimeRecovery: true,
+      timeToLiveAttribute: 'ttl',
+      tags: {
+        Project: 'automated-video-pipeline',
+        Service: 'trend-analysis',
+        Environment: 'production',
+        CostCenter: 'content-creation',
+        ManagedBy: 'cdk'
+      }
+    });
+
+    // GSI for querying trends by topic
+    trendsTable.addGlobalSecondaryIndex({
+      indexName: 'TopicIndex',
+      partitionKey: {
+        name: 'topic',
+        type: AttributeType.STRING
+      },
+      sortKey: {
+        name: 'collectedAt',
+        type: AttributeType.STRING
+      },
+      projectionType: ProjectionType.ALL
+    });
+
+    // GSI for querying trends by collection date
+    trendsTable.addGlobalSecondaryIndex({
+      indexName: 'DateIndex',
+      partitionKey: {
+        name: 'partitionKey',
+        type: AttributeType.STRING
+      },
+      sortKey: {
+        name: 'collectedAt',
+        type: AttributeType.STRING
+      },
+      projectionType: ProjectionType.ALL
+    });
+
     // GSI for querying sync history by timestamp
     syncHistoryTable.addGlobalSecondaryIndex({
       indexName: 'TimestampIndex',
@@ -107,6 +161,54 @@ export class TopicManagementStack extends Stack {
         type: AttributeType.STRING
       },
       projectionType: ProjectionType.ALL
+    });
+
+    // S3 Bucket for storing raw trend data
+    const trendDataBucket = new Bucket(this, 'TrendDataBucket', {
+      bucketName: `automated-video-pipeline-trends-${this.account}-${this.region}`,
+      encryption: BucketEncryption.S3_MANAGED,
+      blockPublicAccess: BlockPublicAccess.BLOCK_ALL,
+      removalPolicy: RemovalPolicy.RETAIN,
+      lifecycleRules: [
+        {
+          id: 'DeleteOldTrendData',
+          enabled: true,
+          expiration: Duration.days(30) // Keep trend data for 30 days
+        }
+      ],
+      tags: {
+        Project: 'automated-video-pipeline',
+        Service: 'trend-data-storage',
+        Environment: 'production',
+        CostCenter: 'content-creation',
+        ManagedBy: 'cdk'
+      }
+    });
+
+    // API Credentials Secret for external APIs
+    const apiCredentialsSecret = new Secret(this, 'APICredentialsSecret', {
+      secretName: 'automated-video-pipeline/api-credentials',
+      description: 'API credentials for external services (YouTube, Twitter, News)',
+      generateSecretString: {
+        secretStringTemplate: JSON.stringify({
+          youtube: {
+            apiKey: 'your-youtube-api-key'
+          },
+          twitter: {
+            bearerToken: 'your-twitter-bearer-token'
+          },
+          news: {
+            apiKey: 'your-news-api-key'
+          }
+        }),
+        generateStringKey: 'placeholder',
+        excludeCharacters: '"\\/'
+      },
+      tags: {
+        Project: 'automated-video-pipeline',
+        Service: 'api-credentials',
+        Environment: 'production'
+      }
     });
 
     // IAM Role for Lambda function
@@ -168,7 +270,51 @@ export class TopicManagementStack extends Stack {
       ]
     }));
 
+    // IAM Role for Trend Data Collection Lambda
+    const trendCollectionRole = new Role(this, 'TrendCollectionLambdaRole', {
+      assumedBy: new ServicePrincipal('lambda.amazonaws.com'),
+      description: 'Role for Trend Data Collection Lambda function',
+      managedPolicies: [
+        {
+          managedPolicyArn: 'arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole'
+        }
+      ]
+    });
 
+    // Add permissions for Trend Collection Lambda
+    trendCollectionRole.addToPolicy(new PolicyStatement({
+      effect: Effect.ALLOW,
+      actions: [
+        'dynamodb:PutItem',
+        'dynamodb:Query',
+        'dynamodb:GetItem'
+      ],
+      resources: [
+        trendsTable.tableArn,
+        `${trendsTable.tableArn}/index/*`
+      ]
+    }));
+
+    trendCollectionRole.addToPolicy(new PolicyStatement({
+      effect: Effect.ALLOW,
+      actions: [
+        's3:PutObject',
+        's3:PutObjectAcl'
+      ],
+      resources: [
+        `${trendDataBucket.bucketArn}/*`
+      ]
+    }));
+
+    trendCollectionRole.addToPolicy(new PolicyStatement({
+      effect: Effect.ALLOW,
+      actions: [
+        'secretsmanager:GetSecretValue'
+      ],
+      resources: [
+        apiCredentialsSecret.secretArn
+      ]
+    }));
 
     // CloudWatch Log Group
     const logGroup = new LogGroup(this, 'TopicManagementLogGroup', {
@@ -230,6 +376,40 @@ export class TopicManagementStack extends Stack {
       tags: {
         Project: 'automated-video-pipeline',
         Service: 'google-sheets-sync',
+        Environment: 'production',
+        Runtime: 'nodejs20.x'
+      }
+    });
+
+    // Trend Data Collection Lambda Log Group
+    const trendCollectionLogGroup = new LogGroup(this, 'TrendCollectionLogGroup', {
+      logGroupName: '/aws/lambda/trend-data-collection',
+      retention: RetentionDays.ONE_MONTH,
+      removalPolicy: RemovalPolicy.DESTROY
+    });
+
+    // Trend Data Collection Lambda Function
+    const trendCollectionFunction = new Function(this, 'TrendCollectionFunction', {
+      functionName: 'trend-data-collection',
+      runtime: Runtime.NODEJS_20_X,
+      handler: 'index.handler',
+      code: Code.fromAsset('src/lambda/trend-data-collection'),
+      role: trendCollectionRole,
+      timeout: Duration.minutes(10), // Longer timeout for API calls
+      memorySize: 1024, // More memory for data processing
+      environment: {
+        TRENDS_TABLE_NAME: trendsTable.tableName,
+        S3_BUCKET_NAME: trendDataBucket.bucketName,
+        API_CREDENTIALS_SECRET_NAME: apiCredentialsSecret.secretName,
+        AWS_REGION: this.region,
+        NODE_ENV: 'production'
+      },
+      description: 'Collects trend data from multiple sources (Google Trends, YouTube, Twitter, News)',
+      logGroup: trendCollectionLogGroup,
+      reservedConcurrentExecutions: 3, // Limit concurrent executions to manage API rate limits
+      tags: {
+        Project: 'automated-video-pipeline',
+        Service: 'trend-data-collection',
         Environment: 'production',
         Runtime: 'nodejs20.x'
       }
@@ -315,6 +495,21 @@ export class TopicManagementStack extends Stack {
       apiKeyRequired: true
     });
 
+    // Trend data collection endpoints
+    const trendsResource = api.root.addResource('trends');
+    const trendCollectionIntegration = new LambdaIntegration(trendCollectionFunction);
+    
+    // POST /trends/collect - Trigger trend data collection
+    const collectResource = trendsResource.addResource('collect');
+    collectResource.addMethod('POST', trendCollectionIntegration, {
+      apiKeyRequired: true
+    });
+    
+    // GET /trends - Get trend data
+    trendsResource.addMethod('GET', trendCollectionIntegration, {
+      apiKeyRequired: true
+    });
+
     // API Key for authentication
     const apiKey = api.addApiKey('TopicManagementApiKey', {
       apiKeyName: 'topic-management-api-key',
@@ -359,6 +554,26 @@ export class TopicManagementStack extends Stack {
     this.addOutput('ApiKeyId', {
       value: apiKey.keyId,
       description: 'ID of the API key for authentication'
+    });
+
+    this.addOutput('TrendsTableName', {
+      value: trendsTable.tableName,
+      description: 'Name of the Trends DynamoDB table'
+    });
+
+    this.addOutput('TrendDataBucketName', {
+      value: trendDataBucket.bucketName,
+      description: 'Name of the S3 bucket for trend data storage'
+    });
+
+    this.addOutput('TrendCollectionFunctionName', {
+      value: trendCollectionFunction.functionName,
+      description: 'Name of the Trend Data Collection Lambda function'
+    });
+
+    this.addOutput('APICredentialsSecretName', {
+      value: apiCredentialsSecret.secretName,
+      description: 'Name of the API credentials secret'
     });
 
     // Export values for other stacks

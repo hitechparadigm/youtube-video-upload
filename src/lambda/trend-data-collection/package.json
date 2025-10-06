@@ -1,0 +1,35 @@
+{
+  "name": "trend-data-collection-lambda",
+  "version": "1.0.0",
+  "description": "Lambda function for collecting trend data from multiple sources (Google Trends, YouTube, Twitter, News)",
+  "type": "module",
+  "main": "index.js",
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "dependencies": {
+    "@aws-sdk/client-dynamodb": "^3.490.0",
+    "@aws-sdk/lib-dynamodb": "^3.490.0",
+    "@aws-sdk/client-secrets-manager": "^3.490.0",
+    "@aws-sdk/client-s3": "^3.490.0",
+    "uuid": "^9.0.1"
+  },
+  "devDependencies": {
+    "@types/uuid": "^9.0.7"
+  },
+  "keywords": [
+    "aws",
+    "lambda",
+    "trends",
+    "google-trends",
+    "youtube-api",
+    "twitter-api",
+    "news-api",
+    "data-collection"
+  ],
+  "author": "Automated YouTube Video Pipeline",
+  "license": "MIT"
+}
