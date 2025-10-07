@@ -13,10 +13,10 @@ exports.handler = async (event) => {
 
     try {
         const orchestrator = new WorkflowOrchestrator();
-        
+
         // Parse the event based on source
         let request;
-        
+
         if (event.httpMethod) {
             // API Gateway request
             request = parseApiGatewayEvent(event);
@@ -34,6 +34,10 @@ exports.handler = async (event) => {
                 const result = await orchestrator.startPipelineExecution(request);
                 return createResponse(event, result);
 
+            case 'start-enhanced':
+                const enhancedResult = await orchestrator.startEnhancedPipelineExecution(request);
+                return createResponse(event, enhancedResult);
+
             case 'batch':
                 const batchResult = await orchestrator.startBatchExecution(request.topics);
                 return createResponse(event, batchResult);
@@ -41,6 +45,10 @@ exports.handler = async (event) => {
             case 'status':
                 const status = await orchestrator.getExecutionStatus(request.executionId);
                 return createResponse(event, status);
+
+            case 'status-enhanced':
+                const enhancedStatus = await orchestrator.getEnhancedExecutionStatus(request.executionId);
+                return createResponse(event, enhancedStatus);
 
             case 'list':
                 const executions = await orchestrator.listRecentExecutions(request.limit);
@@ -84,7 +92,18 @@ exports.handler = async (event) => {
 function parseApiGatewayEvent(event) {
     const { httpMethod, path, body, queryStringParameters } = event;
 
-    if (httpMethod === 'POST' && path.includes('/start')) {
+    if (httpMethod === 'POST' && path.includes('/start-enhanced')) {
+        const requestBody = body ? JSON.parse(body) : {};
+        return {
+            action: 'start-enhanced',
+            baseTopic: requestBody.baseTopic,
+            targetAudience: requestBody.targetAudience || 'general',
+            contentType: requestBody.contentType || 'educational',
+            videoDuration: requestBody.videoDuration || 480,
+            videoStyle: requestBody.videoStyle || 'engaging_educational',
+            scheduledBy: 'api'
+        };
+    } else if (httpMethod === 'POST' && path.includes('/start')) {
         const requestBody = body ? JSON.parse(body) : {};
         return {
             action: 'start',
@@ -99,6 +118,11 @@ function parseApiGatewayEvent(event) {
         return {
             action: 'batch',
             topics: requestBody.topics || []
+        };
+    } else if (httpMethod === 'GET' && path.includes('/status-enhanced')) {
+        return {
+            action: 'status-enhanced',
+            executionId: queryStringParameters?.executionId
         };
     } else if (httpMethod === 'GET' && path.includes('/status')) {
         return {

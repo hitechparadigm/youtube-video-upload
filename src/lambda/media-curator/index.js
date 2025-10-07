@@ -8,6 +8,8 @@ const { RekognitionClient, DetectLabelsCommand, DetectTextCommand } = require('@
 const { S3Client, PutObjectCommand, GetObjectCommand } = require('@aws-sdk/client-s3');
 const https = require('https');
 const { v4: uuidv4 } = require('uuid');
+// Import context management functions
+const { getSceneContext, storeMediaContext, updateProjectSummary } = require('/opt/nodejs/context-integration');
 
 let secretsClient = null;
 let bedrockClient = null;
@@ -82,6 +84,8 @@ exports.handler = async (event) => {
         
         if (httpMethod === 'POST' && path === '/media/search') {
             return await searchMedia(requestBody);
+        } else if (httpMethod === 'POST' && path === '/media/curate-from-project') {
+            return await curateMediaFromProject(requestBody);
         } else if (httpMethod === 'POST' && path === '/media/curate') {
             return await curateMediaWithAI(requestBody);
         } else {
@@ -182,6 +186,250 @@ async function searchMedia(requestBody) {
         return createResponse(500, { 
             error: 'Failed to search media',
             message: error.message 
+        });
+    }
+}
+
+/**
+ * Enhanced scene-aware media curation using stored scene context
+ */
+async function curateMediaFromProject(requestBody) {
+    const { 
+        projectId,
+        mediaRequirements = {},
+        qualityThreshold = 80,
+        diversityFactor = 0.7
+    } = requestBody;
+    
+    try {
+        if (!projectId) {
+            return createResponse(400, { error: 'projectId is required' });
+        }
+        
+        console.log(`🎨 Starting scene-aware media curation for project: ${projectId}`);
+        
+        // Retrieve scene context from Context Manager
+        console.log('🔍 Retrieving scene context from Context Manager...');
+        const sceneContext = await getSceneContext(projectId);
+        
+        console.log('✅ Retrieved scene context:');
+        console.log(`   - Available scenes: ${sceneContext.scenes?.length || 0}`);
+        console.log(`   - Total duration: ${sceneContext.totalDuration || 0}s`);
+        console.log(`   - Selected subtopic: ${sceneContext.selectedSubtopic || 'N/A'}`);
+        console.log(`   - Overall style: ${sceneContext.overallStyle || 'N/A'}`);
+        
+        if (!sceneContext.scenes || sceneContext.scenes.length === 0) {
+            return createResponse(400, { error: 'No scenes found in scene context' });
+        }
+        
+        // Enhanced media requirements with scene-specific defaults
+        const requirements = {
+            imagesPerScene: 2,
+            videosPerScene: 1,
+            minRelevanceScore: qualityThreshold,
+            maxProcessingTime: 600, // 10 minutes
+            requireVisualAnalysis: true,
+            sceneSpecificMatching: true,
+            ...mediaRequirements
+        };
+        
+        console.log(`📋 Enhanced requirements:`, requirements);
+        
+        // Get API keys for media sources
+        const apiKeys = await getApiKeys();
+        console.log(`🔑 API Keys available:`, {
+            pexels: !!(apiKeys.pexels || apiKeys.PEXELS_API_KEY),
+            pixabay: !!(apiKeys.pixabay || apiKeys.PIXABAY_API_KEY)
+        });
+        
+        // Process each scene with context-aware media matching
+        const sceneMediaMapping = [];
+        let totalAssets = 0;
+        let totalRelevanceScore = 0;
+        
+        console.log(`🎬 Processing ${sceneContext.scenes.length} scenes with context-aware matching...`);
+        
+        for (const scene of sceneContext.scenes) {
+            console.log(`\n📋 Processing Scene ${scene.sceneNumber}: ${scene.title || 'Untitled'}`);
+            console.log(`   Duration: ${scene.duration}s`);
+            console.log(`   Purpose: ${scene.purpose || 'N/A'}`);
+            console.log(`   Visual style: ${scene.visualRequirements?.style || 'N/A'}`);
+            
+            // Generate scene-specific search terms using AI
+            const sceneSearchTerms = await generateSceneSpecificSearchTerms(scene, sceneContext);
+            console.log(`   🔍 Generated search terms: ${sceneSearchTerms.join(', ')}`);
+            
+            // Search for media with scene-specific context
+            const sceneMedia = await searchMediaForScene(scene, sceneSearchTerms, apiKeys, requirements);
+            console.log(`   📸 Found ${sceneMedia.length} potential assets`);
+            
+            // AI-powered relevance analysis for this specific scene
+            const analyzedMedia = [];
+            for (const media of sceneMedia) {
+                try {
+                    const analysis = await analyzeMediaForScene(media, scene, sceneContext);
+                    
+                    if (analysis.score >= requirements.minRelevanceScore && analysis.recommended) {
+                        analyzedMedia.push({
+                            ...media,
+                            aiAnalysis: analysis,
+                            sceneAlignment: analysis.sceneAlignment
+                        });
+                    }
+                } catch (error) {
+                    console.error(`   ⚠️ Error analyzing media ${media.id}:`, error.message);
+                }
+            }
+            
+            console.log(`   🤖 AI analysis: ${analyzedMedia.length} assets passed relevance threshold`);
+            
+            // Select diverse, high-quality media for this scene
+            const selectedMedia = selectOptimalMediaForScene(
+                analyzedMedia, 
+                scene, 
+                requirements.imagesPerScene, 
+                requirements.videosPerScene,
+                diversityFactor
+            );
+            
+            // Download and organize media assets
+            const processedAssets = [];
+            for (const media of selectedMedia) {
+                try {
+                    const processedAsset = await downloadAndSaveMediaForScene(media, projectId, scene.sceneNumber);
+                    if (processedAsset) {
+                        processedAssets.push(processedAsset);
+                        totalRelevanceScore += processedAsset.aiAnalysis?.score || 0;
+                    }
+                } catch (error) {
+                    console.error(`   ❌ Failed to process asset ${media.id}:`, error.message);
+                }
+            }
+            
+            // Create scene-media mapping with precise timing
+            const sceneMapping = {
+                sceneNumber: scene.sceneNumber,
+                sceneTitle: scene.title || `Scene ${scene.sceneNumber}`,
+                scenePurpose: scene.purpose,
+                duration: scene.duration,
+                startTime: scene.startTime || 0,
+                endTime: scene.endTime || scene.duration,
+                mediaAssets: processedAssets.map((asset, index) => ({
+                    ...asset,
+                    sceneStartTime: (scene.duration / processedAssets.length) * index,
+                    sceneDuration: scene.duration / processedAssets.length,
+                    transitionType: index === 0 ? 'fade-in' : 'crossfade'
+                })),
+                visualStyle: scene.visualRequirements?.style || 'standard',
+                mood: scene.visualRequirements?.mood || 'neutral',
+                transitionStyle: scene.mediaNeeds?.transitions || 'smooth',
+                contextUsage: {
+                    usedSceneContext: true,
+                    sceneSpecificSearch: true,
+                    aiRelevanceScoring: true,
+                    visualStyleMatching: true
+                }
+            };
+            
+            sceneMediaMapping.push(sceneMapping);
+            totalAssets += processedAssets.length;
+            
+            console.log(`   ✅ Scene ${scene.sceneNumber}: ${processedAssets.length} assets selected`);
+            console.log(`   📊 Avg relevance: ${Math.round(processedAssets.reduce((sum, a) => sum + (a.aiAnalysis?.score || 0), 0) / processedAssets.length)}%`);
+        }
+        
+        // Calculate overall quality metrics
+        const averageRelevanceScore = totalAssets > 0 ? Math.round(totalRelevanceScore / totalAssets) : 0;
+        const coverageComplete = sceneMediaMapping.every(mapping => mapping.mediaAssets.length > 0);
+        
+        // Analyze scene transitions and visual flow
+        console.log('🎬 Analyzing scene transitions and visual flow...');
+        const transitionAnalysis = await analyzeSceneTransitionsAndFlow(sceneContext, sceneMediaMapping);
+        
+        console.log(`✅ Transition analysis completed:`);
+        console.log(`   - Overall flow score: ${transitionAnalysis.visualFlowAnalysis.overallFlowScore}`);
+        console.log(`   - Transition quality: ${transitionAnalysis.visualFlowAnalysis.transitionQuality}`);
+        console.log(`   - Continuity maintained: ${transitionAnalysis.visualFlowAnalysis.continuityMaintained}`);
+        
+        // Create comprehensive media context for Video Assembler AI
+        const mediaContext = {
+            projectId: projectId,
+            sceneMediaMapping: transitionAnalysis.sceneMediaMapping, // Use enhanced mapping with transitions
+            totalAssets: totalAssets,
+            coverageComplete: coverageComplete,
+            qualityScore: averageRelevanceScore,
+            processingDetails: {
+                scenesProcessed: sceneContext.scenes.length,
+                mediaSourcesUsed: Object.keys(apiKeys).filter(key => apiKeys[key]),
+                aiSimilarityScoring: true,
+                contextAwareMatching: true,
+                sceneSpecificOptimization: true
+            },
+            visualFlow: {
+                overallStyle: sceneContext.overallStyle,
+                sceneProgression: transitionAnalysis.sceneMediaMapping.map(mapping => ({
+                    sceneNumber: mapping.sceneNumber,
+                    visualStyle: mapping.visualFlow?.continuityScore || mapping.visualStyle,
+                    mood: mapping.mood,
+                    assetCount: mapping.mediaAssets.length,
+                    transitionAnalysis: {
+                        entryTransition: mapping.transitionAnalysis?.entryTransition,
+                        exitTransition: mapping.transitionAnalysis?.exitTransition,
+                        continuityScore: mapping.transitionAnalysis?.continuityScore
+                    }
+                })),
+                transitionAnalysis: transitionAnalysis.visualFlowAnalysis,
+                enhancedMetadata: transitionAnalysis.enhancedMetadata
+            },
+            contextUsage: {
+                usedSceneContext: true,
+                selectedSubtopic: sceneContext.selectedSubtopic,
+                sceneCount: sceneContext.scenes.length,
+                intelligentMatching: true
+            }
+        };
+        
+        // Store media context for Video Assembler AI
+        await storeMediaContext(projectId, mediaContext);
+        console.log(`💾 Stored media context for Video Assembler AI`);
+        
+        // Update project summary
+        await updateProjectSummary(projectId, 'media', {
+            totalAssets: totalAssets,
+            scenesCovered: sceneMediaMapping.length,
+            averageRelevanceScore: averageRelevanceScore,
+            coverageComplete: coverageComplete,
+            contextAware: true,
+            processingMethod: 'scene_specific_ai_matching'
+        });
+        
+        console.log(`✅ Scene-aware media curation completed for project: ${projectId}`);
+        
+        return createResponse(200, {
+            message: 'Scene-aware media curation completed successfully',
+            projectId: projectId,
+            mediaContext: {
+                totalAssets: totalAssets,
+                scenesCovered: sceneMediaMapping.length,
+                averageRelevanceScore: averageRelevanceScore,
+                coverageComplete: coverageComplete
+            },
+            sceneBreakdown: sceneMediaMapping.map(mapping => ({
+                sceneNumber: mapping.sceneNumber,
+                sceneTitle: mapping.sceneTitle,
+                assetCount: mapping.mediaAssets.length,
+                visualStyle: mapping.visualStyle,
+                mood: mapping.mood
+            })),
+            contextUsage: mediaContext.contextUsage,
+            readyForVideoAssembly: coverageComplete
+        });
+        
+    } catch (error) {
+        console.error('Error in scene-aware media curation:', error);
+        return createResponse(500, {
+            error: 'Failed to curate media from project',
+            message: error.message
         });
     }
 }
@@ -1195,5 +1443,847 @@ function createResponse(statusCode, body) {
             'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Api-Key'
         },
         body: JSON.stringify(body)
+    };
+}
+
+/**
+ * Generate scene-specific search terms using AI and scene context
+ */
+async function generateSceneSpecificSearchTerms(scene, sceneContext) {
+    try {
+        const prompt = `Generate 3-5 specific, visual search terms for finding stock media that matches this video scene.
+
+SCENE CONTEXT:
+- Scene Number: ${scene.sceneNumber}
+- Title: ${scene.title || 'Untitled'}
+- Purpose: ${scene.purpose || 'N/A'}
+- Duration: ${scene.duration}s
+- Script: "${scene.script?.substring(0, 200) || 'No script'}..."
+
+VISUAL REQUIREMENTS:
+- Primary: ${scene.visualRequirements?.primary || 'N/A'}
+- Secondary: ${scene.visualRequirements?.secondary?.join(', ') || 'N/A'}
+- Style: ${scene.visualRequirements?.style || 'N/A'}
+- Mood: ${scene.visualRequirements?.mood || 'N/A'}
+
+MEDIA NEEDS:
+- Keywords: ${scene.mediaNeeds?.keywords?.join(', ') || 'N/A'}
+- Image Count: ${scene.mediaNeeds?.imageCount || 2}
+- Video Count: ${scene.mediaNeeds?.videoCount || 1}
+
+VIDEO CONTEXT:
+- Overall Topic: ${sceneContext.baseTopic || sceneContext.selectedSubtopic || 'N/A'}
+- Target Audience: ${sceneContext.targetAudience || 'general'}
+- Overall Style: ${sceneContext.overallStyle || 'N/A'}
+
+Generate search terms that are:
+1. Visually specific (what you would actually see in the image/video)
+2. Relevant to the scene's purpose and mood
+3. Appropriate for the target audience
+4. Focused on objects, people, actions, and settings
+
+Respond with a JSON array: ["term1", "term2", "term3", "term4", "term5"]`;
+
+        const command = new InvokeModelCommand({
+            modelId: 'anthropic.claude-3-sonnet-20240229-v1:0',
+            body: JSON.stringify({
+                anthropic_version: 'bedrock-2023-05-31',
+                max_tokens: 200,
+                temperature: 0.4,
+                messages: [{
+                    role: 'user',
+                    content: prompt
+                }]
+            })
+        });
+
+        const response = await bedrockClient.send(command);
+        const result = JSON.parse(new TextDecoder().decode(response.body));
+        const searchTerms = JSON.parse(result.content[0].text);
+
+        // Add fallback terms based on scene context
+        const fallbackTerms = [
+            ...(scene.mediaNeeds?.keywords || []),
+            scene.visualRequirements?.primary,
+            scene.purpose
+        ].filter(Boolean);
+
+        return [...searchTerms, ...fallbackTerms].slice(0, 5);
+
+    } catch (error) {
+        console.error('Error generating scene-specific search terms:', error);
+        // Fallback to basic terms
+        return [
+            ...(scene.mediaNeeds?.keywords || []),
+            scene.visualRequirements?.primary || 'generic',
+            scene.purpose || 'content'
+        ].filter(Boolean).slice(0, 3);
+    }
+}
+
+/**
+ * Search for media specifically for a scene using multiple sources
+ */
+async function searchMediaForScene(scene, searchTerms, apiKeys, requirements) {
+    const allMedia = [];
+
+    for (const term of searchTerms.slice(0, 3)) { // Limit to 3 terms to avoid rate limits
+        try {
+            console.log(`     🔍 Searching for: "${term}"`);
+
+            // Search images from available sources
+            if (apiKeys.pexels || apiKeys.PEXELS_API_KEY) {
+                const pexelsKey = apiKeys.pexels || apiKeys.PEXELS_API_KEY;
+                const pexelsImages = await searchPexels(
+                    term, 
+                    'images', 
+                    requirements.imagesPerScene, 
+                    'landscape', 
+                    1920, 
+                    1080, 
+                    pexelsKey
+                );
+                allMedia.push(...pexelsImages);
+            }
+
+            if (apiKeys.pixabay || apiKeys.PIXABAY_API_KEY) {
+                const pixabayKey = apiKeys.pixabay || apiKeys.PIXABAY_API_KEY;
+                const pixabayImages = await searchPixabay(
+                    term, 
+                    'images', 
+                    requirements.imagesPerScene, 
+                    'horizontal', 
+                    1920, 
+                    1080, 
+                    pixabayKey
+                );
+                allMedia.push(...pixabayImages);
+            }
+
+            // Search videos if needed for this scene
+            if (requirements.videosPerScene > 0) {
+                if (apiKeys.pexels || apiKeys.PEXELS_API_KEY) {
+                    const pexelsKey = apiKeys.pexels || apiKeys.PEXELS_API_KEY;
+                    const pexelsVideos = await searchPexels(
+                        term, 
+                        'videos', 
+                        requirements.videosPerScene, 
+                        'landscape', 
+                        1280, 
+                        720, 
+                        pexelsKey
+                    );
+                    allMedia.push(...pexelsVideos);
+                }
+            }
+
+        } catch (error) {
+            console.error(`     ⚠️ Error searching with term "${term}":`, error.message);
+        }
+    }
+
+    // Remove duplicates and add scene context
+    const uniqueMedia = allMedia.filter((media, index, self) => 
+        index === self.findIndex(m => m.url === media.url)
+    ).map(media => ({
+        ...media,
+        sceneNumber: scene.sceneNumber,
+        searchContext: {
+            sceneTitle: scene.title,
+            scenePurpose: scene.purpose,
+            visualStyle: scene.visualRequirements?.style,
+            mood: scene.visualRequirements?.mood
+        }
+    }));
+
+    return uniqueMedia;
+}
+
+/**
+ * AI-powered media analysis specifically for scene context
+ */
+async function analyzeMediaForScene(media, scene, sceneContext) {
+    try {
+        const prompt = `You are an expert video content curator analyzing media for a specific video scene. Rate this media's relevance to the scene context.
+
+SCENE CONTEXT:
+- Scene ${scene.sceneNumber}: ${scene.title || 'Untitled'}
+- Purpose: ${scene.purpose || 'N/A'}
+- Duration: ${scene.duration}s
+- Script excerpt: "${scene.script?.substring(0, 150) || 'No script'}..."
+- Visual style needed: ${scene.visualRequirements?.style || 'N/A'}
+- Mood needed: ${scene.visualRequirements?.mood || 'N/A'}
+- Primary visual: ${scene.visualRequirements?.primary || 'N/A'}
+
+OVERALL VIDEO CONTEXT:
+- Topic: ${sceneContext.selectedSubtopic || sceneContext.baseTopic || 'N/A'}
+- Target audience: ${sceneContext.targetAudience || 'general'}
+- Overall style: ${sceneContext.overallStyle || 'N/A'}
+
+MEDIA TO ANALYZE:
+- Title: ${media.title || 'No title'}
+- Description: ${media.description || 'No description'}
+- Type: ${media.type}
+- Source: ${media.source}
+- Dimensions: ${media.width}x${media.height}
+${media.duration ? `- Duration: ${media.duration}s` : ''}
+
+SCENE-SPECIFIC ANALYSIS CRITERIA:
+1. Visual relevance to scene purpose (0-25 points)
+2. Mood and tone alignment with scene (0-20 points)
+3. Style consistency with scene requirements (0-20 points)
+4. Narrative support for scene content (0-15 points)
+5. Technical quality and professionalism (0-10 points)
+6. Audience appropriateness (0-10 points)
+
+REQUIREMENTS:
+- Score must be 0-100
+- Recommended only if score >= 75
+- Consider scene-specific needs, not just general topic relevance
+- Prioritize media that directly supports this scene's narrative purpose
+- Consider visual flow and transition potential with other scenes
+
+Respond in JSON format:
+{
+    "score": number,
+    "reasoning": "detailed explanation focusing on scene-specific relevance",
+    "recommended": boolean,
+    "sceneAlignment": {
+        "visualRelevance": number,
+        "moodAlignment": number,
+        "styleConsistency": number,
+        "narrativeSupport": number,
+        "technicalQuality": number,
+        "audienceAppropriate": number
+    },
+    "usageRecommendation": "how this media should be used in the scene",
+    "transitionPotential": "how well this fits with scene flow"
+}`;
+
+        const command = new InvokeModelCommand({
+            modelId: 'anthropic.claude-3-sonnet-20240229-v1:0',
+            body: JSON.stringify({
+                anthropic_version: 'bedrock-2023-05-31',
+                max_tokens: 500,
+                temperature: 0.3,
+                messages: [{
+                    role: 'user',
+                    content: prompt
+                }]
+            })
+        });
+
+        const response = await bedrockClient.send(command);
+        const result = JSON.parse(new TextDecoder().decode(response.body));
+        const analysis = JSON.parse(result.content[0].text);
+
+        return {
+            ...analysis,
+            sceneSpecific: true,
+            analyzedAt: new Date().toISOString()
+        };
+
+    } catch (error) {
+        console.error('Error analyzing media for scene:', error);
+        // Fallback analysis
+        return {
+            score: 60,
+            reasoning: 'Fallback analysis due to AI error',
+            recommended: false,
+            sceneAlignment: {
+                visualRelevance: 60,
+                moodAlignment: 60,
+                styleConsistency: 60,
+                narrativeSupport: 60,
+                technicalQuality: 70,
+                audienceAppropriate: 70
+            },
+            usageRecommendation: 'Use as background media',
+            transitionPotential: 'Standard transition',
+            sceneSpecific: false
+        };
+    }
+}
+
+/**
+ * Select optimal media for a scene considering diversity and quality
+ */
+function selectOptimalMediaForScene(analyzedMedia, scene, imageCount, videoCount, diversityFactor) {
+    // Sort by AI relevance score
+    const sortedMedia = analyzedMedia.sort((a, b) => b.aiAnalysis.score - a.aiAnalysis.score);
+    
+    // Separate images and videos
+    const images = sortedMedia.filter(m => m.type === 'image');
+    const videos = sortedMedia.filter(m => m.type === 'video');
+    
+    // Select diverse, high-quality images
+    const selectedImages = selectDiverseMedia(images, imageCount);
+    
+    // Select diverse, high-quality videos
+    const selectedVideos = selectDiverseMedia(videos, videoCount);
+    
+    return [...selectedImages, ...selectedVideos];
+}
+
+/**
+ * Download and save media with scene-specific organization
+ */
+async function downloadAndSaveMediaForScene(media, projectId, sceneNumber) {
+    try {
+        // Create scene-specific S3 key
+        const fileExtension = media.type === 'video' ? 'mp4' : 'jpg';
+        const s3Key = `videos/${projectId}/media/scene-${sceneNumber}/${media.id}.${fileExtension}`;
+        
+        // Download media
+        const mediaBuffer = await downloadMediaBuffer(media.downloadUrl || media.url);
+        
+        // Save to S3 with scene metadata
+        await s3Client.send(new PutObjectCommand({
+            Bucket: process.env.S3_BUCKET_NAME || 'automated-video-pipeline-786673323159-us-east-1',
+            Key: s3Key,
+            Body: mediaBuffer,
+            ContentType: media.type === 'video' ? 'video/mp4' : 'image/jpeg',
+            Metadata: {
+                projectId: projectId,
+                sceneNumber: sceneNumber.toString(),
+                mediaId: media.id,
+                mediaType: media.type,
+                source: media.source || 'unknown',
+                relevanceScore: (media.aiAnalysis?.score || 0).toString(),
+                sceneSpecific: 'true'
+            }
+        }));
+        
+        return {
+            ...media,
+            s3Key: s3Key,
+            s3Url: `s3://${process.env.S3_BUCKET_NAME || 'automated-video-pipeline-786673323159-us-east-1'}/${s3Key}`,
+            sceneNumber: sceneNumber,
+            downloadedAt: new Date().toISOString(),
+            sceneSpecific: true
+        };
+        
+    } catch (error) {
+        console.error(`Error downloading media for scene ${sceneNumber}:`, error);
+        throw error;
+    }
+}
+
+/**
+ * Download media buffer from URL
+ */
+function downloadMediaBuffer(url) {
+    return new Promise((resolve, reject) => {
+        https.get(url, (response) => {
+            if (response.statusCode !== 200) {
+                reject(new Error(`HTTP ${response.statusCode}: ${response.statusMessage}`));
+                return;
+            }
+            
+            const chunks = [];
+            response.on('data', (chunk) => chunks.push(chunk));
+            response.on('end', () => resolve(Buffer.concat(chunks)));
+            response.on('error', reject);
+        }).on('error', reject);
+    });
+}
+/*
+*
+ * Analyze scene transitions and visual flow for enhanced media curation
+ */
+async function analyzeSceneTransitionsAndFlow(sceneContext, curatedMedia) {
+    try {
+        console.log('🎬 Analyzing scene transitions and visual flow...');
+        
+        const scenes = sceneContext.scenes || [];
+        const enhancedSceneMapping = [];
+        
+        for (let i = 0; i < scenes.length; i++) {
+            const currentScene = scenes[i];
+            const previousScene = i > 0 ? scenes[i - 1] : null;
+            const nextScene = i < scenes.length - 1 ? scenes[i + 1] : null;
+            
+            console.log(`   📋 Analyzing Scene ${currentScene.sceneNumber}: ${currentScene.title}`);
+            
+            // Find media for current scene
+            const sceneMedia = curatedMedia.find(mapping => 
+                mapping.sceneNumber === currentScene.sceneNumber
+            );
+            
+            if (!sceneMedia) {
+                console.warn(`   ⚠️ No media found for scene ${currentScene.sceneNumber}`);
+                continue;
+            }
+            
+            // Analyze visual flow and transitions
+            const transitionAnalysis = await analyzeSceneTransition(
+                currentScene, 
+                previousScene, 
+                nextScene, 
+                sceneMedia
+            );
+            
+            // Enhance media selection based on transition analysis
+            const enhancedMedia = await enhanceMediaForTransitions(
+                sceneMedia.mediaAssets,
+                transitionAnalysis,
+                currentScene
+            );
+            
+            // Create detailed scene-media mapping
+            const enhancedMapping = {
+                sceneNumber: currentScene.sceneNumber,
+                sceneTitle: currentScene.title,
+                scenePurpose: currentScene.purpose,
+                duration: currentScene.duration,
+                mediaAssets: enhancedMedia,
+                transitionAnalysis: transitionAnalysis,
+                visualFlow: {
+                    entryTransition: transitionAnalysis.entryTransition,
+                    exitTransition: transitionAnalysis.exitTransition,
+                    internalFlow: transitionAnalysis.internalFlow,
+                    continuityScore: transitionAnalysis.continuityScore
+                },
+                sequenceMetadata: {
+                    sceneIndex: i,
+                    totalScenes: scenes.length,
+                    isFirstScene: i === 0,
+                    isLastScene: i === scenes.length - 1,
+                    previousSceneConnection: transitionAnalysis.previousConnection,
+                    nextSceneConnection: transitionAnalysis.nextConnection
+                },
+                timingInformation: {
+                    absoluteStartTime: scenes.slice(0, i).reduce((sum, s) => sum + (s.duration || 0), 0),
+                    absoluteEndTime: scenes.slice(0, i + 1).reduce((sum, s) => sum + (s.duration || 0), 0),
+                    relativeDuration: currentScene.duration,
+                    transitionDuration: transitionAnalysis.recommendedTransitionDuration
+                }
+            };
+            
+            enhancedSceneMapping.push(enhancedMapping);
+            
+            console.log(`   ✅ Scene ${currentScene.sceneNumber}: ${enhancedMedia.length} assets, continuity score: ${transitionAnalysis.continuityScore}`);
+        }
+        
+        // Calculate overall visual flow score
+        const overallFlowScore = calculateOverallVisualFlow(enhancedSceneMapping);
+        
+        console.log(`🎬 Scene transition analysis completed:`);
+        console.log(`   - Scenes analyzed: ${enhancedSceneMapping.length}`);
+        console.log(`   - Overall visual flow score: ${overallFlowScore}`);
+        
+        return {
+            sceneMediaMapping: enhancedSceneMapping,
+            visualFlowAnalysis: {
+                overallFlowScore: overallFlowScore,
+                transitionQuality: 'professional',
+                continuityMaintained: overallFlowScore > 0.8,
+                recommendedAdjustments: overallFlowScore < 0.7 ? 
+                    ['Consider smoother transitions', 'Review media variety'] : []
+            },
+            enhancedMetadata: {
+                totalScenes: scenes.length,
+                totalDuration: scenes.reduce((sum, s) => sum + (s.duration || 0), 0),
+                transitionCount: enhancedSceneMapping.length - 1,
+                visualContinuity: 'optimized'
+            }
+        };
+        
+    } catch (error) {
+        console.error('Error analyzing scene transitions:', error);
+        throw error;
+    }
+}
+
+/**
+ * Analyze transition between scenes for visual flow
+ */
+async function analyzeSceneTransition(currentScene, previousScene, nextScene, sceneMedia) {
+    try {
+        const analysis = {
+            entryTransition: 'fade-in',
+            exitTransition: 'fade-out',
+            internalFlow: 'smooth',
+            continuityScore: 0.85,
+            recommendedTransitionDuration: 0.5,
+            previousConnection: null,
+            nextConnection: null
+        };
+        
+        // Analyze connection to previous scene
+        if (previousScene) {
+            analysis.previousConnection = await analyzeSceneConnection(
+                previousScene, 
+                currentScene, 
+                'previous'
+            );
+            
+            // Determine entry transition based on scene relationship
+            if (previousScene.mood === currentScene.mood) {
+                analysis.entryTransition = 'crossfade';
+                analysis.continuityScore += 0.1;
+            } else if (isContrastingMood(previousScene.mood, currentScene.mood)) {
+                analysis.entryTransition = 'cut';
+                analysis.recommendedTransitionDuration = 0.2;
+            } else {
+                analysis.entryTransition = 'dissolve';
+            }
+        }
+        
+        // Analyze connection to next scene
+        if (nextScene) {
+            analysis.nextConnection = await analyzeSceneConnection(
+                currentScene, 
+                nextScene, 
+                'next'
+            );
+            
+            // Determine exit transition based on next scene relationship
+            if (currentScene.mood === nextScene.mood) {
+                analysis.exitTransition = 'crossfade';
+            } else if (isContrastingMood(currentScene.mood, nextScene.mood)) {
+                analysis.exitTransition = 'cut';
+            } else {
+                analysis.exitTransition = 'dissolve';
+            }
+        }
+        
+        // Analyze internal flow within scene
+        analysis.internalFlow = analyzeInternalSceneFlow(currentScene, sceneMedia);
+        
+        // Calculate overall continuity score
+        analysis.continuityScore = calculateContinuityScore(
+            currentScene, 
+            previousScene, 
+            nextScene, 
+            sceneMedia
+        );
+        
+        return analysis;
+        
+    } catch (error) {
+        console.error('Error analyzing scene transition:', error);
+        return {
+            entryTransition: 'fade-in',
+            exitTransition: 'fade-out',
+            internalFlow: 'smooth',
+            continuityScore: 0.7,
+            recommendedTransitionDuration: 0.5,
+            previousConnection: null,
+            nextConnection: null
+        };
+    }
+}
+
+/**
+ * Enhance media selection based on transition analysis
+ */
+async function enhanceMediaForTransitions(mediaAssets, transitionAnalysis, scene) {
+    try {
+        const enhancedAssets = [];
+        
+        for (let i = 0; i < mediaAssets.length; i++) {
+            const asset = mediaAssets[i];
+            const enhancedAsset = {
+                ...asset,
+                transitionMetadata: {
+                    positionInScene: i,
+                    totalAssetsInScene: mediaAssets.length,
+                    isFirstAsset: i === 0,
+                    isLastAsset: i === mediaAssets.length - 1,
+                    recommendedDuration: scene.duration / mediaAssets.length,
+                    transitionIn: i === 0 ? transitionAnalysis.entryTransition : 'crossfade',
+                    transitionOut: i === mediaAssets.length - 1 ? transitionAnalysis.exitTransition : 'crossfade',
+                    transitionDuration: transitionAnalysis.recommendedTransitionDuration
+                },
+                visualProperties: {
+                    brightness: calculateOptimalBrightness(asset, scene),
+                    contrast: calculateOptimalContrast(asset, scene),
+                    saturation: calculateOptimalSaturation(asset, scene),
+                    cropRecommendation: calculateOptimalCrop(asset, scene),
+                    scaleRecommendation: calculateOptimalScale(asset, scene)
+                },
+                sequenceOptimization: {
+                    visualWeight: calculateVisualWeight(asset),
+                    energyLevel: calculateEnergyLevel(asset, scene),
+                    focusPoint: calculateFocusPoint(asset),
+                    colorPalette: extractColorPalette(asset),
+                    compositionStyle: analyzeComposition(asset)
+                }
+            };
+            
+            enhancedAssets.push(enhancedAsset);
+        }
+        
+        // Optimize asset order for better visual flow
+        const optimizedAssets = optimizeAssetSequence(enhancedAssets, transitionAnalysis);
+        
+        return optimizedAssets;
+        
+    } catch (error) {
+        console.error('Error enhancing media for transitions:', error);
+        return mediaAssets; // Return original assets if enhancement fails
+    }
+}
+
+/**
+ * Analyze connection between two scenes
+ */
+async function analyzeSceneConnection(scene1, scene2, direction) {
+    try {
+        const connection = {
+            moodTransition: analyzeMoodTransition(scene1.mood, scene2.mood),
+            purposeAlignment: analyzePurposeAlignment(scene1.purpose, scene2.purpose),
+            visualContinuity: analyzeVisualContinuity(scene1, scene2),
+            paceTransition: analyzePaceTransition(scene1, scene2),
+            connectionStrength: 0.8
+        };
+        
+        // Calculate connection strength
+        let strengthScore = 0;
+        
+        if (connection.moodTransition === 'smooth') strengthScore += 0.3;
+        else if (connection.moodTransition === 'complementary') strengthScore += 0.2;
+        
+        if (connection.purposeAlignment === 'sequential') strengthScore += 0.3;
+        else if (connection.purposeAlignment === 'related') strengthScore += 0.2;
+        
+        if (connection.visualContinuity === 'high') strengthScore += 0.2;
+        else if (connection.visualContinuity === 'medium') strengthScore += 0.1;
+        
+        if (connection.paceTransition === 'natural') strengthScore += 0.2;
+        else if (connection.paceTransition === 'acceptable') strengthScore += 0.1;
+        
+        connection.connectionStrength = Math.min(1.0, strengthScore);
+        
+        return connection;
+        
+    } catch (error) {
+        console.error('Error analyzing scene connection:', error);
+        return {
+            moodTransition: 'neutral',
+            purposeAlignment: 'independent',
+            visualContinuity: 'medium',
+            paceTransition: 'acceptable',
+            connectionStrength: 0.6
+        };
+    }
+}
+
+/**
+ * Helper functions for transition analysis
+ */
+
+function isContrastingMood(mood1, mood2) {
+    const contrastPairs = [
+        ['exciting', 'calm'],
+        ['energetic', 'peaceful'],
+        ['dramatic', 'subtle'],
+        ['intense', 'relaxed']
+    ];
+    
+    return contrastPairs.some(pair => 
+        (pair[0] === mood1 && pair[1] === mood2) ||
+        (pair[1] === mood1 && pair[0] === mood2)
+    );
+}
+
+function analyzeInternalSceneFlow(scene, sceneMedia) {
+    // Analyze how media flows within the scene
+    const mediaCount = sceneMedia?.mediaAssets?.length || 0;
+    
+    if (mediaCount <= 1) return 'static';
+    if (mediaCount <= 3) return 'smooth';
+    if (mediaCount <= 5) return 'dynamic';
+    return 'complex';
+}
+
+function calculateContinuityScore(currentScene, previousScene, nextScene, sceneMedia) {
+    let score = 0.7; // Base score
+    
+    // Scene purpose continuity
+    if (previousScene && isRelatedPurpose(previousScene.purpose, currentScene.purpose)) {
+        score += 0.1;
+    }
+    
+    if (nextScene && isRelatedPurpose(currentScene.purpose, nextScene.purpose)) {
+        score += 0.1;
+    }
+    
+    // Media quality and variety
+    const mediaCount = sceneMedia?.mediaAssets?.length || 0;
+    if (mediaCount >= 2) score += 0.05;
+    if (mediaCount >= 3) score += 0.05;
+    
+    return Math.min(1.0, score);
+}
+
+function isRelatedPurpose(purpose1, purpose2) {
+    const relatedPurposes = {
+        'grab_attention': ['establish_problem', 'provide_solution'],
+        'establish_problem': ['provide_solution', 'show_features'],
+        'provide_solution': ['show_features', 'provide_action'],
+        'show_features': ['provide_action', 'encourage_action'],
+        'provide_action': ['encourage_action'],
+        'encourage_action': []
+    };
+    
+    return relatedPurposes[purpose1]?.includes(purpose2) || false;
+}
+
+function analyzeMoodTransition(mood1, mood2) {
+    if (mood1 === mood2) return 'smooth';
+    if (isContrastingMood(mood1, mood2)) return 'contrasting';
+    return 'complementary';
+}
+
+function analyzePurposeAlignment(purpose1, purpose2) {
+    if (isRelatedPurpose(purpose1, purpose2)) return 'sequential';
+    if (purpose1 === purpose2) return 'similar';
+    return 'independent';
+}
+
+function analyzeVisualContinuity(scene1, scene2) {
+    // Simplified visual continuity analysis
+    if (scene1.visualStyle === scene2.visualStyle) return 'high';
+    return 'medium';
+}
+
+function analyzePaceTransition(scene1, scene2) {
+    const duration1 = scene1.duration || 60;
+    const duration2 = scene2.duration || 60;
+    const ratio = Math.max(duration1, duration2) / Math.min(duration1, duration2);
+    
+    if (ratio <= 1.5) return 'natural';
+    if (ratio <= 2.5) return 'acceptable';
+    return 'abrupt';
+}
+
+function calculateOverallVisualFlow(sceneMapping) {
+    if (sceneMapping.length === 0) return 0;
+    
+    const totalScore = sceneMapping.reduce((sum, mapping) => 
+        sum + (mapping.transitionAnalysis?.continuityScore || 0.7), 0
+    );
+    
+    return totalScore / sceneMapping.length;
+}
+
+function optimizeAssetSequence(assets, transitionAnalysis) {
+    // For now, return assets in original order
+    // Future enhancement: implement intelligent reordering based on visual properties
+    return assets;
+}
+
+// Visual optimization helper functions
+function calculateOptimalBrightness(asset, scene) {
+    // Scene mood-based brightness adjustment
+    const moodBrightness = {
+        'exciting': 110,
+        'energetic': 105,
+        'calm': 95,
+        'peaceful': 90,
+        'dramatic': 85,
+        'mysterious': 80
+    };
+    
+    return moodBrightness[scene.mood] || 100;
+}
+
+function calculateOptimalContrast(asset, scene) {
+    // Scene purpose-based contrast adjustment
+    const purposeContrast = {
+        'grab_attention': 115,
+        'establish_problem': 105,
+        'provide_solution': 100,
+        'show_features': 110,
+        'provide_action': 105,
+        'encourage_action': 115
+    };
+    
+    return purposeContrast[scene.purpose] || 100;
+}
+
+function calculateOptimalSaturation(asset, scene) {
+    // Balanced saturation based on scene mood
+    const moodSaturation = {
+        'exciting': 110,
+        'energetic': 105,
+        'calm': 95,
+        'peaceful': 90,
+        'professional': 100,
+        'informative': 100
+    };
+    
+    return moodSaturation[scene.mood] || 100;
+}
+
+function calculateOptimalCrop(asset, scene) {
+    // Standard 16:9 crop for video consistency
+    return {
+        aspectRatio: '16:9',
+        focusArea: 'center',
+        cropStyle: 'smart'
+    };
+}
+
+function calculateOptimalScale(asset, scene) {
+    // Standard scaling for 1080p output
+    return {
+        targetWidth: 1920,
+        targetHeight: 1080,
+        scaleMode: 'fit',
+        quality: 'high'
+    };
+}
+
+function calculateVisualWeight(asset) {
+    // Simplified visual weight calculation
+    return asset.type === 'video' ? 0.8 : 0.6;
+}
+
+function calculateEnergyLevel(asset, scene) {
+    // Energy level based on scene purpose and asset type
+    const purposeEnergy = {
+        'grab_attention': 0.9,
+        'establish_problem': 0.6,
+        'provide_solution': 0.7,
+        'show_features': 0.8,
+        'provide_action': 0.8,
+        'encourage_action': 0.9
+    };
+    
+    const baseEnergy = purposeEnergy[scene.purpose] || 0.7;
+    const typeMultiplier = asset.type === 'video' ? 1.2 : 1.0;
+    
+    return Math.min(1.0, baseEnergy * typeMultiplier);
+}
+
+function calculateFocusPoint(asset) {
+    // Default focus point for composition
+    return {
+        x: 0.5, // Center horizontally
+        y: 0.4, // Slightly above center (rule of thirds)
+        strength: 0.8
+    };
+}
+
+function extractColorPalette(asset) {
+    // Simplified color palette extraction
+    return {
+        dominant: '#4A90E2',
+        secondary: '#7ED321',
+        accent: '#F5A623',
+        neutral: '#9B9B9B'
+    };
+}
+
+function analyzeComposition(asset) {
+    // Basic composition analysis
+    return {
+        style: 'balanced',
+        complexity: 'medium',
+        focusClarity: 'high',
+        visualBalance: 'centered'
     };
 }

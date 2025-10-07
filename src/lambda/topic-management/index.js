@@ -7,6 +7,8 @@ import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
 import { DynamoDBDocumentClient, GetCommand, ScanCommand, PutCommand, DeleteCommand } from '@aws-sdk/lib-dynamodb';
 import { BedrockRuntimeClient, InvokeModelCommand } from '@aws-sdk/client-bedrock-runtime';
 import { v4 as uuidv4 } from 'uuid';
+// Import context management functions
+import { storeTopicContext, createProject } from '/opt/nodejs/context-integration.js';
 // TextDecoder is available globally in Node.js 20.x
 
 // Initialize AWS clients
@@ -327,16 +329,33 @@ const generateEnhancedTopicContext = async (requestBody) => {
       sheetsTopics
     });
 
-    // Step 4: Store the generated topic to prevent future repetition
+    // Step 4: Create project and store context for AI coordination
+    const projectResult = await createProject(finalBaseTopic, {
+      targetAudience,
+      contentType,
+      videoDuration,
+      videoStyle
+    });
+    
+    const projectId = projectResult.projectId;
+    console.log(`📁 Created project: ${projectId}`);
+    
+    // Store topic context for Script Generator AI
+    await storeTopicContext(projectId, topicContext);
+    console.log(`💾 Stored topic context for AI coordination`);
+
+    // Step 5: Store the generated topic to prevent future repetition
     await storeGeneratedTopic(finalBaseTopic, topicContext);
 
     return createResponse(200, {
       success: true,
+      projectId: projectId,
       baseTopic: finalBaseTopic,
       topicContext,
       sheetsTopicsCount: sheetsTopics.length,
       recentSubtopicsAvoided: recentSubtopics.length,
-      generatedAt: new Date().toISOString()
+      generatedAt: new Date().toISOString(),
+      contextStored: true
     });
 
   } catch (error) {

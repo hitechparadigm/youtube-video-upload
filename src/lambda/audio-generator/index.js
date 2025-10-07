@@ -8,6 +8,8 @@ const { S3Client, PutObjectCommand, GetObjectCommand } = require('@aws-sdk/clien
 const { DynamoDBClient } = require('@aws-sdk/client-dynamodb');
 const { DynamoDBDocumentClient, PutCommand, GetCommand, UpdateCommand, ScanCommand } = require('@aws-sdk/lib-dynamodb');
 const { initializeConfig, getConfigManager } = require('/opt/nodejs/config-manager');
+// Import context management functions
+const { getSceneContext, updateProjectSummary } = require('/opt/nodejs/context-integration');
 
 // Global configuration
 let config = null;
@@ -22,6 +24,29 @@ let docClient = null;
 let SCRIPTS_TABLE = null;
 let AUDIO_TABLE = null;
 let S3_BUCKET = null;
+
+// Rate limiting configuration for Amazon Polly
+const POLLY_RATE_LIMITS = {
+    standard: { tps: 100, maxChars: 3000 },
+    neural: { tps: 10, maxChars: 3000 },
+    generative: { tps: 5, maxChars: 3000 }
+};
+
+// Rate limiting state with proper queue management
+let rateLimitState = {
+    requests: [],
+    lastCleanup: Date.now(),
+    queues: {
+        generative: [],
+        neural: [],
+        standard: []
+    },
+    processing: {
+        generative: false,
+        neural: false,
+        standard: false
+    }
+};
 
 /**
  * Initialize configuration and AWS clients
@@ -79,6 +104,8 @@ exports.handler = async (event) => {
         // Route requests
         if (httpMethod === 'POST' && path === '/audio/generate') {
             return await generateAudio(requestBody);
+        } else if (httpMethod === 'POST' && path === '/audio/generate-from-project') {
+            return await generateAudioFromProject(requestBody);
         } else if (httpMethod === 'POST' && path === '/audio/generate-from-script') {
             return await generateAudioFromScript(requestBody);
         } else if (httpMethod === 'GET' && path === '/audio/voices') {
@@ -92,6 +119,8 @@ exports.handler = async (event) => {
             return await generateAudioPreview(requestBody);
         } else if (httpMethod === 'POST' && path === '/audio/validate') {
             return await validateAudio(requestBody);
+        } else if (httpMethod === 'GET' && path === '/audio/rate-limit-status') {
+            return await getRateLimitStatus();
         } else {
             return createResponse(404, { error: 'Endpoint not found' });
         }
@@ -168,13 +197,183 @@ async function generateAudio(requestBody) {
             duration: audioData.estimatedDuration,
             fileSize: audioData.audioBuffer?.length || 0,
             voiceUsed: voiceId,
-            engine: engine
+            engine: engine,
+            rateLimiting: {
+                wasRateLimited: audioData.rateLimited || false,
+                chunkCount: audioData.chunkCount || 1,
+                engineLimits: POLLY_RATE_LIMITS[engine] || POLLY_RATE_LIMITS.standard
+            }
         });
         
     } catch (error) {
         console.error('Error generating audio:', error);
         return createResponse(500, { 
             error: 'Failed to generate audio',
+            message: error.message 
+        });
+    }
+}
+
+/**
+ * Generate audio from project using stored scene context
+ */
+async function generateAudioFromProject(requestBody) {
+    const { 
+        projectId,
+        voiceId = 'Ruth',
+        engine = 'generative',
+        audioOptions = {},
+        generateByScene = true 
+    } = requestBody;
+    
+    try {
+        if (!projectId) {
+            return createResponse(400, { error: 'projectId is required' });
+        }
+        
+        console.log(`🎙️ Generating audio for project: ${projectId}`);
+        
+        // Retrieve scene context from Context Manager
+        console.log('🔍 Retrieving scene context from Context Manager...');
+        const sceneContext = await getSceneContext(projectId);
+        
+        console.log('✅ Retrieved scene context:');
+        console.log(`   - Available scenes: ${sceneContext.scenes?.length || 0}`);
+        console.log(`   - Total duration: ${sceneContext.totalDuration || 0}s`);
+        console.log(`   - Selected subtopic: ${sceneContext.selectedSubtopic || 'N/A'}`);
+        
+        if (!sceneContext.scenes || sceneContext.scenes.length === 0) {
+            return createResponse(400, { error: 'No scenes found in scene context' });
+        }
+        
+        let audioResults = [];
+        
+        if (generateByScene) {
+            // Generate audio for each scene separately using scene context
+            console.log(`🎵 Generating audio for ${sceneContext.scenes.length} scenes with context awareness...`);
+            
+            for (const scene of sceneContext.scenes) {
+                console.log(`   Processing Scene ${scene.sceneNumber}: ${scene.title || 'Untitled'}`);
+                
+                const sceneAudio = await generateAudioWithPolly({
+                    text: scene.script,
+                    voiceId,
+                    engine,
+                    outputFormat: 'mp3',
+                    sampleRate: '24000',
+                    includeTimestamps: true,
+                    sceneInfo: {
+                        sceneNumber: scene.sceneNumber,
+                        title: scene.title,
+                        startTime: scene.startTime,
+                        endTime: scene.endTime,
+                        purpose: scene.purpose,
+                        tone: scene.tone || scene.visualRequirements?.mood
+                    },
+                    audioOptions: {
+                        ...audioOptions,
+                        // Adjust audio based on scene context
+                        speakingRate: scene.tone === 'exciting' ? 'fast' : 'medium',
+                        emphasis: scene.purpose === 'hook' ? 'strong' : 'moderate'
+                    }
+                });
+                
+                sceneAudio.sceneNumber = scene.sceneNumber;
+                sceneAudio.sceneTitle = scene.title;
+                sceneAudio.projectId = projectId;
+                sceneAudio.contextAware = true;
+                
+                const storedSceneAudio = await storeAudioData(sceneAudio, projectId);
+                audioResults.push(storedSceneAudio);
+                
+                console.log(`   ✅ Scene ${scene.sceneNumber} audio: ${storedSceneAudio.estimatedDuration}s`);
+            }
+            
+            // Create a master audio record that references all scenes
+            const masterAudio = {
+                audioId: `audio-${projectId}-master-${Date.now()}`,
+                projectId: projectId,
+                type: 'master',
+                sceneAudios: audioResults.map(audio => ({
+                    audioId: audio.audioId,
+                    sceneNumber: audio.sceneNumber,
+                    sceneTitle: audio.sceneTitle,
+                    duration: audio.estimatedDuration,
+                    s3Key: audio.s3Key
+                })),
+                totalDuration: audioResults.reduce((sum, audio) => sum + (audio.estimatedDuration || 0), 0),
+                voiceId,
+                engine,
+                createdAt: new Date().toISOString(),
+                generatedBy: 'project-context',
+                contextUsage: {
+                    usedSceneContext: true,
+                    sceneCount: sceneContext.scenes.length,
+                    selectedSubtopic: sceneContext.selectedSubtopic,
+                    contextAwareGeneration: true
+                }
+            };
+            
+            const storedMasterAudio = await storeAudioData(masterAudio, projectId);
+            
+            // Update project summary
+            await updateProjectSummary(projectId, 'audio', {
+                masterAudioId: storedMasterAudio.audioId,
+                sceneAudioCount: audioResults.length,
+                totalDuration: masterAudio.totalDuration,
+                voiceId: voiceId,
+                engine: engine,
+                contextAware: true
+            });
+            
+            return createResponse(200, {
+                message: 'Context-aware audio generated successfully for all scenes',
+                projectId: projectId,
+                masterAudio: storedMasterAudio,
+                sceneAudios: audioResults,
+                totalScenes: audioResults.length,
+                totalDuration: masterAudio.totalDuration,
+                contextUsage: masterAudio.contextUsage,
+                readyForVideoAssembly: true
+            });
+            
+        } else {
+            // Generate audio for entire script as one file
+            const fullScript = sceneContext.scenes.map(scene => scene.script).join('\n\n');
+            
+            const audioRequest = {
+                text: fullScript,
+                voiceId,
+                engine,
+                outputFormat: 'mp3',
+                sampleRate: '24000',
+                includeTimestamps: true,
+                projectId: projectId,
+                audioOptions
+            };
+            
+            const result = await generateAudio(audioRequest);
+            
+            // Update project summary
+            if (result.statusCode === 200) {
+                const responseBody = JSON.parse(result.body);
+                await updateProjectSummary(projectId, 'audio', {
+                    audioId: responseBody.audio.audioId,
+                    totalDuration: responseBody.duration,
+                    voiceId: voiceId,
+                    engine: engine,
+                    contextAware: false,
+                    generationType: 'single_file'
+                });
+            }
+            
+            return result;
+        }
+        
+    } catch (error) {
+        console.error('Error generating audio from project:', error);
+        return createResponse(500, { 
+            error: 'Failed to generate audio from project',
             message: error.message 
         });
     }
@@ -291,7 +490,160 @@ async function generateAudioFromScript(requestBody) {
 }
 
 /**
- * Generate audio using Amazon Polly with generative voices
+ * Smart rate limiting for Amazon Polly requests with proper queue management
+ */
+async function checkRateLimit(engine, textLength) {
+    const limits = POLLY_RATE_LIMITS[engine] || POLLY_RATE_LIMITS.standard;
+    
+    // Check character limit first
+    if (textLength > limits.maxChars) {
+        throw new Error(`Text too long for ${engine} engine: ${textLength} chars (max: ${limits.maxChars})`);
+    }
+    
+    // Return a promise that resolves when it's this request's turn
+    return new Promise((resolve) => {
+        const requestId = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+        
+        // Add to queue
+        rateLimitState.queues[engine].push({
+            id: requestId,
+            timestamp: Date.now(),
+            textLength,
+            resolve
+        });
+        
+        // Process queue if not already processing
+        if (!rateLimitState.processing[engine]) {
+            processRateLimitQueue(engine);
+        }
+    });
+}
+
+/**
+ * Process the rate limit queue for a specific engine
+ */
+async function processRateLimitQueue(engine) {
+    if (rateLimitState.processing[engine]) {
+        return; // Already processing
+    }
+    
+    rateLimitState.processing[engine] = true;
+    const limits = POLLY_RATE_LIMITS[engine] || POLLY_RATE_LIMITS.standard;
+    
+    try {
+        while (rateLimitState.queues[engine].length > 0) {
+            const now = Date.now();
+            
+            // Clean up old requests (older than 1 second)
+            if (now - rateLimitState.lastCleanup > 1000) {
+                rateLimitState.requests = rateLimitState.requests.filter(req => now - req.timestamp < 1000);
+                rateLimitState.lastCleanup = now;
+            }
+            
+            // Count recent requests for this engine
+            const recentRequests = rateLimitState.requests.filter(req => 
+                req.engine === engine && now - req.timestamp < 1000
+            );
+            
+            // Check if we can process the next request
+            if (recentRequests.length < limits.tps) {
+                // Process next request in queue
+                const nextRequest = rateLimitState.queues[engine].shift();
+                
+                // Record this request
+                rateLimitState.requests.push({
+                    engine,
+                    timestamp: now,
+                    textLength: nextRequest.textLength,
+                    requestId: nextRequest.id
+                });
+                
+                console.log(`📊 Rate limit status for ${engine}: ${recentRequests.length + 1}/${limits.tps} TPS`);
+                
+                // Resolve the request
+                nextRequest.resolve();
+                
+                // Small delay to prevent tight loops
+                await new Promise(resolve => setTimeout(resolve, 10));
+                
+            } else {
+                // Need to wait - calculate how long until we can send another request
+                const oldestRecentRequest = Math.min(...recentRequests.map(r => r.timestamp));
+                const waitTime = Math.max(100, 1000 - (now - oldestRecentRequest) + 50); // Add 50ms buffer
+                
+                console.log(`⏳ Rate limiting: waiting ${waitTime}ms for ${engine} engine (${recentRequests.length}/${limits.tps} TPS)`);
+                await new Promise(resolve => setTimeout(resolve, waitTime));
+            }
+        }
+    } finally {
+        rateLimitState.processing[engine] = false;
+    }
+}
+
+/**
+ * Split long text into chunks that respect Polly limits
+ */
+function splitTextForPolly(text, engine) {
+    const limits = POLLY_RATE_LIMITS[engine] || POLLY_RATE_LIMITS.standard;
+    const maxChars = limits.maxChars - 100; // Leave buffer for SSML tags
+    
+    if (text.length <= maxChars) {
+        return [text];
+    }
+    
+    const chunks = [];
+    let currentChunk = '';
+    
+    // Split by sentences to maintain natural breaks
+    const sentences = text.split(/(?<=[.!?])\s+/);
+    
+    for (const sentence of sentences) {
+        if (sentence.length > maxChars) {
+            // If single sentence is too long, split by words
+            if (currentChunk) {
+                chunks.push(currentChunk.trim());
+                currentChunk = '';
+            }
+            
+            const words = sentence.split(' ');
+            let wordChunk = '';
+            
+            for (const word of words) {
+                if ((wordChunk + ' ' + word).length > maxChars) {
+                    if (wordChunk) {
+                        chunks.push(wordChunk.trim());
+                        wordChunk = word;
+                    } else {
+                        // Single word too long - truncate
+                        chunks.push(word.substring(0, maxChars));
+                        wordChunk = word.substring(maxChars);
+                    }
+                } else {
+                    wordChunk += (wordChunk ? ' ' : '') + word;
+                }
+            }
+            
+            if (wordChunk) {
+                currentChunk = wordChunk;
+            }
+        } else if ((currentChunk + ' ' + sentence).length > maxChars) {
+            chunks.push(currentChunk.trim());
+            currentChunk = sentence;
+        } else {
+            currentChunk += (currentChunk ? ' ' : '') + sentence;
+        }
+    }
+    
+    if (currentChunk) {
+        chunks.push(currentChunk.trim());
+    }
+    
+    console.log(`📝 Split text into ${chunks.length} chunks for ${engine} engine`);
+    return chunks;
+}
+
+/**
+ * Generate audio using Amazon Polly with smart rate limiting
  */
 async function generateAudioWithPolly(params) {
     const {
@@ -304,6 +656,19 @@ async function generateAudioWithPolly(params) {
         sceneInfo,
         audioOptions
     } = params;
+    
+    console.log(`🎙️ Generating audio: ${text.length} chars with ${voiceId} (${engine})`);
+    
+    // Check rate limits before processing
+    await checkRateLimit(engine, text.length);
+    
+    // Split text into chunks if necessary
+    const textChunks = splitTextForPolly(text, engine);
+    
+    if (textChunks.length > 1) {
+        console.log(`📦 Processing ${textChunks.length} chunks due to length limits`);
+        return await generateAudioFromChunks(textChunks, params);
+    }
     
     // Prepare text - use plain text for generative voices, SSML for others
     let textToSpeak, textType;
@@ -400,6 +765,156 @@ async function generateAudioWithPolly(params) {
     };
     
     return audioData;
+}
+
+/**
+ * Generate audio from multiple text chunks and combine them
+ */
+async function generateAudioFromChunks(textChunks, originalParams) {
+    const audioChunks = [];
+    let totalDuration = 0;
+    
+    console.log(`🔄 Processing ${textChunks.length} text chunks with rate limiting...`);
+    
+    for (let i = 0; i < textChunks.length; i++) {
+        const chunk = textChunks[i];
+        console.log(`📝 Processing chunk ${i + 1}/${textChunks.length} (${chunk.length} chars)`);
+        
+        // Apply rate limiting between chunks
+        if (i > 0) {
+            const engine = originalParams.engine;
+            const limits = POLLY_RATE_LIMITS[engine] || POLLY_RATE_LIMITS.standard;
+            const delayMs = Math.ceil(1000 / limits.tps) + 50; // Add 50ms buffer
+            
+            console.log(`⏳ Rate limit delay: ${delayMs}ms between chunks`);
+            await new Promise(resolve => setTimeout(resolve, delayMs));
+        }
+        
+        // Generate audio for this chunk
+        const chunkParams = {
+            ...originalParams,
+            text: chunk
+        };
+        
+        // Recursive call for single chunk (won't split again)
+        const chunkAudio = await generateSingleAudioChunk(chunkParams);
+        audioChunks.push(chunkAudio);
+        totalDuration += chunkAudio.estimatedDuration || 0;
+    }
+    
+    // Combine audio chunks
+    const combinedAudio = await combineAudioChunks(audioChunks, originalParams);
+    combinedAudio.estimatedDuration = totalDuration;
+    combinedAudio.chunkCount = textChunks.length;
+    combinedAudio.rateLimited = true;
+    
+    console.log(`✅ Combined ${audioChunks.length} audio chunks (total: ${totalDuration}s)`);
+    return combinedAudio;
+}
+
+/**
+ * Generate audio for a single chunk (no further splitting)
+ */
+async function generateSingleAudioChunk(params) {
+    const {
+        text,
+        voiceId,
+        engine,
+        outputFormat,
+        sampleRate,
+        includeTimestamps,
+        sceneInfo,
+        audioOptions
+    } = params;
+    
+    // Prepare text - use plain text for generative voices, SSML for others
+    let textToSpeak, textType;
+    if (engine === 'generative') {
+        textToSpeak = text;
+        textType = 'text';
+    } else {
+        textToSpeak = createSSMLText(text, audioOptions);
+        textType = 'ssml';
+    }
+    
+    // Configure Polly parameters
+    const pollyParams = {
+        Text: textToSpeak,
+        TextType: textType,
+        VoiceId: voiceId,
+        Engine: engine,
+        OutputFormat: outputFormat,
+        SampleRate: sampleRate
+    };
+    
+    // Add engine-specific settings
+    if (engine === 'neural' || engine === 'generative') {
+        pollyParams.LanguageCode = audioOptions?.languageCode || 'en-US';
+    }
+    
+    if (engine === 'generative') {
+        if (audioOptions?.stability) {
+            pollyParams.Stability = audioOptions.stability;
+        }
+        if (audioOptions?.similarity) {
+            pollyParams.Similarity = audioOptions.similarity;
+        }
+    }
+    
+    console.log(`🎵 Synthesizing with Polly: ${voiceId} (${engine}) - ${text.length} chars`);
+    
+    // Generate the audio
+    const command = new SynthesizeSpeechCommand(pollyParams);
+    const response = await pollyClient.send(command);
+    
+    if (!response.AudioStream) {
+        throw new Error('No audio stream received from Polly');
+    }
+    
+    // Convert stream to buffer
+    const audioBuffer = await streamToBuffer(response.AudioStream);
+    const estimatedDuration = estimateAudioDuration(text, voiceId);
+    
+    return {
+        audioBuffer,
+        estimatedDuration,
+        text,
+        voiceId,
+        engine,
+        outputFormat,
+        fileSize: audioBuffer.length
+    };
+}
+
+/**
+ * Combine multiple audio chunks into a single audio file
+ */
+async function combineAudioChunks(audioChunks, originalParams) {
+    // For now, concatenate buffers (in production, use proper audio processing)
+    const combinedBuffer = Buffer.concat(audioChunks.map(chunk => chunk.audioBuffer));
+    
+    const combinedAudio = {
+        audioId: `audio-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+        text: audioChunks.map(chunk => chunk.text).join(' '),
+        voiceId: originalParams.voiceId,
+        engine: originalParams.engine,
+        outputFormat: originalParams.outputFormat,
+        sampleRate: originalParams.sampleRate,
+        audioBuffer: combinedBuffer,
+        estimatedDuration: audioChunks.reduce((sum, chunk) => sum + (chunk.estimatedDuration || 0), 0),
+        fileSize: combinedBuffer.length,
+        sceneInfo: originalParams.sceneInfo,
+        createdAt: new Date().toISOString(),
+        generatedBy: 'polly-chunked',
+        version: '1.0',
+        metadata: {
+            chunkCount: audioChunks.length,
+            rateLimited: true,
+            originalTextLength: audioChunks.map(chunk => chunk.text).join(' ').length
+        }
+    };
+    
+    return combinedAudio;
 }
 
 /**
@@ -1051,6 +1566,71 @@ async function streamToString(stream) {
         stream.on('error', reject);
         stream.on('end', () => resolve(Buffer.concat(chunks).toString('utf8')));
     });
+}
+
+/**
+ * Get current rate limiting status with queue information
+ */
+async function getRateLimitStatus() {
+    try {
+        const now = Date.now();
+        
+        // Clean up old requests
+        rateLimitState.requests = rateLimitState.requests.filter(req => now - req.timestamp < 1000);
+        
+        // Calculate current usage by engine
+        const usage = {};
+        Object.keys(POLLY_RATE_LIMITS).forEach(engine => {
+            const recentRequests = rateLimitState.requests.filter(req => req.engine === engine);
+            const queueLength = rateLimitState.queues[engine]?.length || 0;
+            const isProcessing = rateLimitState.processing[engine] || false;
+            
+            usage[engine] = {
+                currentTPS: recentRequests.length,
+                maxTPS: POLLY_RATE_LIMITS[engine].tps,
+                utilizationPercent: Math.round((recentRequests.length / POLLY_RATE_LIMITS[engine].tps) * 100),
+                maxChars: POLLY_RATE_LIMITS[engine].maxChars,
+                queueLength: queueLength,
+                isProcessing: isProcessing,
+                status: recentRequests.length >= POLLY_RATE_LIMITS[engine].tps * 0.8 ? 'throttling' : 'normal'
+            };
+        });
+        
+        return createResponse(200, {
+            rateLimiting: {
+                currentTime: now,
+                totalActiveRequests: rateLimitState.requests.length,
+                totalQueuedRequests: Object.values(rateLimitState.queues).reduce((sum, queue) => sum + queue.length, 0),
+                engineUsage: usage,
+                queueStatus: {
+                    generative: {
+                        queued: rateLimitState.queues.generative?.length || 0,
+                        processing: rateLimitState.processing.generative || false
+                    },
+                    neural: {
+                        queued: rateLimitState.queues.neural?.length || 0,
+                        processing: rateLimitState.processing.neural || false
+                    },
+                    standard: {
+                        queued: rateLimitState.queues.standard?.length || 0,
+                        processing: rateLimitState.processing.standard || false
+                    }
+                },
+                recommendations: {
+                    generative: 'Use for high-quality narration (5 TPS limit)',
+                    neural: 'Use for balanced quality/speed (10 TPS limit)', 
+                    standard: 'Use for high-volume processing (100 TPS limit)'
+                }
+            }
+        });
+        
+    } catch (error) {
+        console.error('Error getting rate limit status:', error);
+        return createResponse(500, { 
+            error: 'Failed to get rate limit status',
+            message: error.message 
+        });
+    }
 }
 
 /**

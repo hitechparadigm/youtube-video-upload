@@ -89,7 +89,22 @@ The Automated YouTube Video Pipeline is a comprehensive AWS-based solution that 
 9. WHEN processing video THEN the system SHALL ensure final duration matches the optimal duration determined by Topic Management AI
 10. IF video processing fails THEN the system SHALL retry with alternative media assets
 
-### Requirement 6: YouTube Publishing with Engagement-Focused SEO
+### Requirement 6: Professional Audio Production with Smart Rate Limiting
+
+**User Story:** As a content creator, I want the system to generate high-quality audio while respecting Amazon Polly rate limits so that audio production is reliable and cost-effective.
+
+#### Acceptance Criteria
+
+1. WHEN generating audio THEN the system SHALL implement smart rate limiting for Amazon Polly engines (generative: 5 TPS, neural: 10 TPS, standard: 100 TPS)
+2. WHEN text exceeds character limits THEN the system SHALL intelligently split text into chunks at natural sentence breaks while maintaining narrative flow
+3. WHEN processing multiple audio requests THEN the system SHALL implement throttling to stay within 80% of rate limits to prevent throttling errors
+4. WHEN using generative voices THEN the system SHALL prioritize quality over speed and implement appropriate delays between requests
+5. WHEN combining audio chunks THEN the system SHALL maintain audio quality and seamless transitions between segments
+6. WHEN rate limits are approached THEN the system SHALL automatically delay requests and provide status information
+7. WHEN audio generation fails due to rate limiting THEN the system SHALL implement exponential backoff and retry logic
+8. WHEN monitoring audio production THEN the system SHALL track rate limit utilization and provide optimization recommendations
+
+### Requirement 7: YouTube Publishing with Engagement-Focused SEO
 
 **User Story:** As a content creator, I want the system to automatically upload videos with engaging titles, compelling thumbnails, and subscriber-growth optimization.
 

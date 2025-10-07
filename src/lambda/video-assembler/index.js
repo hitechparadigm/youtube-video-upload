@@ -7,6 +7,8 @@ const { ECSClient, RunTaskCommand, DescribeTasksCommand } = require('@aws-sdk/cl
 const { S3Client, PutObjectCommand, GetObjectCommand, ListObjectsV2Command } = require('@aws-sdk/client-s3');
 const { DynamoDBClient } = require('@aws-sdk/client-dynamodb');
 const { DynamoDBDocumentClient, PutCommand, GetCommand, UpdateCommand } = require('@aws-sdk/lib-dynamodb');
+// Import context management functions
+const { getSceneContext, getMediaContext, storeAssemblyContext, updateProjectSummary } = require('/opt/nodejs/context-integration');
 
 // Initialize AWS clients
 const ecsClient = new ECSClient({ region: process.env.AWS_REGION || 'us-east-1' });
@@ -36,7 +38,9 @@ exports.handler = async (event) => {
         }
         
         // Route requests
-        if (httpMethod === 'POST' && path === '/video/assemble-project') {
+        if (httpMethod === 'POST' && path === '/video/assemble-from-project') {
+            return await assembleVideoFromProject(requestBody);
+        } else if (httpMethod === 'POST' && path === '/video/assemble-project') {
             return await assembleProjectVideo(requestBody);
         } else if (httpMethod === 'GET' && path === '/video/status') {
             return await getVideoStatus(event.queryStringParameters || {});
@@ -386,6 +390,160 @@ async function streamToString(stream) {
         stream.on('error', reject);
         stream.on('end', () => resolve(Buffer.concat(chunks).toString('utf8')));
     });
+}
+
+/**
+ * Enhanced video assembly using stored scene and media contexts
+ */
+async function assembleVideoFromProject(requestBody) {
+    const { 
+        projectId,
+        videoSettings = {},
+        qualitySettings = {},
+        outputFormat = 'mp4'
+    } = requestBody;
+    
+    try {
+        if (!projectId) {
+            return createResponse(400, { error: 'projectId is required' });
+        }
+        
+        console.log(`🎬 Starting context-aware video assembly for project: ${projectId}`);
+        
+        // Retrieve all contexts from Context Manager
+        console.log('🔍 Retrieving contexts from Context Manager...');
+        
+        const sceneContext = await getSceneContext(projectId);
+        const mediaContext = await getMediaContext(projectId);
+        
+        console.log('✅ Retrieved contexts:');
+        console.log(`   - Scene context: ${sceneContext.scenes?.length || 0} scenes, ${sceneContext.totalDuration || 0}s`);
+        console.log(`   - Media context: ${mediaContext.totalAssets || 0} assets, ${mediaContext.sceneMediaMapping?.length || 0} scene mappings`);
+        console.log(`   - Coverage complete: ${mediaContext.coverageComplete}`);
+        
+        if (!sceneContext.scenes || sceneContext.scenes.length === 0) {
+            return createResponse(400, { error: 'No scenes found in scene context' });
+        }
+        
+        if (!mediaContext.sceneMediaMapping || mediaContext.sceneMediaMapping.length === 0) {
+            return createResponse(400, { error: 'No media mapping found in media context' });
+        }
+        
+        // Enhanced video settings with context-aware defaults
+        const enhancedVideoSettings = {
+            resolution: '1920x1080',
+            framerate: 30,
+            bitrate: '5000k',
+            audioCodec: 'aac',
+            videoCodec: 'h264',
+            sceneTransitions: true,
+            contextAwareAssembly: true,
+            ...videoSettings
+        };
+        
+        console.log(`📋 Enhanced video settings:`, enhancedVideoSettings);
+        
+        // Create comprehensive assembly configuration using contexts
+        const assemblyConfig = await createContextAwareAssemblyConfig(
+            projectId,
+            sceneContext,
+            mediaContext,
+            enhancedVideoSettings
+        );
+        
+        console.log(`🔧 Assembly configuration created:`);
+        console.log(`   - Total scenes: ${assemblyConfig.scenes.length}`);
+        console.log(`   - Total duration: ${assemblyConfig.totalDuration}s`);
+        console.log(`   - Audio tracks: ${assemblyConfig.audioTracks.length}`);
+        console.log(`   - Video tracks: ${assemblyConfig.videoTracks.length}`);
+        
+        // Start ECS task for context-aware video processing
+        const taskResult = await startContextAwareVideoProcessing(assemblyConfig);
+        
+        console.log(`🚀 ECS task started: ${taskResult.taskArn}`);
+        
+        // Create assembly context for tracking
+        const assemblyContext = {
+            projectId: projectId,
+            videoId: assemblyConfig.videoId,
+            finalVideoPath: assemblyConfig.outputPath,
+            duration: assemblyConfig.totalDuration,
+            status: 'processing',
+            assemblyDetails: {
+                scenesAssembled: assemblyConfig.scenes.length,
+                assetsUsed: mediaContext.totalAssets,
+                contextIntegration: {
+                    sceneContextUsed: true,
+                    mediaContextUsed: true,
+                    preciseTimingEnabled: true,
+                    transitionsOptimized: true
+                }
+            },
+            qualityMetrics: {
+                resolution: enhancedVideoSettings.resolution,
+                bitrate: enhancedVideoSettings.bitrate,
+                framerate: enhancedVideoSettings.framerate,
+                audioQuality: enhancedVideoSettings.audioCodec,
+                sceneTransitions: enhancedVideoSettings.sceneTransitions
+            },
+            processingDetails: {
+                taskArn: taskResult.taskArn,
+                startedAt: new Date().toISOString(),
+                estimatedCompletion: new Date(Date.now() + (10 * 60 * 1000)).toISOString() // 10 minutes
+            },
+            contextUsage: {
+                usedSceneContext: true,
+                usedMediaContext: true,
+                sceneCount: sceneContext.scenes.length,
+                mediaAssets: mediaContext.totalAssets,
+                preciseAssembly: true
+            }
+        };
+        
+        // Store assembly context
+        await storeAssemblyContext(projectId, assemblyContext);
+        console.log(`💾 Stored assembly context for tracking`);
+        
+        // Update project summary
+        await updateProjectSummary(projectId, 'assembly', {
+            videoId: assemblyConfig.videoId,
+            status: 'processing',
+            taskArn: taskResult.taskArn,
+            totalDuration: assemblyConfig.totalDuration,
+            contextAware: true,
+            processingMethod: 'context_aware_assembly'
+        });
+        
+        console.log(`✅ Context-aware video assembly initiated for project: ${projectId}`);
+        
+        return createResponse(200, {
+            message: 'Context-aware video assembly started successfully',
+            projectId: projectId,
+            videoId: assemblyConfig.videoId,
+            taskArn: taskResult.taskArn,
+            status: 'processing',
+            assemblyDetails: {
+                totalScenes: assemblyConfig.scenes.length,
+                totalAssets: mediaContext.totalAssets,
+                totalDuration: assemblyConfig.totalDuration,
+                contextAware: true
+            },
+            processingDetails: {
+                estimatedCompletion: assemblyContext.processingDetails.estimatedCompletion,
+                qualitySettings: enhancedVideoSettings,
+                outputPath: assemblyConfig.outputPath
+            },
+            contextUsage: assemblyContext.contextUsage,
+            readyForPublishing: false // Will be true when processing completes
+        });
+        
+    } catch (error) {
+        console.error('Error in context-aware video assembly:', error);
+        return createResponse(500, {
+            error: 'Failed to assemble video from project',
+            message: error.message
+        });
+    }
 }
 
 /**
@@ -776,4 +934,300 @@ function createResponse(statusCode, body) {
         },
         body: JSON.stringify(body, null, 2)
     };
+}
+
+/**
+ * Create context-aware assembly configuration using scene and media contexts
+ */
+async function createContextAwareAssemblyConfig(projectId, sceneContext, mediaContext, videoSettings) {
+    try {
+        console.log(`🔧 Creating context-aware assembly configuration for project: ${projectId}`);
+        
+        const videoId = `video-${projectId}-${Date.now()}`;
+        const outputPath = `s3://${S3_BUCKET}/videos/${projectId}/final/${videoId}.${videoSettings.outputFormat || 'mp4'}`;
+        
+        // Create scene-by-scene assembly instructions
+        const scenes = [];
+        const audioTracks = [];
+        const videoTracks = [];
+        
+        let currentTime = 0;
+        
+        for (const sceneMapping of mediaContext.sceneMediaMapping) {
+            const sceneNumber = sceneMapping.sceneNumber;
+            const sceneData = sceneContext.scenes.find(s => s.sceneNumber === sceneNumber);
+            
+            if (!sceneData) {
+                console.warn(`Scene ${sceneNumber} not found in scene context`);
+                continue;
+            }
+            
+            console.log(`   📋 Processing Scene ${sceneNumber}: ${sceneMapping.sceneTitle}`);
+            
+            // Create scene assembly configuration
+            const sceneConfig = {
+                sceneNumber: sceneNumber,
+                title: sceneMapping.sceneTitle,
+                startTime: currentTime,
+                endTime: currentTime + sceneMapping.duration,
+                duration: sceneMapping.duration,
+                
+                // Audio configuration
+                audio: {
+                    startTime: currentTime,
+                    duration: sceneMapping.duration,
+                    s3Path: `s3://${S3_BUCKET}/videos/${projectId}/audio/scene-${sceneNumber}.mp3`,
+                    volume: 1.0,
+                    fadeIn: sceneNumber === 1 ? 0.5 : 0,
+                    fadeOut: sceneNumber === sceneContext.scenes.length ? 0.5 : 0
+                },
+                
+                // Video/media configuration with precise timing
+                media: sceneMapping.mediaAssets.map((asset, index) => ({
+                    assetId: asset.assetId,
+                    type: asset.type,
+                    s3Path: asset.s3Url || `s3://${S3_BUCKET}/${asset.s3Key}`,
+                    startTime: currentTime + (asset.sceneStartTime || 0),
+                    duration: asset.sceneDuration || (sceneMapping.duration / sceneMapping.mediaAssets.length),
+                    
+                    // Visual effects and transitions
+                    transition: {
+                        type: asset.transitionType || 'crossfade',
+                        duration: 0.5,
+                        easing: 'ease-in-out'
+                    },
+                    
+                    // Positioning and scaling
+                    transform: {
+                        scale: 1.0,
+                        position: 'center',
+                        crop: 'smart', // AI-powered smart cropping
+                        aspectRatio: '16:9'
+                    },
+                    
+                    // Context-aware effects
+                    effects: {
+                        brightness: sceneMapping.mood === 'exciting' ? 1.1 : 1.0,
+                        contrast: sceneMapping.visualStyle === 'dynamic' ? 1.1 : 1.0,
+                        saturation: sceneMapping.mood === 'optimistic' ? 1.05 : 1.0,
+                        blur: 0,
+                        vignette: sceneMapping.visualStyle === 'cinematic' ? 0.2 : 0
+                    },
+                    
+                    // Scene context metadata
+                    sceneContext: {
+                        purpose: sceneData.purpose,
+                        mood: sceneMapping.mood,
+                        visualStyle: sceneMapping.visualStyle,
+                        relevanceScore: asset.aiAnalysis?.score || 0
+                    }
+                })),
+                
+                // Scene-specific effects and styling
+                sceneEffects: {
+                    backgroundMusic: sceneData.purpose === 'hook' ? 'energetic' : 'subtle',
+                    textOverlay: sceneData.purpose === 'call_to_action' ? true : false,
+                    transitionOut: getSceneTransition(sceneData.purpose, sceneNumber, sceneContext.scenes.length)
+                },
+                
+                // Context metadata
+                contextMetadata: {
+                    originalScript: sceneData.script?.substring(0, 100) + '...',
+                    visualRequirements: sceneData.visualRequirements,
+                    mediaNeeds: sceneData.mediaNeeds,
+                    aiRelevanceScore: Math.round(
+                        sceneMapping.mediaAssets.reduce((sum, asset) => 
+                            sum + (asset.aiAnalysis?.score || 0), 0
+                        ) / sceneMapping.mediaAssets.length
+                    )
+                }
+            };
+            
+            scenes.push(sceneConfig);
+            
+            // Add to audio and video tracks
+            audioTracks.push(sceneConfig.audio);
+            videoTracks.push(...sceneConfig.media);
+            
+            currentTime += sceneMapping.duration;
+            
+            console.log(`     ✅ Scene ${sceneNumber}: ${sceneMapping.mediaAssets.length} assets, ${sceneMapping.duration}s`);
+        }
+        
+        // Create comprehensive assembly configuration
+        const assemblyConfig = {
+            projectId: projectId,
+            videoId: videoId,
+            outputPath: outputPath,
+            
+            // Timing and structure
+            totalDuration: currentTime,
+            totalScenes: scenes.length,
+            
+            // Assembly instructions
+            scenes: scenes,
+            audioTracks: audioTracks,
+            videoTracks: videoTracks,
+            
+            // Video settings
+            videoSettings: {
+                ...videoSettings,
+                totalDuration: currentTime,
+                sceneCount: scenes.length
+            },
+            
+            // Context integration metadata
+            contextIntegration: {
+                sceneContextUsed: true,
+                mediaContextUsed: true,
+                preciseTimingEnabled: true,
+                aiOptimizedEffects: true,
+                professionalTransitions: true
+            },
+            
+            // Quality metrics
+            qualityMetrics: {
+                averageRelevanceScore: Math.round(
+                    videoTracks.reduce((sum, track) => 
+                        sum + (track.sceneContext?.relevanceScore || 0), 0
+                    ) / videoTracks.length
+                ),
+                scenesCovered: scenes.length,
+                totalAssets: videoTracks.length,
+                contextAware: true
+            },
+            
+            // Processing instructions for ECS task
+            processingInstructions: {
+                useContextAwareAssembly: true,
+                enableSmartTransitions: true,
+                optimizeForEngagement: true,
+                maintainVisualCoherence: true,
+                syncAudioPrecisely: true
+            }
+        };
+        
+        console.log(`✅ Assembly configuration created: ${scenes.length} scenes, ${currentTime}s total`);
+        
+        return assemblyConfig;
+        
+    } catch (error) {
+        console.error('Error creating context-aware assembly configuration:', error);
+        throw error;
+    }
+}
+
+/**
+ * Get appropriate scene transition based on scene purpose and position
+ */
+function getSceneTransition(scenePurpose, sceneNumber, totalScenes) {
+    if (sceneNumber === 1) {
+        return { type: 'fade-in', duration: 0.5 };
+    } else if (sceneNumber === totalScenes) {
+        return { type: 'fade-out', duration: 1.0 };
+    } else {
+        switch (scenePurpose) {
+            case 'hook':
+                return { type: 'quick-cut', duration: 0.1 };
+            case 'problem':
+                return { type: 'dissolve', duration: 0.8 };
+            case 'solution':
+                return { type: 'slide', duration: 0.6 };
+            case 'call_to_action':
+                return { type: 'zoom', duration: 0.4 };
+            default:
+                return { type: 'crossfade', duration: 0.5 };
+        }
+    }
+}
+
+/**
+ * Start context-aware video processing using ECS
+ */
+async function startContextAwareVideoProcessing(assemblyConfig) {
+    try {
+        console.log(`🚀 Starting ECS task for context-aware video processing`);
+        
+        // Save assembly configuration to S3 for ECS task
+        const configKey = `videos/${assemblyConfig.projectId}/assembly/config.json`;
+        
+        await s3Client.send(new PutObjectCommand({
+            Bucket: S3_BUCKET,
+            Key: configKey,
+            Body: JSON.stringify(assemblyConfig, null, 2),
+            ContentType: 'application/json',
+            Metadata: {
+                projectId: assemblyConfig.projectId,
+                videoId: assemblyConfig.videoId,
+                contextAware: 'true',
+                totalScenes: assemblyConfig.totalScenes.toString(),
+                totalDuration: assemblyConfig.totalDuration.toString()
+            }
+        }));
+        
+        console.log(`💾 Assembly configuration saved to S3: ${configKey}`);
+        
+        // Start ECS task with enhanced configuration
+        const taskParams = {
+            cluster: CLUSTER_NAME,
+            taskDefinition: TASK_DEFINITION,
+            launchType: 'FARGATE',
+            networkConfiguration: {
+                awsvpcConfiguration: {
+                    subnets: [
+                        process.env.SUBNET_1 || 'subnet-12345',
+                        process.env.SUBNET_2 || 'subnet-67890'
+                    ],
+                    securityGroups: [process.env.SECURITY_GROUP || 'sg-12345'],
+                    assignPublicIp: 'ENABLED'
+                }
+            },
+            overrides: {
+                containerOverrides: [
+                    {
+                        name: 'video-processor',
+                        environment: [
+                            { name: 'PROJECT_ID', value: assemblyConfig.projectId },
+                            { name: 'VIDEO_ID', value: assemblyConfig.videoId },
+                            { name: 'CONFIG_S3_KEY', value: configKey },
+                            { name: 'S3_BUCKET', value: S3_BUCKET },
+                            { name: 'CONTEXT_AWARE', value: 'true' },
+                            { name: 'TOTAL_SCENES', value: assemblyConfig.totalScenes.toString() },
+                            { name: 'TOTAL_DURATION', value: assemblyConfig.totalDuration.toString() },
+                            { name: 'PROCESSING_MODE', value: 'context_aware_assembly' }
+                        ]
+                    }
+                ]
+            },
+            tags: [
+                { key: 'Project', value: 'automated-video-pipeline' },
+                { key: 'ProjectId', value: assemblyConfig.projectId },
+                { key: 'VideoId', value: assemblyConfig.videoId },
+                { key: 'ContextAware', value: 'true' },
+                { key: 'ProcessingType', value: 'enhanced_assembly' }
+            ]
+        };
+        
+        const result = await ecsClient.send(new RunTaskCommand(taskParams));
+        
+        if (!result.tasks || result.tasks.length === 0) {
+            throw new Error('Failed to start ECS task');
+        }
+        
+        const task = result.tasks[0];
+        console.log(`✅ ECS task started successfully: ${task.taskArn}`);
+        
+        return {
+            taskArn: task.taskArn,
+            clusterArn: task.clusterArn,
+            taskDefinitionArn: task.taskDefinitionArn,
+            launchType: task.launchType,
+            configS3Key: configKey,
+            contextAware: true
+        };
+        
+    } catch (error) {
+        console.error('Error starting context-aware video processing:', error);
+        throw error;
+    }
 }

@@ -6,6 +6,8 @@
 const { SFNClient, StartExecutionCommand, DescribeExecutionCommand, ListExecutionsCommand } = require('@aws-sdk/client-sfn');
 const { DynamoDBDocumentClient, PutCommand, GetCommand, QueryCommand } = require('@aws-sdk/lib-dynamodb');
 const { DynamoDBClient } = require('@aws-sdk/client-dynamodb');
+// Import context management for enhanced coordination
+const { createProject, validateContextFlow, getProjectSummary } = require('/opt/nodejs/context-integration');
 
 class WorkflowOrchestrator {
     constructor() {
@@ -20,7 +22,90 @@ class WorkflowOrchestrator {
     }
 
     /**
-     * Start video pipeline execution for a topic
+     * Start enhanced video pipeline execution with context management
+     */
+    async startEnhancedPipelineExecution(topicRequest) {
+        const {
+            baseTopic,
+            targetAudience = 'general',
+            contentType = 'educational',
+            videoDuration = 480,
+            videoStyle = 'engaging_educational',
+            scheduledBy = 'manual'
+        } = topicRequest;
+
+        try {
+            console.log(`🚀 Starting enhanced pipeline execution for topic: ${baseTopic}`);
+
+            // Step 1: Create project with context management
+            const projectResult = await createProject(baseTopic, {
+                targetAudience,
+                contentType,
+                videoDuration,
+                videoStyle
+            });
+
+            const projectId = projectResult.projectId;
+            console.log(`📁 Created project: ${projectId}`);
+
+            // Step 2: Start context-aware Step Functions execution
+            const executionName = `enhanced-pipeline-${projectId}`;
+
+            const stepFunctionsInput = {
+                projectId: projectId,
+                baseTopic: baseTopic,
+                targetAudience: targetAudience,
+                contentType: contentType,
+                videoDuration: videoDuration,
+                videoStyle: videoStyle,
+                scheduledBy: scheduledBy,
+                requestedAt: new Date().toISOString(),
+                contextManagementEnabled: true
+            };
+
+            // Start Step Functions execution
+            const startResponse = await this.sfnClient.send(new StartExecutionCommand({
+                stateMachineArn: this.config.stateMachineArn,
+                name: executionName,
+                input: JSON.stringify(stepFunctionsInput)
+            }));
+
+            // Create enhanced execution record
+            const executionRecord = {
+                executionId: executionName,
+                executionArn: startResponse.executionArn,
+                projectId: projectId,
+                baseTopic: baseTopic,
+                status: 'RUNNING',
+                startedAt: new Date().toISOString(),
+                scheduledBy: scheduledBy,
+                contextManagementEnabled: true,
+                input: stepFunctionsInput
+            };
+
+            // Store execution record
+            await this.storeExecutionRecord(executionRecord);
+
+            console.log(`✅ Enhanced pipeline execution started: ${executionName}`);
+
+            return {
+                success: true,
+                projectId: projectId,
+                executionId: executionName,
+                executionArn: startResponse.executionArn,
+                status: 'RUNNING',
+                contextManagementEnabled: true,
+                estimatedCompletionTime: new Date(Date.now() + (15 * 60 * 1000)).toISOString()
+            };
+
+        } catch (error) {
+            console.error(`❌ Failed to start enhanced pipeline execution:`, error);
+            throw new Error(`Enhanced pipeline execution failed: ${error.message}`);
+        }
+    }
+
+    /**
+     * Start video pipeline execution for a topic (legacy method)
      */
     async startPipelineExecution(topicRequest) {
         const {
@@ -173,6 +258,101 @@ class WorkflowOrchestrator {
             console.error(`❌ Failed to get execution status:`, error);
             throw error;
         }
+    }
+
+    /**
+     * Get enhanced execution status with context information
+     */
+    async getEnhancedExecutionStatus(executionId) {
+        try {
+            console.log(`🔍 Getting enhanced status for execution: ${executionId}`);
+
+            // Get basic execution status
+            const basicStatus = await this.getExecutionStatus(executionId);
+            
+            // Get execution record to find project ID
+            const executionRecord = await this.getExecutionRecord(executionId);
+            
+            if (!executionRecord || !executionRecord.projectId) {
+                // Return basic status if no project ID (legacy execution)
+                return {
+                    ...basicStatus,
+                    contextManagementEnabled: false,
+                    message: 'Legacy execution without context management'
+                };
+            }
+
+            const projectId = executionRecord.projectId;
+
+            // Get context flow validation
+            const contextValidation = await validateContextFlow(projectId);
+            
+            // Get project summary
+            let projectSummary = null;
+            try {
+                projectSummary = await getProjectSummary(projectId);
+            } catch (error) {
+                console.warn(`Could not retrieve project summary: ${error.message}`);
+            }
+
+            // Enhanced status with context information
+            return {
+                ...basicStatus,
+                projectId: projectId,
+                contextManagementEnabled: true,
+                contextFlow: {
+                    isValid: contextValidation.isValid,
+                    stages: contextValidation.stages,
+                    errors: contextValidation.errors || []
+                },
+                projectSummary: projectSummary,
+                pipeline: {
+                    topicGenerated: !!contextValidation.stages?.topic?.exists,
+                    scriptGenerated: !!contextValidation.stages?.scene?.exists,
+                    audioGenerated: !!contextValidation.stages?.audio?.exists,
+                    mediaGenerated: !!contextValidation.stages?.media?.exists,
+                    videoAssembled: !!contextValidation.stages?.assembly?.exists
+                },
+                recommendations: this.generateStatusRecommendations(contextValidation, basicStatus)
+            };
+
+        } catch (error) {
+            console.error(`❌ Failed to get enhanced execution status:`, error);
+            throw error;
+        }
+    }
+
+    /**
+     * Generate recommendations based on status and context
+     */
+    generateStatusRecommendations(contextValidation, basicStatus) {
+        const recommendations = [];
+
+        if (basicStatus.status === 'RUNNING') {
+            if (!contextValidation.stages?.topic?.exists) {
+                recommendations.push('Topic generation in progress');
+            } else if (!contextValidation.stages?.scene?.exists) {
+                recommendations.push('Script generation in progress');
+            } else if (!contextValidation.stages?.audio?.exists) {
+                recommendations.push('Audio generation in progress');
+            } else if (!contextValidation.stages?.media?.exists) {
+                recommendations.push('Media curation in progress');
+            } else if (!contextValidation.stages?.assembly?.exists) {
+                recommendations.push('Video assembly in progress');
+            }
+        } else if (basicStatus.status === 'FAILED') {
+            recommendations.push('Check execution logs for error details');
+            if (contextValidation.errors?.length > 0) {
+                recommendations.push(`Context issues: ${contextValidation.errors.join(', ')}`);
+            }
+        } else if (basicStatus.status === 'SUCCEEDED') {
+            recommendations.push('Pipeline completed successfully');
+            if (contextValidation.stages?.assembly?.exists) {
+                recommendations.push('Video ready for publishing');
+            }
+        }
+
+        return recommendations;
     }
 
     /**

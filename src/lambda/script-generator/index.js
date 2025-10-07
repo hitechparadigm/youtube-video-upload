@@ -8,6 +8,8 @@ const { DynamoDBClient } = require('@aws-sdk/client-dynamodb');
 const { DynamoDBDocumentClient, PutCommand, QueryCommand, GetCommand } = require('@aws-sdk/lib-dynamodb');
 const { S3Client, PutObjectCommand } = require('@aws-sdk/client-s3');
 const { initializeConfig, getConfigManager } = require('/opt/nodejs/config-manager');
+// Import context management functions
+const { getTopicContext, storeSceneContext, updateProjectSummary } = require('/opt/nodejs/context-integration');
 
 // Global configuration
 let config = null;
@@ -79,6 +81,8 @@ exports.handler = async (event) => {
             return await generateScript(requestBody);
         } else if (httpMethod === 'POST' && path === '/scripts/generate-enhanced') {
             return await generateEnhancedScript(requestBody);
+        } else if (httpMethod === 'POST' && path === '/scripts/generate-from-project') {
+            return await generateScriptFromProject(requestBody);
         } else if (httpMethod === 'POST' && path === '/scripts/generate-from-topic') {
             return await generateScriptFromTopic(requestBody);
         } else if (httpMethod === 'GET' && path === '/scripts') {
@@ -237,6 +241,123 @@ async function generateEnhancedScript(requestBody) {
         console.error('Error generating enhanced script:', error);
         return createResponse(500, { 
             error: 'Failed to generate enhanced script',
+            message: error.message 
+        });
+    }
+}
+
+/**
+ * Generate script from project using stored topic context
+ */
+async function generateScriptFromProject(requestBody) {
+    const { 
+        projectId,
+        scriptOptions = {}
+    } = requestBody;
+    
+    try {
+        if (!projectId) {
+            return createResponse(400, { error: 'projectId is required' });
+        }
+        
+        console.log(`📝 Generating script for project: ${projectId}`);
+        
+        // Retrieve topic context from Context Manager
+        console.log('🔍 Retrieving topic context from Context Manager...');
+        const topicContext = await getTopicContext(projectId);
+        
+        console.log('✅ Retrieved topic context:');
+        console.log(`   - Expanded topics: ${topicContext.expandedTopics?.length || 0}`);
+        console.log(`   - Video structure: ${topicContext.videoStructure?.recommendedScenes || 0} scenes`);
+        console.log(`   - SEO keywords: ${topicContext.seoContext?.primaryKeywords?.length || 0}`);
+        
+        // Extract optimal parameters from topic context
+        const optimalDuration = topicContext.videoStructure?.mainContentDuration + 
+                               topicContext.videoStructure?.hookDuration + 
+                               topicContext.videoStructure?.conclusionDuration || 480;
+        
+        const selectedSubtopic = topicContext.expandedTopics?.[0]?.subtopic || topicContext.mainTopic;
+        
+        // Generate enhanced script using topic context
+        const scriptData = await generateScriptWithAI({
+            topic: topicContext.mainTopic,
+            title: selectedSubtopic,
+            hook: null, // Let AI create based on context
+            targetLength: optimalDuration,
+            style: scriptOptions.style || 'engaging_educational',
+            targetAudience: scriptOptions.targetAudience || 'general',
+            includeVisuals: true,
+            includeTiming: true,
+            topicContext
+        });
+        
+        // Add context metadata to script
+        scriptData.enhancedFeatures = {
+            usedTopicContext: true,
+            contextSource: 'topic_management_ai',
+            intelligentScenes: true,
+            sceneOptimization: 'duration_and_complexity_based',
+            expandedTopicsUsed: topicContext.expandedTopics?.length || 0,
+            seoOptimized: !!topicContext.seoContext?.primaryKeywords?.length,
+            projectId: projectId
+        };
+        
+        // Store the generated script
+        const storedScript = await storeScript(scriptData, projectId);
+        
+        // Create scene context for Media Curator AI
+        const sceneContext = {
+            projectId: projectId,
+            baseTopic: topicContext.mainTopic,
+            selectedSubtopic: selectedSubtopic,
+            scenes: scriptData.scenes || [],
+            totalDuration: scriptData.estimatedDuration || optimalDuration,
+            sceneCount: scriptData.scenes?.length || 0,
+            overallStyle: scriptOptions.style || 'engaging_educational',
+            targetAudience: scriptOptions.targetAudience || 'general',
+            sceneFlow: scriptData.sceneFlow || {},
+            contextUsage: {
+                usedTopicContext: true,
+                usedVideoStructure: true,
+                usedContentGuidance: true,
+                usedSeoKeywords: true
+            }
+        };
+        
+        // Store scene context for Media Curator AI
+        await storeSceneContext(projectId, sceneContext);
+        console.log(`💾 Stored scene context for Media Curator AI`);
+        
+        // Update project summary
+        await updateProjectSummary(projectId, 'script', {
+            scriptId: storedScript.scriptId,
+            selectedSubtopic: selectedSubtopic,
+            sceneCount: sceneContext.sceneCount,
+            totalDuration: sceneContext.totalDuration,
+            enhancedFeatures: scriptData.enhancedFeatures
+        });
+        
+        return createResponse(200, {
+            message: 'Context-aware script generated successfully',
+            projectId: projectId,
+            script: storedScript,
+            sceneContext: {
+                sceneCount: sceneContext.sceneCount,
+                totalDuration: sceneContext.totalDuration,
+                selectedSubtopic: selectedSubtopic
+            },
+            enhancedFeatures: scriptData.enhancedFeatures,
+            contextFlow: {
+                topicContextUsed: true,
+                sceneContextStored: true,
+                readyForMediaCuration: true
+            }
+        });
+        
+    } catch (error) {
+        console.error('Error generating script from project:', error);
+        return createResponse(500, { 
+            error: 'Failed to generate script from project',
             message: error.message 
         });
     }
