@@ -1,14 +1,10 @@
-import { createResponse, createErrorResponse } from '../../shared/http/response-handler.js';
-import { createAWSClients } from '../../shared/aws-clients/factory.js';
-import { getEnvironmentConfig } from '../../shared/config/environment.js';
-
 /**
- * Fixed Video Assembly Orchestrator
- * Simple, working version for Italy video assembly
+ * AI-Powered Video Assembly Orchestrator
+ * Creates engaging, dynamic videos with intelligent media sequencing
  */
 
 const { ECSClient, RunTaskCommand, DescribeTasksCommand } = require('@aws-sdk/client-ecs');
-const { S3Client, PutObjectCommand, GetObjectCommand } = require('@aws-sdk/client-s3');
+const { S3Client, PutObjectCommand, GetObjectCommand, ListObjectsV2Command } = require('@aws-sdk/client-s3');
 const { DynamoDBClient } = require('@aws-sdk/client-dynamodb');
 const { DynamoDBDocumentClient, PutCommand, GetCommand, UpdateCommand } = require('@aws-sdk/lib-dynamodb');
 
@@ -40,9 +36,7 @@ exports.handler = async (event) => {
         }
         
         // Route requests
-        if (httpMethod === 'POST' && path === '/video/assemble') {
-            return await assembleVideo(requestBody);
-        } else if (httpMethod === 'POST' && path === '/video/assemble-project') {
+        if (httpMethod === 'POST' && path === '/video/assemble-project') {
             return await assembleProjectVideo(requestBody);
         } else if (httpMethod === 'GET' && path === '/video/status') {
             return await getVideoStatus(event.queryStringParameters || {});
@@ -60,67 +54,453 @@ exports.handler = async (event) => {
 };
 
 /**
- * Assemble video from project configuration
+ * Load all project components from S3
+ */
+async function loadProjectComponents(projectId) {
+    try {
+        console.log(`📂 Loading project components for: ${projectId}`);
+        
+        const projectData = {
+            script: null,
+            audio: null,
+            media: [],
+            metadata: null,
+            audioDuration: 0
+        };
+        
+        // Load project summary to get component references
+        try {
+            const summaryResponse = await s3Client.send(new GetObjectCommand({
+                Bucket: S3_BUCKET,
+                Key: `videos/${projectId}/metadata/project.json`
+            }));
+            
+            const summaryData = JSON.parse(await streamToString(summaryResponse.Body));
+            console.log(`📋 Project summary loaded, status: ${summaryData.status}`);
+            
+            // Load script
+            if (summaryData.components?.script) {
+                const scriptResponse = await s3Client.send(new GetObjectCommand({
+                    Bucket: S3_BUCKET,
+                    Key: `videos/${projectId}/script/${summaryData.components.script.scriptId}.json`
+                }));
+                projectData.script = JSON.parse(await streamToString(scriptResponse.Body));
+                console.log(`📝 Script loaded: ${projectData.script.wordCount} words`);
+            }
+            
+            // Load audio info (we'll reference the file path)
+            if (summaryData.components?.audio) {
+                projectData.audio = summaryData.components.audio;
+                projectData.audioDuration = summaryData.components.audio.duration || 480; // fallback
+                console.log(`🎵 Audio info loaded: ${projectData.audioDuration}s duration`);
+            }
+            
+        } catch (error) {
+            console.error('Error loading project summary:', error);
+            throw new Error('Project summary not found or invalid');
+        }
+        
+        // Load media assets
+        try {
+            const mediaPrefix = `videos/${projectId}/media/`;
+            
+            // List all media files
+            const { ListObjectsV2Command } = require('@aws-sdk/client-s3');
+            const mediaResponse = await s3Client.send(new ListObjectsV2Command({
+                Bucket: S3_BUCKET,
+                Prefix: mediaPrefix
+            }));
+            
+            if (mediaResponse.Contents) {
+                for (const object of mediaResponse.Contents) {
+                    if (object.Key.endsWith('.jpg') || object.Key.endsWith('.jpeg') || 
+                        object.Key.endsWith('.png') || object.Key.endsWith('.mp4')) {
+                        
+                        const mediaType = object.Key.includes('/images/') ? 'image' : 'video';
+                        const fileName = object.Key.split('/').pop();
+                        
+                        projectData.media.push({
+                            type: mediaType,
+                            s3Key: object.Key,
+                            fileName: fileName,
+                            size: object.Size,
+                            url: `s3://${S3_BUCKET}/${object.Key}`
+                        });
+                    }
+                }
+            }
+            
+            console.log(`🖼️ Loaded ${projectData.media.length} media assets`);
+            
+        } catch (error) {
+            console.error('Error loading media assets:', error);
+        }
+        
+        return projectData;
+        
+    } catch (error) {
+        console.error('Error loading project components:', error);
+        throw error;
+    }
+}
+
+/**
+ * Create engaging media sequence with optimal timing for YouTube engagement
+ */
+async function createEngagingMediaSequence(script, mediaAssets, totalDuration) {
+    try {
+        console.log(`🎯 Creating engaging sequence for ${totalDuration}s video`);
+        
+        const sequence = [];
+        const images = mediaAssets.filter(m => m.type === 'image');
+        const videos = mediaAssets.filter(m => m.type === 'video');
+        
+        // YouTube engagement best practices:
+        // - Change visuals every 3-8 seconds for high retention
+        // - Use videos for key moments (intro, main points, conclusion)
+        // - Images with motion effects for supporting content
+        // - Faster cuts in first 15 seconds (hook period)
+        
+        const segments = [];
+        let currentTime = 0;
+        
+        // Hook period (0-15s): Fast cuts every 3-4 seconds
+        const hookDuration = Math.min(15, totalDuration * 0.1);
+        while (currentTime < hookDuration) {
+            const segmentDuration = Math.random() * 2 + 3; // 3-5 seconds
+            const duration = Math.min(segmentDuration, hookDuration - currentTime);
+            
+            segments.push({
+                startTime: currentTime,
+                duration: duration,
+                phase: 'hook',
+                priority: 'high'
+            });
+            
+            currentTime += duration;
+        }
+        
+        // Main content (15s - 90%): Moderate cuts every 5-8 seconds
+        const mainEndTime = totalDuration * 0.9;
+        while (currentTime < mainEndTime) {
+            const segmentDuration = Math.random() * 3 + 5; // 5-8 seconds
+            const duration = Math.min(segmentDuration, mainEndTime - currentTime);
+            
+            segments.push({
+                startTime: currentTime,
+                duration: duration,
+                phase: 'main',
+                priority: 'medium'
+            });
+            
+            currentTime += duration;
+        }
+        
+        // Conclusion (last 10%): Slower cuts for call-to-action
+        while (currentTime < totalDuration) {
+            const segmentDuration = Math.random() * 4 + 6; // 6-10 seconds
+            const duration = Math.min(segmentDuration, totalDuration - currentTime);
+            
+            segments.push({
+                startTime: currentTime,
+                duration: duration,
+                phase: 'conclusion',
+                priority: 'low'
+            });
+            
+            currentTime += duration;
+        }
+        
+        console.log(`📊 Created ${segments.length} segments: ${segments.filter(s => s.phase === 'hook').length} hook, ${segments.filter(s => s.phase === 'main').length} main, ${segments.filter(s => s.phase === 'conclusion').length} conclusion`);
+        
+        // Assign media to segments with intelligent selection
+        let mediaIndex = 0;
+        let videoIndex = 0;
+        
+        for (let i = 0; i < segments.length; i++) {
+            const segment = segments[i];
+            let selectedMedia;
+            let effects = [];
+            
+            // Use videos for key moments (every 4-6 segments or important phases)
+            const useVideo = (
+                videos.length > 0 && 
+                videoIndex < videos.length && 
+                (i % 5 === 0 || segment.phase === 'hook' || segment.phase === 'conclusion')
+            );
+            
+            if (useVideo) {
+                selectedMedia = videos[videoIndex % videos.length];
+                videoIndex++;
+                
+                // Video effects for engagement
+                effects = [
+                    'scale=1920:1080:force_original_aspect_ratio=increase',
+                    'crop=1920:1080',
+                    segment.phase === 'hook' ? 'fade=in:0:30' : null
+                ].filter(Boolean);
+                
+            } else {
+                // Use images with motion effects
+                selectedMedia = images[mediaIndex % images.length];
+                mediaIndex++;
+                
+                // Ken Burns effect and transitions for images
+                const kenBurnsEffects = [
+                    'zoompan=z=1.1:d=25*3:s=1920x1080', // Slow zoom
+                    'zoompan=z=1.05:x=iw*0.1:d=25*3:s=1920x1080', // Pan right
+                    'zoompan=z=1.08:y=ih*0.1:d=25*3:s=1920x1080', // Pan down
+                    'scale=1920:1080:force_original_aspect_ratio=increase,crop=1920:1080'
+                ];
+                
+                effects = [
+                    kenBurnsEffects[i % kenBurnsEffects.length],
+                    segment.phase === 'hook' ? 'fade=in:0:15' : null,
+                    i === segments.length - 1 ? 'fade=out:st=' + (segment.duration - 1) + ':d=1' : null
+                ].filter(Boolean);
+            }
+            
+            sequence.push({
+                segmentIndex: i,
+                startTime: segment.startTime,
+                duration: segment.duration,
+                media: selectedMedia,
+                effects: effects,
+                phase: segment.phase,
+                transition: i > 0 ? 'crossfade:0.5' : null
+            });
+        }
+        
+        console.log(`✅ Media sequence created: ${sequence.filter(s => s.media.type === 'video').length} video segments, ${sequence.filter(s => s.media.type === 'image').length} image segments`);
+        
+        return sequence;
+        
+    } catch (error) {
+        console.error('Error creating media sequence:', error);
+        throw error;
+    }
+}
+
+/**
+ * Generate comprehensive FFmpeg command for video assembly
+ */
+async function generateFFmpegCommand(projectId, projectData, mediaSequence, videoOptions = {}) {
+    try {
+        console.log(`⚙️ Generating FFmpeg command for ${mediaSequence.length} segments`);
+        
+        const audioPath = `videos/${projectId}/audio/${projectData.audio.audioId}.mp3`;
+        const outputPath = `videos/${projectId}/output/final-video.mp4`;
+        
+        // Build complex FFmpeg command for engaging video
+        const inputs = [];
+        const filterComplex = [];
+        const maps = [];
+        
+        // Add audio input
+        inputs.push(`-i s3://${S3_BUCKET}/${audioPath}`);
+        
+        // Add media inputs
+        mediaSequence.forEach((segment, index) => {
+            inputs.push(`-i s3://${S3_BUCKET}/${segment.media.s3Key}`);
+        });
+        
+        // Create video segments with effects
+        let videoStreams = [];
+        
+        mediaSequence.forEach((segment, index) => {
+            const inputIndex = index + 1; // +1 because audio is input 0
+            const streamName = `v${index}`;
+            
+            let filter = `[${inputIndex}:v]`;
+            
+            // Apply effects based on media type and segment
+            if (segment.media.type === 'image') {
+                // Image processing with Ken Burns effect
+                filter += segment.effects.join(',');
+                filter += `,setpts=PTS-STARTPTS,fps=30,format=yuv420p[${streamName}]`;
+            } else {
+                // Video processing
+                filter += segment.effects.join(',');
+                filter += `,setpts=PTS-STARTPTS[${streamName}]`;
+            }
+            
+            filterComplex.push(filter);
+            videoStreams.push(`[${streamName}]`);
+        });
+        
+        // Concatenate all video segments
+        const concatFilter = videoStreams.join('') + `concat=n=${mediaSequence.length}:v=1:a=0[outv]`;
+        filterComplex.push(concatFilter);
+        
+        // Build final FFmpeg command
+        const ffmpegCommand = [
+            'ffmpeg',
+            '-y', // Overwrite output
+            ...inputs,
+            '-filter_complex', `"${filterComplex.join('; ')}"`,
+            '-map', '[outv]',
+            '-map', '0:a', // Use original audio
+            '-c:v', videoOptions.videoCodec || 'libx264',
+            '-c:a', videoOptions.audioCodec || 'aac',
+            '-preset', videoOptions.preset || 'medium',
+            '-crf', videoOptions.crf || '23',
+            '-b:v', videoOptions.bitrate || '8000k',
+            '-b:a', '192k',
+            '-ar', '44100',
+            '-r', videoOptions.fps || '30',
+            '-s', videoOptions.resolution || '1920x1080',
+            '-movflags', '+faststart', // Optimize for web streaming
+            '-metadata', `title="${projectData.script.title}"`,
+            '-metadata', `comment="Generated by AI Video Pipeline"`,
+            `s3://${S3_BUCKET}/${outputPath}`
+        ].join(' ');
+        
+        console.log(`✅ FFmpeg command generated (${ffmpegCommand.length} chars)`);
+        
+        return {
+            command: ffmpegCommand,
+            inputCount: inputs.length,
+            outputPath: outputPath,
+            estimatedProcessingTime: Math.ceil(projectData.audioDuration * 0.5), // Rough estimate
+            complexity: mediaSequence.length,
+            effects: {
+                kenBurns: mediaSequence.filter(s => s.media.type === 'image').length,
+                videoSegments: mediaSequence.filter(s => s.media.type === 'video').length,
+                transitions: mediaSequence.filter(s => s.transition).length
+            }
+        };
+        
+    } catch (error) {
+        console.error('Error generating FFmpeg command:', error);
+        throw error;
+    }
+}
+
+/**
+ * Helper function to convert stream to string
+ */
+async function streamToString(stream) {
+    const chunks = [];
+    return new Promise((resolve, reject) => {
+        stream.on('data', (chunk) => chunks.push(chunk));
+        stream.on('error', reject);
+        stream.on('end', () => resolve(Buffer.concat(chunks).toString('utf8')));
+    });
+}
+
+/**
+ * Assemble video from project configuration with intelligent media sequencing
  */
 async function assembleProjectVideo(requestBody) {
     const { 
         projectId,
-        projectPath,
-        audioSegments = [],
-        imageSequence = [],
+        scriptId,
+        audioId,
+        mediaAssets = [],
         videoOptions = {}
     } = requestBody;
     
     try {
-        console.log(`Assembling project video: ${projectId}`);
+        console.log(`🎬 Assembling dynamic video for project: ${projectId}`);
+        console.log(`📋 Request body:`, JSON.stringify(requestBody, null, 2));
         
         if (!projectId) {
             return createResponse(400, { error: 'projectId is required' });
         }
         
+        // Load project components from S3
+        const projectData = await loadProjectComponents(projectId);
+        
+        if (!projectData.script || !projectData.audio || !projectData.media.length) {
+            return createResponse(400, { 
+                error: 'Incomplete project data',
+                missing: {
+                    script: !projectData.script,
+                    audio: !projectData.audio,
+                    media: !projectData.media.length
+                }
+            });
+        }
+        
+        console.log(`📊 Project loaded: ${projectData.media.length} media assets, ${Math.floor(projectData.audioDuration)}s audio`);
+        
+        // Create intelligent media sequence for engaging video
+        const mediaSequence = await createEngagingMediaSequence(
+            projectData.script,
+            projectData.media,
+            projectData.audioDuration
+        );
+        
+        console.log(`🎯 Generated ${mediaSequence.length} media segments for dynamic video`);
+        
+        // Generate FFmpeg command for video assembly
+        const ffmpegCommand = await generateFFmpegCommand(
+            projectId,
+            projectData,
+            mediaSequence,
+            videoOptions
+        );
+        
         // Create video job
         const videoJob = {
-            videoId: `${projectId}-${Date.now()}`,
+            videoId: `video-${projectId}-${Date.now()}`,
             projectId: projectId,
-            projectPath: projectPath,
-            audioSegments: audioSegments,
-            imageSequence: imageSequence,
+            status: 'queued',
+            createdAt: new Date().toISOString(),
+            estimatedDuration: projectData.audioDuration,
+            mediaSequence: mediaSequence,
+            ffmpegCommand: ffmpegCommand,
             videoOptions: {
                 outputFormat: 'mp4',
                 resolution: '1920x1080',
                 fps: 30,
-                bitrate: '5000k',
+                bitrate: '8000k', // Higher bitrate for quality
+                audioCodec: 'aac',
+                videoCodec: 'libx264',
+                preset: 'medium',
+                crf: 23, // Good quality/size balance
                 ...videoOptions
             },
-            status: 'queued',
-            createdAt: new Date().toISOString(),
-            estimatedDuration: audioSegments.reduce((sum, seg) => sum + (seg.duration || 0), 0)
+            components: {
+                script: projectData.script.scriptId,
+                audio: projectData.audio.audioId,
+                mediaCount: projectData.media.length,
+                segmentCount: mediaSequence.length
+            }
         };
         
         // Store video job
         await storeVideoJob(videoJob);
         
-        // Start ECS Fargate task
-        const taskArn = await startVideoProcessingTask(videoJob);
-        
-        // Update job with task info
-        videoJob.taskArn = taskArn;
-        videoJob.status = 'processing';
-        videoJob.startedAt = new Date().toISOString();
-        
-        await updateVideoJob(videoJob);
+        // For now, return the FFmpeg command and job details
+        // In production, this would trigger ECS task or Lambda processing
+        videoJob.status = 'ready_for_processing';
+        videoJob.createdAt = new Date().toISOString();
         
         return createResponse(200, {
-            message: 'Video assembly started successfully',
+            success: true,
+            message: 'Video assembly plan created successfully',
             video: videoJob,
-            taskArn: taskArn,
-            estimatedCompletionTime: new Date(Date.now() + (8 * 60 * 1000)).toISOString()
+            ffmpegCommand: videoJob.ffmpegCommand,
+            processingInfo: {
+                segmentCount: videoJob.mediaSequence.length,
+                estimatedDuration: videoJob.estimatedDuration,
+                complexity: videoJob.ffmpegCommand.complexity,
+                effects: videoJob.ffmpegCommand.effects
+            },
+            nextSteps: [
+                'FFmpeg command generated for dynamic video assembly',
+                'Media sequence optimized for YouTube engagement',
+                'Ready for video processing pipeline'
+            ]
         });
         
     } catch (error) {
         console.error('Error assembling project video:', error);
+        console.error('Error stack:', error.stack);
         return createResponse(500, { 
-            error: 'Failed to assemble video',
+            success: false,
+            error: 'Video assembly failed',
             message: error.message 
         });
     }
@@ -385,7 +765,15 @@ async function getVideoStatus(queryParams) {
 /**
  * Create HTTP response
  */
-// createResponse now imported from shared utilities,
+function createResponse(statusCode, body) {
+    return {
+        statusCode,
+        headers: {
+            'Content-Type': 'application/json',
+            'Access-Control-Allow-Origin': '*',
+            'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+            'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Api-Key'
+        },
         body: JSON.stringify(body, null, 2)
     };
 }

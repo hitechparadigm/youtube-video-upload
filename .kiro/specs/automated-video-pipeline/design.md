@@ -407,42 +407,270 @@ Travel tips for Europe             | 1              | 3        | active | travel
 - **Caching**: Response caching for frequently accessed data
 - **Regional Endpoints**: Cost-optimized regional deployment
 
-## AI Agent Architecture
+## Enhanced AI Agent Architecture with Intelligent Context Flow
 
 ### Overview
 
-The system uses Amazon Bedrock Agents with a hierarchical multi-agent collaboration pattern. One supervisor agent coordinates five specialized collaborator agents, each responsible for a specific aspect of video generation.
+The system uses Amazon Bedrock Agents with an enhanced hierarchical multi-agent collaboration pattern featuring intelligent context flow between agents. The Topic Management AI provides comprehensive context to the Script Generator AI, which creates detailed scene breakdowns for the Media Curator AI, enabling precise scene-media synchronization by the Video Assembler AI. This enhanced coordination ensures professional video production standards and optimal viewer engagement.
 
-### Agent Hierarchy and Communication
+### Enhanced Agent Hierarchy with Context Flow
 
 ```mermaid
 graph TD
-    USER[User Request] --> SUPER[Video Production Orchestrator]
-
+    USER[User Request] --> TOPIC[Topic Management AI]
+    
+    TOPIC --> |Enhanced Topic Context| SUPER[Video Production Orchestrator]
+    
     SUPER --> TREND[Trend Research Analyst]
-    SUPER --> SCRIPT[Content Script Writer]
-    SUPER --> MEDIA[Media Curator]
+    SUPER --> SCRIPT[Script Generator AI]
+    SUPER --> MEDIA[Media Curator AI]
     SUPER --> AUDIO[Audio Producer]
-    SUPER --> VIDEO[Video Compositor & Publisher]
+    SUPER --> VIDEO[Video Assembler AI]
 
+    TOPIC --> |Topic Context| SCRIPT
     TREND --> |Trend Data| SCRIPT
-    SCRIPT --> |Script & Requirements| MEDIA
+    SCRIPT --> |Scene Breakdown| MEDIA
     SCRIPT --> |Script Text| AUDIO
-    MEDIA --> |Media Assets| VIDEO
+    MEDIA --> |Scene-Media Mapping| VIDEO
     AUDIO --> |Audio Files| VIDEO
     VIDEO --> |Final Video| YOUTUBE[YouTube]
 
-    SUPER -.-> DDB[(DynamoDB State)]
-    TREND -.-> S3[(S3 Raw Data)]
+    SUPER -.-> DDB[(Context Storage)]
+    TOPIC -.-> S3[(Context Objects)]
     SCRIPT -.-> S3
     MEDIA -.-> S3
     AUDIO -.-> S3
     VIDEO -.-> S3
+    
+    subgraph "Context Flow"
+        CTX1[Topic Context]
+        CTX2[Scene Context]
+        CTX3[Media Context]
+        CTX4[Assembly Context]
+    end
+    
+    TOPIC --> CTX1
+    SCRIPT --> CTX2
+    MEDIA --> CTX3
+    VIDEO --> CTX4
 ```
+
+### Context Flow Architecture
+
+#### Context Object Schema
+
+**Topic Context (Topic Management AI → Script Generator AI)**:
+```json
+{
+  "mainTopic": "Investing for beginners",
+  "expandedTopics": [
+    {
+      "subtopic": "What is an ETF and why invest in ETFs",
+      "priority": "high",
+      "estimatedDuration": 90,
+      "visualNeeds": "explanatory graphics",
+      "trendScore": 95
+    },
+    {
+      "subtopic": "Top ETFs to start investing in October 2025",
+      "priority": "high", 
+      "estimatedDuration": 120,
+      "visualNeeds": "charts and data",
+      "trendScore": 88
+    }
+  ],
+  "videoStructure": {
+    "recommendedScenes": 6,
+    "hookDuration": 15,
+    "mainContentDuration": 420,
+    "conclusionDuration": 45,
+    "optimalSceneLengths": [15, 60, 90, 120, 90, 45]
+  },
+  "contentGuidance": {
+    "complexConcepts": ["ETF structure", "expense ratios"],
+    "quickWins": ["app downloads", "account setup"],
+    "visualOpportunities": ["portfolio growth", "app interfaces"],
+    "emotionalBeats": ["success stories", "fear of missing out"]
+  },
+  "sceneContexts": [
+    {
+      "sceneNumber": 1,
+      "purpose": "hook",
+      "duration": 15,
+      "content": "attention-grabbing opener about ETF success",
+      "visualStyle": "dynamic, eye-catching",
+      "mediaNeeds": ["portfolio growth animation", "success imagery"],
+      "tone": "exciting, curious"
+    }
+  ],
+  "seoContext": {
+    "primaryKeywords": ["ETF investing", "beginner ETFs"],
+    "longTailKeywords": ["best ETFs for beginners 2025", "how to invest in ETFs"],
+    "trendingTerms": ["passive investing", "index funds"],
+    "competitorTopics": ["Vanguard ETFs", "S&P 500 investing"]
+  }
+}
+```
+
+**Scene Context (Script Generator AI → Media Curator AI)**:
+```json
+{
+  "scenes": [
+    {
+      "sceneNumber": 1,
+      "purpose": "hook",
+      "duration": 15,
+      "startTime": 0,
+      "endTime": 15,
+      "narration": "What if I told you there's one investment that made beginners $10,000 in their first year?",
+      "visualRequirements": {
+        "primary": "money growth visualization",
+        "secondary": ["happy investor", "portfolio charts"],
+        "style": "dynamic and engaging",
+        "mood": "exciting and optimistic"
+      },
+      "mediaNeeds": {
+        "imageCount": 2,
+        "videoCount": 1,
+        "keywords": ["investment success", "money growth", "portfolio", "celebration"],
+        "duration": 15,
+        "transitions": "fast-paced cuts"
+      },
+      "engagementElements": ["curiosity gap", "specific number", "success story"]
+    }
+  ],
+  "overallStyle": "professional yet accessible",
+  "targetAudience": "investment beginners",
+  "emotionalJourney": ["curiosity", "excitement", "confidence", "action"]
+}
+```
+
+**Media Context (Media Curator AI → Video Assembler AI)**:
+```json
+{
+  "sceneMediaMapping": [
+    {
+      "sceneNumber": 1,
+      "duration": 15,
+      "mediaAssets": [
+        {
+          "assetId": "pexels_video_001",
+          "type": "video",
+          "startTime": 0,
+          "duration": 8,
+          "s3Location": "s3://bucket/media/videos/pexels_video_001.mp4",
+          "description": "Portfolio growth animation",
+          "relevanceScore": 95
+        },
+        {
+          "assetId": "pexels_img_002", 
+          "type": "image",
+          "startTime": 8,
+          "duration": 7,
+          "s3Location": "s3://bucket/media/images/pexels_img_002.jpg",
+          "description": "Happy investor celebrating",
+          "relevanceScore": 92
+        }
+      ],
+      "transitionStyle": "crossfade",
+      "visualFlow": "growth → success → emotion"
+    }
+  ],
+  "totalAssets": 24,
+  "qualityScore": 94,
+  "coverageComplete": true
+}
+```
+
+#### Context Validation and Error Handling
+
+**Context Validation Rules**:
+- Topic Context must include expandedTopics array with minimum 5 items
+- Scene Context must have precise timing with no gaps or overlaps
+- Media Context must provide 100% scene coverage
+- All context objects must include confidence scores and fallback options
+
+**Error Recovery Strategies**:
+- Missing context elements trigger targeted regeneration requests
+- Invalid timing triggers automatic scene duration adjustment
+- Insufficient media triggers expanded search with relaxed criteria
+- Context corruption triggers rollback to last valid state
 
 ### Agent Specifications
 
-#### 1. Supervisor Agent: Video Production Orchestrator
+#### 1. Enhanced Topic Management AI Agent
+
+**Purpose:** Generate comprehensive context and related topics for intelligent video production
+
+**Input:**
+```json
+{
+  "baseTopic": "Investing for beginners",
+  "targetAudience": "beginners",
+  "contentType": "educational",
+  "videoDuration": 480,
+  "videoStyle": "engaging_educational"
+}
+```
+
+**Enhanced Output:**
+```json
+{
+  "topicContext": {
+    "mainTopic": "Investing for beginners",
+    "expandedTopics": [
+      {
+        "subtopic": "What is an ETF and why invest in ETFs",
+        "priority": "high",
+        "estimatedDuration": 90,
+        "visualNeeds": "explanatory graphics",
+        "trendScore": 95,
+        "searchVolume": 50000,
+        "competitionLevel": "medium"
+      }
+    ],
+    "videoStructure": {
+      "recommendedScenes": 6,
+      "hookDuration": 15,
+      "mainContentDuration": 420,
+      "conclusionDuration": 45,
+      "optimalSceneLengths": [15, 60, 90, 120, 90, 45]
+    },
+    "contentGuidance": {
+      "complexConcepts": ["ETF structure", "expense ratios"],
+      "quickWins": ["app downloads", "account setup"],
+      "visualOpportunities": ["portfolio growth", "app interfaces"],
+      "emotionalBeats": ["success stories", "fear of missing out"]
+    },
+    "sceneContexts": [
+      {
+        "sceneNumber": 1,
+        "purpose": "hook",
+        "duration": 15,
+        "content": "attention-grabbing opener about ETF success",
+        "visualStyle": "dynamic, eye-catching",
+        "mediaNeeds": ["portfolio growth animation", "success imagery"],
+        "tone": "exciting, curious"
+      }
+    ],
+    "seoContext": {
+      "primaryKeywords": ["ETF investing", "beginner ETFs"],
+      "longTailKeywords": ["best ETFs for beginners 2025", "how to invest in ETFs"],
+      "trendingTerms": ["passive investing", "index funds"],
+      "competitorTopics": ["Vanguard ETFs", "S&P 500 investing"]
+    }
+  }
+}
+```
+
+**Responsibilities:**
+- Generate 10-20 related subtopics using AI analysis and trend data
+- Determine optimal video duration based on topic complexity
+- Provide detailed scene structure recommendations
+- Include SEO keywords and competitive analysis
+- Pass comprehensive context to Script Generator AI
+
+#### 2. Supervisor Agent: Video Production Orchestrator
 
 **Purpose:** Central coordinator that manages the entire video generation workflow
 
@@ -621,16 +849,16 @@ graph TD
 }
 ```
 
-**Responsibilities:**
+**Enhanced Responsibilities:**
 
-- Take basic topic input (e.g., "Investing for beginners in the USA")
-- Analyze current trends from last 7 days across all sources
-- Use AI to identify specific, trendy video angles and subtopics
-- Generate exact number of video topics based on daily frequency
-- Create optimized keywords and content strategies for each video
-- Rank video concepts by estimated engagement potential
-- Provide reasoning and trend insights for each generated topic
-- Store comprehensive trend analysis and generated topics in DynamoDB
+- Analyze each scene's visual requirements, duration, and emotional tone from scene context
+- Use scene-specific keywords and context to find highly relevant images and videos
+- Assess and select media that is very close to scene context using AI similarity analysis when no 100% match exists
+- Ensure sufficient variety and appropriate pacing to maintain visual interest throughout video
+- Consider scene transitions and visual flow between consecutive scenes
+- Provide detailed scene-media mapping with context, sequence, and timing information to Video Assembler
+- Organize assets by scene number and include metadata for precise synchronization
+- Support multiple media sources (Pexels, Pixabay, Unsplash, custom S3 libraries) through configurable sources
 
 **Tools & Action Groups:**
 
@@ -644,30 +872,34 @@ graph TD
 
 ---
 
-#### 3. Collaborator Agent: Engaging Content Script Writer
+#### 3. Enhanced Script Generator AI Agent
 
-**Purpose:** Creates highly engaging, subscriber-focused video scripts that maximize watch time and channel growth
+**Purpose:** Creates scene-aware scripts with professional video production practices using enhanced topic context
 
-**Input:**
+**Enhanced Input:**
 
 ```json
 {
-  "specificTopic": "Best Investment Apps for Beginners in 2025",
+  "topicContext": {
+    "mainTopic": "Investing for beginners",
+    "expandedTopics": [...],
+    "videoStructure": {
+      "recommendedScenes": 6,
+      "optimalSceneLengths": [15, 60, 90, 120, 90, 45]
+    },
+    "contentGuidance": {
+      "complexConcepts": ["ETF structure"],
+      "quickWins": ["app downloads"],
+      "visualOpportunities": ["portfolio growth"],
+      "emotionalBeats": ["success stories"]
+    },
+    "sceneContexts": [...],
+    "seoContext": {...}
+  },
   "trendAnalysis": "object from Trend Research Analyst",
   "targetDuration": 480,
   "targetAudience": "beginner investors",
-  "contentStyle": "engaging_educational",
-  "engagementGoals": {
-    "watchTimeTarget": "80%",
-    "subscriberConversionRate": "5%",
-    "clickThroughRate": "8%"
-  },
-  "contentFormats": [
-    "top_list",
-    "comparison",
-    "secrets_revealed",
-    "mistakes_to_avoid"
-  ]
+  "contentStyle": "engaging_educational"
 }
 ```
 
@@ -842,63 +1074,139 @@ graph TD
 }
 ```
 
-**Responsibilities:**
+**Enhanced Responsibilities:**
 
-- Create highly engaging scripts with hooks, stories, and curiosity gaps
-- Design content structure for maximum watch time and subscriber conversion
-- Generate click-worthy titles that balance curiosity with honesty
-- Create compelling thumbnails with emotional triggers and clear value propositions
-- Incorporate engagement psychology (social proof, scarcity, curiosity, personal connection)
-- Structure videos with retention tactics (countdowns, reveals, surprises, cliffhangers)
-- Optimize calls-to-action for subscription growth and community building
-- Balance entertainment value with educational content for long-term subscriber loyalty
-- Create content that encourages comments, shares, and repeat viewing
+- Use enhanced topic context to create scene-aware scripts following video production best practices
+- Break content into 4-8 scenes with optimal duration distribution based on topic context
+- Follow engagement principles: attention-grabbing opener, value-packed middle sections, compelling CTA
+- Include specific visual requirements, emotional tone, and pacing recommendations for each scene
+- Provide precise timestamps and duration for each scene to enable accurate media synchronization
+- Pass detailed scene breakdown to Media Curator AI including sceneNumber, purpose, duration, content, visualStyle, mediaNeeds, and tone
+- Incorporate retention techniques like questions, surprises, and "wait for it" moments based on topic context
+- Generate click-worthy titles and compelling descriptions
+- Create content structure for maximum watch time and subscriber conversion
 
-**Tools & Action Groups:**
+#### 5. Enhanced Video Assembler AI Agent
 
-- Amazon Bedrock (Claude 3 Sonnet) for script generation
-- Prompt engineering templates for different content types
-- SEO optimization algorithms
-- Content quality validation
-- S3 storage for script versions
-- Keyword density analysis
+**Purpose:** Precisely synchronize media assets with scenes using detailed scene-media mapping for professional video production
 
----
-
-#### 4. Collaborator Agent: Media Curator (Enhanced Content-Relevant)
-
-**Purpose:** Intelligently searches, evaluates, and curates high-quality media assets from Pexels and Pixabay that perfectly match script content
-
-**Input:**
+**Enhanced Input:**
 
 ```json
 {
-  "script": "object from Content Script Writer",
-  "trendAnalysis": "object with trending keywords",
-  "scenes": [
+  "sceneMediaMapping": [
     {
-      "sceneId": 1,
+      "sceneNumber": 1,
       "duration": 15,
-      "narration": "What if I told you there's an app that can turn your spare change into thousands of dollars?",
-      "visualRequirements": [
-        "money growing animation",
-        "phone with apps",
-        "investment success"
+      "mediaAssets": [
+        {
+          "assetId": "pexels_video_001",
+          "type": "video",
+          "startTime": 0,
+          "duration": 8,
+          "s3Location": "s3://bucket/media/videos/pexels_video_001.mp4",
+          "description": "Portfolio growth animation",
+          "relevanceScore": 95
+        }
       ],
-      "keywords": [
-        "investment apps",
-        "money growth",
-        "smartphone",
-        "success",
-        "wealth building"
-      ],
-      "mood": "exciting",
-      "style": "modern"
+      "transitionStyle": "crossfade",
+      "visualFlow": "growth → success → emotion"
     }
   ],
+  "audioFiles": {
+    "narration": "s3://bucket/audio/narration.mp3",
+    "backgroundMusic": "s3://bucket/audio/background.mp3"
+  },
+  "videoStructure": {
+    "totalDuration": 480,
+    "aspectRatio": "16:9",
+    "resolution": "1920x1080"
+  }
+}
+```
+
+**Enhanced Output:**
+
+```json
+{
+  "assembledVideo": {
+    "videoId": "video_001",
+    "s3Location": "s3://bucket/final-videos/video_001.mp4",
+    "duration": 480,
+    "resolution": "1920x1080",
+    "sceneAccuracy": 98.5,
+    "syncQuality": "excellent",
+    "processingTime": 180,
+    "qualityMetrics": {
+      "audioVideoSync": 99.2,
+      "transitionSmoothness": 96.8,
+      "visualConsistency": 94.5,
+      "overallQuality": 96.8
+    }
+  }
+}
+```
+
+**Enhanced Responsibilities:**
+
+- Synchronize media assets with exact scene timestamps from scene-media mapping
+- Ensure each media asset appears at correct time and duration as specified in scene breakdown
+- Implement smooth transitions between scenes using appropriate effects and timing
+- Align speech with relevant visuals using detailed scene context and timing information
+- Maintain consistent visual quality and pacing throughout video
+- Validate that all scenes have appropriate media coverage and timing accuracy
+- Generate final output that meets professional production standards with proper scene flow
+- Create seamless audio-visual synchronization with background music and narration
+- Implement professional video production techniques like match cuts and visual continuity
+
+**Tools & Action Groups:**
+
+- FFmpeg on AWS Fargate for video processing
+- Amazon Rekognition for quality validation
+- Scene-based assembly algorithms
+- Audio-visual synchronization tools
+- Professional transition effects library
+- Quality assurance validation
+
+---
+
+#### 4. Enhanced Media Curator AI Agent
+
+**Purpose:** Intelligently matches media assets to specific scenes using detailed scene context and AI similarity analysis
+
+**Enhanced Input:**
+
+```json
+{
+  "sceneContext": {
+    "scenes": [
+      {
+        "sceneNumber": 1,
+        "purpose": "hook",
+        "duration": 15,
+        "startTime": 0,
+        "endTime": 15,
+        "narration": "What if I told you there's one investment that made beginners $10,000?",
+        "visualRequirements": {
+          "primary": "money growth visualization",
+          "secondary": ["happy investor", "portfolio charts"],
+          "style": "dynamic and engaging",
+          "mood": "exciting and optimistic"
+        },
+        "mediaNeeds": {
+          "imageCount": 2,
+          "videoCount": 1,
+          "keywords": ["investment success", "money growth", "portfolio"],
+          "duration": 15,
+          "transitions": "fast-paced cuts"
+        }
+      }
+    ],
+    "overallStyle": "professional yet accessible",
+    "targetAudience": "investment beginners"
+  },
   "videoDuration": 480,
-  "targetQuality": "1080p",
-  "contentStyle": "professional_engaging"
+  "targetQuality": "1080p"
 }
 ```
 
@@ -1343,6 +1651,136 @@ const pixabayParams = {
 - Better cost control
 - Higher reliability
 - More customization options
+
+## Context Management System
+
+### Overview
+
+The Context Management System enables intelligent information flow between AI agents, ensuring each agent receives comprehensive context from previous agents to make informed decisions and produce higher quality outputs.
+
+### Context Storage Architecture
+
+```mermaid
+graph TB
+    subgraph "Context Flow"
+        TOPIC[Topic Management AI] --> CTX1[Topic Context]
+        SCRIPT[Script Generator AI] --> CTX2[Scene Context]
+        MEDIA[Media Curator AI] --> CTX3[Media Context]
+        VIDEO[Video Assembler AI] --> CTX4[Assembly Context]
+    end
+    
+    subgraph "Storage Layer"
+        DDB[(DynamoDB)]
+        S3[(S3 Buckets)]
+    end
+    
+    subgraph "Context Processing"
+        VALIDATE[Context Validator]
+        COMPRESS[Context Compressor]
+        CACHE[Context Cache]
+    end
+    
+    CTX1 --> VALIDATE
+    CTX2 --> VALIDATE
+    CTX3 --> VALIDATE
+    CTX4 --> VALIDATE
+    
+    VALIDATE --> COMPRESS
+    COMPRESS --> DDB
+    COMPRESS --> S3
+    
+    DDB --> CACHE
+    S3 --> CACHE
+```
+
+### Context Object Management
+
+**DynamoDB Context Table Schema:**
+```json
+{
+  "contextId": "video_001_topic_context",
+  "videoId": "video_001", 
+  "agentType": "topic_management",
+  "contextType": "topic_context",
+  "contextSize": 2048,
+  "s3Location": "s3://bucket/context/video_001_topic.json",
+  "createdAt": "2025-01-15T10:00:00Z",
+  "ttl": 1642248000,
+  "validationStatus": "valid",
+  "compressionRatio": 0.65
+}
+```
+
+**Context Validation Rules:**
+- Topic Context: Must include expandedTopics (min 5), videoStructure, contentGuidance
+- Scene Context: Must have complete scene coverage with no timing gaps
+- Media Context: Must provide 100% scene coverage with quality scores
+- Assembly Context: Must include sync quality metrics and validation results
+
+**Context Compression Strategy:**
+- Small contexts (<1KB): Store directly in DynamoDB
+- Medium contexts (1KB-10KB): Compress and store in DynamoDB
+- Large contexts (>10KB): Store in S3 with DynamoDB reference
+- Automatic compression using gzip for JSON objects
+
+### Context Transfer Protocol
+
+**Context Request Format:**
+```json
+{
+  "requestId": "req_001",
+  "videoId": "video_001",
+  "requestingAgent": "script_generator",
+  "requiredContexts": ["topic_context", "trend_analysis"],
+  "fallbackBehavior": "use_defaults",
+  "timeout": 30000
+}
+```
+
+**Context Response Format:**
+```json
+{
+  "requestId": "req_001",
+  "status": "success",
+  "contexts": {
+    "topic_context": {...},
+    "trend_analysis": {...}
+  },
+  "metadata": {
+    "retrievalTime": 150,
+    "cacheHit": true,
+    "validationPassed": true
+  }
+}
+```
+
+### Error Handling and Recovery
+
+**Context Validation Failures:**
+- Missing required fields → Request targeted regeneration
+- Invalid data types → Apply data transformation rules
+- Incomplete coverage → Generate fallback context
+- Corruption detected → Rollback to last valid state
+
+**Recovery Strategies:**
+- Partial context available → Continue with reduced functionality
+- Complete context failure → Generate minimal viable context
+- Timeout scenarios → Use cached context from similar videos
+- Agent failure → Preserve context for retry attempts
+
+### Performance Optimization
+
+**Context Caching Strategy:**
+- Frequently accessed contexts cached in memory (Redis)
+- Similar topic contexts reused with modifications
+- Context templates for common video types
+- Intelligent cache invalidation based on content freshness
+
+**Compression and Storage:**
+- JSON context objects compressed using gzip
+- Large media contexts stored in S3 with streaming access
+- Context deduplication for similar video topics
+- Automatic cleanup of expired contexts using TTL
 
 ## Components and Interfaces
 

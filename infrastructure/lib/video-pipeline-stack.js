@@ -121,6 +121,7 @@ export class VideoPipelineStack extends Stack {
         'bedrock:InvokeModelWithResponseStream',
         // Polly permissions
         'polly:SynthesizeSpeech',
+        'polly:DescribeVoices',
         // Rekognition permissions
         'rekognition:DetectLabels',
         'rekognition:DetectText',
@@ -192,14 +193,14 @@ export class VideoPipelineStack extends Stack {
     const mediaCuratorFunction = new Function(this, 'MediaCuratorFunction', {
       functionName: `${projectName}-media-curator-v2`,
       runtime: Runtime.NODEJS_20_X,
-      handler: 'handler.handler',
+      handler: 'index.handler',
       code: Code.fromAsset(join(process.cwd(), '../src/lambda/media-curator')),
       timeout: Duration.minutes(10),
       memorySize: 512,
       role: lambdaRole,
       environment: {
         S3_BUCKET_NAME: primaryBucket.bucketName,
-        MEDIA_SECRET_NAME: `${projectName}/media-credentials`,
+        API_KEYS_SECRET_NAME: `${projectName}/api-keys`,
         NODE_ENV: environment
       }
     });
@@ -224,7 +225,7 @@ export class VideoPipelineStack extends Stack {
     const videoAssemblerFunction = new Function(this, 'VideoAssemblerFunction', {
       functionName: `${projectName}-video-assembler-v2`,
       runtime: Runtime.NODEJS_20_X,
-      handler: 'handler.handler',
+      handler: 'index.handler',
       code: Code.fromAsset(join(process.cwd(), '../src/lambda/video-assembler')),
       timeout: Duration.minutes(15),
       memorySize: 1024,
@@ -373,6 +374,11 @@ export class VideoPipelineStack extends Stack {
     workflowResource.addResource('status').addMethod('GET', new LambdaIntegration(workflowOrchestratorFunction), { apiKeyRequired: true });
     workflowResource.addResource('list').addMethod('GET', new LambdaIntegration(workflowOrchestratorFunction), { apiKeyRequired: true });
     workflowResource.addResource('stats').addMethod('GET', new LambdaIntegration(workflowOrchestratorFunction), { apiKeyRequired: true });
+
+    // Media endpoints
+    const mediaResource = api.root.addResource('media');
+    mediaResource.addResource('search').addMethod('POST', new LambdaIntegration(mediaCuratorFunction), { apiKeyRequired: true });
+    mediaResource.addResource('curate').addMethod('POST', new LambdaIntegration(mediaCuratorFunction), { apiKeyRequired: true });
 
     // Video endpoints
     const videoResource = api.root.addResource('video');

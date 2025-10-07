@@ -64,14 +64,19 @@ External APIs ──→ Trend Analysis   ──→ S3 Bucket ──→ Web Inter
 User Input   ──→ Content Creation  ──→ Secrets   ──→ Mobile Apps
 ```
 
-### **AI Agent Architecture (Planned)**
+### **Enhanced AI Agent Architecture (In Development)**
 
 ```
-📊 Trend Research Analyst ──→ 🎯 Video Production Orchestrator
-✍️ Content Script Writer   ──→     (Supervisor Agent)
-🎨 Media Curator          ──→           │
-🎵 Audio Producer         ──→           ▼
-🎬 Video Compositor       ──→    📺 Published Videos
+🎯 Topic Management AI ──→ Enhanced Context ──→ 📝 Script Generator AI
+     │                                              │
+     ▼                                              ▼
+🔍 Trend Research ──→ Scene Context ──→ 🎨 Media Curator AI
+     │                                              │
+     ▼                                              ▼
+🎵 Audio Producer ──→ Scene-Media Mapping ──→ 🎬 Video Assembler AI
+     │                                              │
+     ▼                                              ▼
+📺 YouTube Publisher ←── Professional Video ←── Context Flow
 ```
 
 ## 📈 **Key Metrics & Performance**
@@ -162,11 +167,11 @@ User Input   ──→ Content Creation  ──→ Secrets   ──→ Mobile Ap
 
 ## 🔮 **Future Roadmap**
 
-### **Phase 2B: Content Creation (Next 2-3 Months)**
-- **Script Generation**: AI-powered video scripts with hooks and CTAs
-- **Title Optimization**: Click-worthy titles with A/B testing
-- **Thumbnail Concepts**: AI-generated thumbnail ideas
-- **SEO Integration**: Automatic keyword optimization
+### **Phase 2B: Enhanced AI Coordination (Current - Next 1-2 Months)**
+- **Topic Management AI**: Generate 10-20 related subtopics with comprehensive context
+- **Scene-Aware Script Generation**: Professional video production with precise timing
+- **Intelligent Media Curation**: Scene-specific media matching with AI analysis
+- **Context Management System**: Seamless information flow between AI agents
 
 ### **Phase 3: Media Production (3-6 Months)**
 - **Media Curation**: Multi-source image/video collection

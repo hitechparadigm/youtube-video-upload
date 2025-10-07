@@ -6,20 +6,23 @@ The Automated YouTube Video Pipeline is a comprehensive AWS-based solution that 
 
 ## Requirements
 
-### Requirement 1: Simplified Topic Definition and AI-Driven Content Generation
+### Requirement 1: Enhanced Topic Management with Contextual Intelligence
 
-**User Story:** As a content creator, I want to specify simple topic ideas and let AI agents automatically research trends, generate keywords, and create optimized video content.
+**User Story:** As a content creator, I want the Topic Management AI agent to provide comprehensive context and related topics so that subsequent agents can create more targeted and engaging content.
 
 #### Acceptance Criteria
 
 1. WHEN defining topics THEN the user SHALL only need to specify basic topic ideas like "Investing for beginners in the USA" or "Travel to Mexico"
 2. WHEN setting topics THEN the user SHALL specify topic, daily frequency (e.g., 2 videos per day), and status (active/paused)
-3. WHEN a topic is defined THEN the Trend Research Analyst agent SHALL automatically analyze recent trends (last 7 days) from news, YouTube, and social media
-4. WHEN trend analysis is complete THEN the agent SHALL identify the most relevant current trends, keywords, and subtopics for the base topic
-5. WHEN generating videos THEN the system SHALL create the specified number of videos per day based on the frequency setting
-6. WHEN topics are active THEN the system SHALL continuously generate fresh content by re-analyzing trends for each video
-7. WHEN accessing external trend sources THEN the system SHALL use appropriate authentication methods for secure API access
-8. WHEN trend analysis fails THEN the system SHALL use fallback content generation and continue with available data
+3. WHEN processing a base topic THEN the Topic Management AI SHALL generate 10-20 related subtopics using AI analysis
+4. WHEN generating related topics THEN the system SHALL create associations like "Investing for beginners" → "What is an ETF and why invest in ETFs" and "Top ETFs to start investing in October 2025"
+5. WHEN analyzing topics THEN the AI SHALL use Google Trends and news analysis to identify trending variations and timely angles
+6. WHEN setting video parameters THEN the Topic Management AI SHALL determine optimal video duration (6-12 minutes) based on topic complexity and audience engagement patterns
+7. WHEN providing context THEN the agent SHALL include topic expansion, video structure recommendations, content depth analysis, and scene-specific guidance
+8. WHEN generating topic context THEN the system SHALL provide SEO keywords, trending terms, and competitor analysis insights
+9. WHEN topic analysis is complete THEN the agent SHALL pass comprehensive context including expandedTopics, videoStructure, contentGuidance, sceneContexts, and seoContext to the Script Generator
+10. WHEN accessing external trend sources THEN the system SHALL use appropriate authentication methods for secure API access
+11. WHEN trend analysis fails THEN the system SHALL use fallback content generation and continue with available data
 
 ### Requirement 2: Intelligent Trend Analysis and Content Discovery
 
@@ -35,48 +38,56 @@ The Automated YouTube Video Pipeline is a comprehensive AWS-based solution that 
 6. WHEN trend analysis is complete THEN the agent SHALL provide ranked content suggestions with estimated engagement potential
 7. IF trend analysis fails for any source THEN the agent SHALL continue with available sources and generate content based on historical data
 
-### Requirement 3: Engaging Content Generation for Maximum Subscriber Growth
+### Requirement 3: Intelligent Script Generation with Scene-Aware Context
 
-**User Story:** As a content creator, I want the system to generate highly engaging, entertaining video content that makes viewers want to subscribe and come back for more.
-
-#### Acceptance Criteria
-
-1. WHEN trend analysis is complete THEN the system SHALL generate engaging video scripts with hooks, storytelling, and subscriber-focused content
-2. WHEN creating scripts THEN the system SHALL include attention-grabbing openings, compelling narratives, and strong calls-to-action for subscriptions
-3. WHEN generating content THEN the system SHALL use engaging formats like "Top 5", "Secrets", "Mistakes to Avoid", "Before & After", and "Shocking Truth"
-4. WHEN creating scripts THEN the system SHALL incorporate trending keywords naturally while maintaining entertainment value and viewer engagement
-5. WHEN generating titles THEN the system SHALL create click-worthy, curiosity-driven titles that encourage clicks without being clickbait
-6. WHEN content generation is complete THEN the system SHALL convert scripts to dynamic, engaging audio with varied pacing and emphasis
-7. WHEN creating video structure THEN the system SHALL include engagement elements like questions, surprises, and "wait for it" moments to increase watch time
-
-### Requirement 4: Configurable Media Asset Acquisition
-
-**User Story:** As a content creator, I want the system to automatically find and download relevant media from multiple configurable sources so that my videos have professional visuals without copyright issues and I can easily add new media sources.
+**User Story:** As a content creator, I want the Script Generator AI to create detailed scene breakdowns with professional video production practices so that each scene has clear purpose and optimal pacing.
 
 #### Acceptance Criteria
 
-1. WHEN script generation is complete THEN the system SHALL search for relevant images and videos from all enabled media sources
-2. WHEN configuring media sources THEN the system SHALL support Pexels, Pixabay, Unsplash, and custom S3 libraries through AWS Secrets Manager configuration
-3. WHEN adding new media sources THEN the system SHALL allow enabling/disabling sources without code changes via Secrets Manager
-4. WHEN searching for media THEN the system SHALL use keywords extracted from the script and topic across all configured sources
-5. WHEN downloading media THEN the system SHALL store assets in dedicated S3 bucket with metadata tags for scene matching and source attribution
-6. WHEN acquiring media THEN the system SHALL ensure sufficient variety and duration to cover the entire video length
-7. WHEN media sources have rate limits THEN the system SHALL implement automatic throttling and source rotation
-8. IF media search returns insufficient results THEN the system SHALL expand search terms and retry across alternative sources
-9. WHEN storing media THEN the system SHALL track attribution requirements and license information for each source
+1. WHEN receiving topic context THEN the Script Generator AI SHALL use the enhanced context to create scene-aware scripts following video production best practices
+2. WHEN creating scripts THEN the system SHALL break content into 4-8 scenes with optimal duration distribution (hook: 15s, main content: 70-80%, conclusion: 45-60s)
+3. WHEN structuring scenes THEN the agent SHALL follow engagement principles: attention-grabbing opener, value-packed middle sections, and compelling call-to-action
+4. WHEN generating scene content THEN each scene SHALL include specific visual requirements, emotional tone, pacing recommendations, and transition strategies
+5. WHEN creating script timing THEN the system SHALL provide precise timestamps and duration for each scene to enable accurate media synchronization
+6. WHEN script generation is complete THEN the agent SHALL pass detailed scene breakdown including sceneNumber, purpose, duration, content, visualStyle, mediaNeeds, and tone to Media Curator
+7. WHEN optimizing for engagement THEN the script SHALL incorporate retention techniques like questions, surprises, and "wait for it" moments based on topic context
+8. WHEN generating titles THEN the system SHALL create click-worthy, curiosity-driven titles that encourage clicks without being clickbait
+9. WHEN content generation is complete THEN the system SHALL convert scripts to dynamic, engaging audio with varied pacing and emphasis
 
-### Requirement 5: Video Production and Assembly
+### Requirement 4: Scene-Specific Media Curation with Intelligent Matching
 
-**User Story:** As a content creator, I want the system to automatically assemble professional videos so that I have publication-ready content without manual editing.
+**User Story:** As a content creator, I want the Media Curator AI to intelligently match media assets to specific scenes so that visuals perfectly complement the script content and maintain viewer engagement.
 
 #### Acceptance Criteria
 
-1. WHEN media and audio are ready THEN the system SHALL combine assets using FFmpeg on AWS Fargate
-2. WHEN assembling video THEN the system SHALL synchronize audio with visuals using speech mark timestamps
-3. WHEN creating video THEN the system SHALL generate and embed subtitles from the script or audio transcription
-4. WHEN video assembly is complete THEN the system SHALL validate video quality using Amazon Rekognition
-5. WHEN processing video THEN the system SHALL ensure final duration is between 5-10 minutes
-6. IF video processing fails THEN the system SHALL retry with alternative media assets
+1. WHEN receiving script context THEN the Media Curator AI SHALL analyze each scene's visual requirements, duration, and emotional tone
+2. WHEN searching for media THEN the system SHALL use scene-specific keywords and context to find highly relevant images and videos
+3. WHEN no 100% match exists THEN the agent SHALL assess and select media that is very close to the scene context using AI similarity analysis
+4. WHEN curating media THEN the system SHALL ensure sufficient variety and appropriate pacing to maintain visual interest throughout the video
+5. WHEN selecting media assets THEN the agent SHALL consider scene transitions and visual flow between consecutive scenes
+6. WHEN media curation is complete THEN the system SHALL provide detailed scene-media mapping with context, sequence, and timing information to Video Assembler
+7. WHEN downloading media THEN the system SHALL organize assets by scene number and include metadata for precise synchronization
+8. WHEN configuring media sources THEN the system SHALL support Pexels, Pixabay, Unsplash, and custom S3 libraries through AWS Secrets Manager configuration
+9. WHEN adding new media sources THEN the system SHALL allow enabling/disabling sources without code changes via Secrets Manager
+10. WHEN media sources have rate limits THEN the system SHALL implement automatic throttling and source rotation
+11. WHEN storing media THEN the system SHALL track attribution requirements and license information for each source
+
+### Requirement 5: Precise Video Assembly with Scene-Media Synchronization
+
+**User Story:** As a content creator, I want the Video Assembler AI to precisely match media assets with respective scenes so that the final video has professional timing and seamless transitions.
+
+#### Acceptance Criteria
+
+1. WHEN receiving scene-media mapping THEN the Video Assembler AI SHALL synchronize media assets with exact scene timestamps
+2. WHEN assembling video THEN the system SHALL ensure each media asset appears at the correct time and duration as specified in the scene breakdown
+3. WHEN creating transitions THEN the agent SHALL implement smooth transitions between scenes using appropriate effects and timing
+4. WHEN synchronizing audio THEN the system SHALL align speech with relevant visuals using the detailed scene context and timing information
+5. WHEN processing scenes THEN the assembler SHALL maintain consistent visual quality and pacing throughout the video
+6. WHEN assembly is complete THEN the system SHALL validate that all scenes have appropriate media coverage and timing accuracy
+7. WHEN generating final output THEN the video SHALL meet professional production standards with proper scene flow and engagement optimization
+8. WHEN creating video THEN the system SHALL generate and embed subtitles from the script or audio transcription
+9. WHEN processing video THEN the system SHALL ensure final duration matches the optimal duration determined by Topic Management AI
+10. IF video processing fails THEN the system SHALL retry with alternative media assets
 
 ### Requirement 6: YouTube Publishing with Engagement-Focused SEO
 
@@ -104,17 +115,21 @@ The Automated YouTube Video Pipeline is a comprehensive AWS-based solution that 
 4. WHEN automation is active THEN the system SHALL continue running until manually stopped or error threshold reached
 5. IF scheduled execution fails THEN the system SHALL send notifications and attempt retry at next scheduled time
 
-### Requirement 8: AI Agent Orchestration
+### Requirement 8: Enhanced AI Agent Context Flow Architecture
 
-**User Story:** As a system administrator, I want AI agents to coordinate the video creation process so that complex workflows are managed intelligently and efficiently.
+**User Story:** As a system administrator, I want a robust context passing system between AI agents so that information flows seamlessly and each agent builds upon previous work.
 
 #### Acceptance Criteria
 
-1. WHEN pipeline starts THEN the Video Production Orchestrator agent SHALL coordinate all specialized agents
-2. WHEN delegating tasks THEN the supervisor agent SHALL route work to appropriate collaborator agents
-3. WHEN agents are working THEN the system SHALL support parallel execution for independent tasks
-4. WHEN agent communication is needed THEN the system SHALL use shared state in DynamoDB for coordination
-5. IF any agent fails THEN the supervisor agent SHALL implement error recovery and workflow continuation
+1. WHEN agents communicate THEN the system SHALL use structured JSON context objects with standardized schemas
+2. WHEN passing context THEN each agent SHALL validate received context and provide detailed error handling for missing or invalid data
+3. WHEN context flows between agents THEN the system SHALL maintain data integrity and ensure no critical information is lost
+4. WHEN storing context THEN the system SHALL use DynamoDB with TTL for temporary context storage and S3 for larger context objects
+5. WHEN context validation fails THEN the system SHALL implement fallback mechanisms and continue processing with available data
+6. WHEN debugging workflows THEN the system SHALL log all context transfers with timestamps and agent identifiers for troubleshooting
+7. WHEN scaling processing THEN the context flow system SHALL support parallel execution while maintaining data consistency
+8. WHEN pipeline starts THEN the Video Production Orchestrator agent SHALL coordinate all specialized agents
+9. IF any agent fails THEN the supervisor agent SHALL implement error recovery and workflow continuation
 
 ### Requirement 9: Isolated Data Storage and Management
 
@@ -170,7 +185,49 @@ The Automated YouTube Video Pipeline is a comprehensive AWS-based solution that 
 5. WHEN updating dependencies THEN the system SHALL ensure compatibility with Node.js 20.x runtime
 6. WHEN running in production THEN the system SHALL receive latest security patches and performance improvements from AWS
 
-### Requirement 13: Per-Video Cost Tracking
+### Requirement 13: Professional Video Production Standards
+
+**User Story:** As a content creator, I want the system to follow professional video production practices so that generated videos meet industry standards for engagement and quality.
+
+#### Acceptance Criteria
+
+1. WHEN structuring videos THEN the system SHALL implement the "Hook-Value-CTA" framework with optimal timing for each section
+2. WHEN creating scene transitions THEN the agent SHALL use professional techniques like match cuts, fade transitions, and visual continuity
+3. WHEN pacing content THEN the system SHALL vary scene lengths to maintain viewer attention with shorter scenes for complex topics
+4. WHEN designing visual flow THEN the agent SHALL ensure consistent visual style and appropriate contrast between consecutive scenes
+5. WHEN optimizing for retention THEN the system SHALL place engagement hooks every 30-45 seconds to maintain viewer interest
+6. WHEN creating audio-visual sync THEN the assembler SHALL ensure perfect timing between speech, visuals, and background music
+7. WHEN validating output THEN the system SHALL check for professional standards including proper aspect ratios, audio levels, and visual quality
+
+### Requirement 14: Intelligent Media Assessment and Selection
+
+**User Story:** As a content creator, I want the Media Curator AI to make intelligent decisions about media selection so that even imperfect matches contribute effectively to the video narrative.
+
+#### Acceptance Criteria
+
+1. WHEN evaluating media relevance THEN the system SHALL use AI image/video analysis to assess content similarity to scene requirements
+2. WHEN no perfect match exists THEN the agent SHALL select media based on conceptual relevance, visual appeal, and emotional alignment
+3. WHEN assessing media quality THEN the system SHALL evaluate resolution, composition, and professional appearance using computer vision
+4. WHEN selecting from multiple options THEN the agent SHALL prioritize media that enhances the narrative flow and maintains visual interest
+5. WHEN media variety is needed THEN the system SHALL ensure diverse visual styles while maintaining thematic consistency
+6. WHEN duration matching is required THEN the agent SHALL select or edit media to fit exact scene timing requirements
+7. WHEN media assessment is complete THEN the system SHALL provide confidence scores and alternative options for each scene
+
+### Requirement 15: Context-Aware Error Handling and Recovery
+
+**User Story:** As a system administrator, I want intelligent error handling that considers context from previous agents so that failures are handled gracefully without losing valuable work.
+
+#### Acceptance Criteria
+
+1. WHEN agent failures occur THEN the system SHALL preserve context from successful agents and attempt recovery with available data
+2. WHEN context validation fails THEN the agent SHALL identify specific missing elements and request targeted regeneration
+3. WHEN media curation fails THEN the system SHALL use fallback media sources and adjust scene requirements accordingly
+4. WHEN assembly errors occur THEN the Video Assembler SHALL attempt alternative media combinations using the scene context
+5. WHEN partial failures happen THEN the system SHALL complete processing with reduced functionality rather than complete failure
+6. WHEN recovery is attempted THEN the system SHALL log detailed error context and recovery actions for system improvement
+7. WHEN critical context is missing THEN the agent SHALL generate minimal viable context to continue processing
+
+### Requirement 16: Per-Video Cost Tracking
 
 **User Story:** As a system owner, I want to track the exact cost of generating each video so that I can optimize the pipeline economics and understand profitability.
 

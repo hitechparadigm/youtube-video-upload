@@ -126,7 +126,7 @@ async function createTopicInPipeline(topic) {
         };
         
         const result = await lambda.invoke({
-            FunctionName: 'topic-management',
+            FunctionName: 'automated-video-pipeline-topic-management-v2',
             Payload: JSON.stringify(payload)
         }).promise();
         

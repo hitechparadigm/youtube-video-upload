@@ -6,6 +6,7 @@
 const { BedrockRuntimeClient, InvokeModelCommand } = require('@aws-sdk/client-bedrock-runtime');
 const { DynamoDBClient } = require('@aws-sdk/client-dynamodb');
 const { DynamoDBDocumentClient, PutCommand, QueryCommand, GetCommand } = require('@aws-sdk/lib-dynamodb');
+const { S3Client, PutObjectCommand } = require('@aws-sdk/client-s3');
 const { initializeConfig, getConfigManager } = require('/opt/nodejs/config-manager');
 
 // Global configuration
@@ -15,6 +16,7 @@ let config = null;
 let bedrockClient = null;
 let dynamoClient = null;
 let docClient = null;
+let s3Client = null;
 
 // Configuration values
 let SCRIPTS_TABLE = null;
@@ -35,7 +37,12 @@ async function initializeService() {
         const region = config.ai?.models?.primary?.region || process.env.AWS_REGION || 'us-east-1';
         bedrockClient = new BedrockRuntimeClient({ region });
         dynamoClient = new DynamoDBClient({ region });
-        docClient = DynamoDBDocumentClient.from(dynamoClient);
+        docClient = DynamoDBDocumentClient.from(dynamoClient, {
+            marshallOptions: {
+                removeUndefinedValues: true
+            }
+        });
+        s3Client = new S3Client({ region });
         
         // Set table names
         SCRIPTS_TABLE = process.env.SCRIPTS_TABLE_NAME || 'automated-video-pipeline-scripts';
@@ -106,7 +113,8 @@ async function generateScript(requestBody) {
         style = 'engaging_educational',
         targetAudience = 'general',
         includeVisuals = true,
-        includeTiming = true 
+        includeTiming = true,
+        projectId = null // Project ID for organized storage
     } = requestBody;
     
     try {
@@ -132,7 +140,7 @@ async function generateScript(requestBody) {
         });
         
         // Store the generated script
-        const storedScript = await storeScript(scriptData);
+        const storedScript = await storeScript(scriptData, projectId);
         
         return createResponse(200, {
             message: 'Script generated successfully',
@@ -216,10 +224,10 @@ async function generateScriptWithAI(params) {
         includeTiming
     });
     
-    // Get AI model configuration
-    const modelId = config.ai?.models?.primary?.id || process.env.BEDROCK_MODEL_ID;
-    const temperature = config.ai?.models?.primary?.temperature || 0.7;
-    const maxTokens = config.ai?.models?.primary?.maxTokens || 4000;
+    // Get AI model configuration with defaults
+    const modelId = config?.ai?.models?.primary?.id || process.env.BEDROCK_MODEL_ID || 'anthropic.claude-3-sonnet-20240229-v1:0';
+    const temperature = config?.ai?.models?.primary?.temperature || 0.7;
+    const maxTokens = config?.ai?.models?.primary?.maxTokens || 4000;
     
     const requestBody = {
         anthropic_version: "bedrock-2023-05-31",
@@ -458,7 +466,7 @@ function createFallbackScript(aiResponse, originalParams) {
 /**
  * Store generated script in DynamoDB
  */
-async function storeScript(scriptData) {
+async function storeScript(scriptData, projectId = null) {
     const item = {
         PK: `SCRIPT#${scriptData.scriptId}`,
         SK: 'METADATA',
@@ -466,13 +474,325 @@ async function storeScript(scriptData) {
         ttl: Math.floor(Date.now() / 1000) + (90 * 24 * 60 * 60) // 90 days TTL
     };
     
+    // Store in DynamoDB
     await docClient.send(new PutCommand({
         TableName: SCRIPTS_TABLE,
         Item: item
     }));
     
+    // Also save to S3 in organized project structure
+    if (projectId && process.env.S3_BUCKET_NAME) {
+        try {
+            const scriptContent = {
+                scriptId: scriptData.scriptId,
+                title: scriptData.title,
+                topic: scriptData.topic,
+                scenes: scriptData.scenes,
+                metadata: {
+                    wordCount: scriptData.wordCount,
+                    estimatedDuration: scriptData.estimatedDuration,
+                    style: scriptData.style,
+                    targetAudience: scriptData.targetAudience,
+                    createdAt: scriptData.createdAt
+                }
+            };
+            
+            const s3Key = `videos/${projectId}/script/${scriptData.scriptId}.json`;
+            
+            await s3Client.send(new PutObjectCommand({
+                Bucket: process.env.S3_BUCKET_NAME,
+                Key: s3Key,
+                Body: JSON.stringify(scriptContent, null, 2),
+                ContentType: 'application/json',
+                Metadata: {
+                    scriptId: scriptData.scriptId,
+                    projectId: projectId,
+                    wordCount: scriptData.wordCount?.toString() || '0',
+                    estimatedDuration: scriptData.estimatedDuration?.toString() || '0'
+                }
+            }));
+            
+            console.log(`Script saved to S3: ${s3Key}`);
+            scriptData.s3Key = s3Key;
+            scriptData.s3Url = `s3://${process.env.S3_BUCKET_NAME}/${s3Key}`;
+            
+            // Also generate and save YouTube metadata
+            await generateAndSaveMetadata(scriptData, projectId);
+            
+        } catch (error) {
+            console.error('Error saving script to S3:', error);
+            // Don't fail the whole operation if S3 save fails
+        }
+    }
+    
     console.log(`Script stored with ID: ${scriptData.scriptId}`);
     return scriptData;
+}
+
+/**
+ * Generate and save YouTube metadata for the video
+ */
+async function generateAndSaveMetadata(scriptData, projectId) {
+    try {
+        console.log(`Generating YouTube metadata for project: ${projectId}`);
+        
+        // Generate YouTube-optimized metadata using AI
+        const metadata = await generateYouTubeMetadata(scriptData);
+        
+        // Save metadata to S3
+        const metadataKey = `videos/${projectId}/metadata/youtube.json`;
+        
+        await s3Client.send(new PutObjectCommand({
+            Bucket: process.env.S3_BUCKET_NAME,
+            Key: metadataKey,
+            Body: JSON.stringify(metadata, null, 2),
+            ContentType: 'application/json',
+            Metadata: {
+                projectId: projectId,
+                scriptId: scriptData.scriptId,
+                generatedAt: new Date().toISOString()
+            }
+        }));
+        
+        console.log(`YouTube metadata saved to S3: ${metadataKey}`);
+        
+        // Also save project summary
+        const projectSummary = {
+            projectId: projectId,
+            createdAt: new Date().toISOString(),
+            topic: scriptData.topic,
+            title: scriptData.title,
+            estimatedDuration: scriptData.estimatedDuration,
+            wordCount: scriptData.wordCount,
+            components: {
+                script: {
+                    scriptId: scriptData.scriptId,
+                    s3Key: scriptData.s3Key
+                },
+                metadata: {
+                    s3Key: metadataKey
+                }
+                // Audio and media will be added by their respective services
+            },
+            status: 'script_generated'
+        };
+        
+        const summaryKey = `videos/${projectId}/metadata/project.json`;
+        
+        await s3Client.send(new PutObjectCommand({
+            Bucket: process.env.S3_BUCKET_NAME,
+            Key: summaryKey,
+            Body: JSON.stringify(projectSummary, null, 2),
+            ContentType: 'application/json',
+            Metadata: {
+                projectId: projectId,
+                createdAt: new Date().toISOString()
+            }
+        }));
+        
+        console.log(`Project summary saved to S3: ${summaryKey}`);
+        
+    } catch (error) {
+        console.error('Error generating/saving metadata:', error);
+        // Don't fail the whole operation if metadata generation fails
+    }
+}
+
+/**
+ * Generate YouTube-optimized metadata using AI
+ */
+async function generateYouTubeMetadata(scriptData) {
+    try {
+        // Extract scene timestamps for description
+        const sceneTimestamps = scriptData.scenes ? 
+            scriptData.scenes.map((scene, index) => ({
+                time: `${Math.floor(index * (scriptData.estimatedDuration / scriptData.scenes.length) / 60)}:${String(Math.floor(index * (scriptData.estimatedDuration / scriptData.scenes.length) % 60)).padStart(2, '0')}`,
+                title: scene.title || `Section ${index + 1}`,
+                description: scene.script.substring(0, 100) + '...'
+            })) : [];
+
+        const prompt = `You are a YouTube SEO expert. Generate highly optimized metadata for this video that will maximize views, engagement, and subscriber growth.
+
+TOPIC: ${scriptData.topic}
+TITLE: ${scriptData.title}
+ESTIMATED DURATION: ${scriptData.estimatedDuration} seconds (${Math.floor(scriptData.estimatedDuration / 60)}:${String(scriptData.estimatedDuration % 60).padStart(2, '0')})
+WORD COUNT: ${scriptData.wordCount} words
+
+SCRIPT CONTENT:
+${scriptData.scenes ? scriptData.scenes.map((scene, i) => `Scene ${i + 1}: ${scene.script}`).join('\n\n') : scriptData.content || ''}
+
+REQUIREMENTS:
+1. TITLE: Create 3 engaging, clickable titles (under 60 chars each) with high-volume keywords
+2. DESCRIPTION: Write a comprehensive description (300-500 words) including:
+   - Hook in first 125 characters (mobile preview)
+   - Detailed video overview with keywords
+   - Timestamps for each major section
+   - Strong call-to-action to subscribe
+   - Related video suggestions
+   - Social media links placeholders
+   - Relevant hashtags
+3. TAGS: 15-20 highly relevant tags mixing:
+   - Primary keywords (high volume)
+   - Long-tail keywords (specific)
+   - Trending related terms
+   - Competitor analysis terms
+4. SEO OPTIMIZATION:
+   - Target 3-5 primary keywords
+   - Include semantic keywords
+   - Optimize for YouTube search algorithm
+   - Consider trending topics in the niche
+
+Focus on:
+- Emotional triggers in titles (curiosity, urgency, benefit)
+- Search intent matching
+- Beginner-friendly but authoritative tone
+- Clear value proposition
+- Engagement optimization (CTR, watch time, comments)
+
+Respond in JSON format:
+{
+    "titles": [
+        "Primary SEO title (main recommendation)",
+        "Alternative clickbait title",
+        "Long-tail keyword title"
+    ],
+    "description": "Complete optimized description with timestamps and CTAs",
+    "tags": ["primary-keyword", "long-tail-keyword", "trending-term"],
+    "primaryKeywords": ["main keyword 1", "main keyword 2"],
+    "secondaryKeywords": ["semantic keyword 1", "semantic keyword 2"],
+    "hashtags": ["#MainTopic", "#Trending", "#Educational"],
+    "category": "Education",
+    "thumbnailSuggestions": [
+        "Bold text: 'MAIN BENEFIT' with excited face",
+        "Before/After split screen with arrows",
+        "Step numbers (1,2,3) with key visuals"
+    ],
+    "timestamps": [
+        {"time": "0:00", "title": "Introduction", "description": "What you'll learn"},
+        {"time": "1:30", "title": "Main Topic", "description": "Core content"}
+    ],
+    "callToActions": {
+        "subscribe": "🔔 Subscribe for more beginner-friendly tutorials!",
+        "like": "👍 Like this video if it helped you!",
+        "comment": "💬 What's your biggest challenge with [topic]? Let me know below!",
+        "share": "📤 Share this with someone who needs to see it!"
+    },
+    "seoOptimization": {
+        "searchVolume": "High/Medium/Low",
+        "competition": "Low/Medium/High",
+        "trendingScore": "1-10",
+        "clickThroughRate": "Expected 8-12%",
+        "watchTimeOptimization": "Hooks every 30 seconds"
+    },
+    "bestPostingTime": "Tuesday-Thursday 2-4 PM EST",
+    "estimatedPerformance": {
+        "views": "10K-25K in first month",
+        "retention": "65-75% average",
+        "engagement": "4-6% engagement rate"
+    }
+}`;
+
+        const command = new InvokeModelCommand({
+            modelId: 'anthropic.claude-3-sonnet-20240229-v1:0',
+            body: JSON.stringify({
+                anthropic_version: 'bedrock-2023-05-31',
+                max_tokens: 800,
+                temperature: 0.3,
+                messages: [{
+                    role: 'user',
+                    content: prompt
+                }]
+            })
+        });
+
+        const response = await bedrockClient.send(command);
+        const result = JSON.parse(new TextDecoder().decode(response.body));
+        const metadata = JSON.parse(result.content[0].text);
+        
+        // Add additional metadata
+        metadata.generatedAt = new Date().toISOString();
+        metadata.scriptId = scriptData.scriptId;
+        metadata.originalTopic = scriptData.topic;
+        metadata.estimatedDuration = scriptData.estimatedDuration;
+        metadata.wordCount = scriptData.wordCount;
+        
+        return metadata;
+        
+    } catch (error) {
+        console.error('Error generating YouTube metadata:', error);
+        
+        // Comprehensive fallback metadata if AI generation fails
+        const topicKeywords = scriptData.topic.toLowerCase().split(' ');
+        const duration = Math.floor(scriptData.estimatedDuration / 60);
+        
+        return {
+            titles: [
+                `${scriptData.topic} - Complete Beginner's Guide 2025`,
+                `How to ${scriptData.topic}: Step-by-Step Tutorial`,
+                `${scriptData.topic} Explained Simply (${duration} Min Guide)`
+            ],
+            description: `🎯 Master ${scriptData.topic} with this comprehensive beginner's guide!\n\nIn this ${duration}-minute tutorial, you'll discover everything you need to know about ${scriptData.topic}. Perfect for beginners who want to get started quickly and effectively.\n\n📚 What You'll Learn:\n✅ Essential ${scriptData.topic} concepts\n✅ Step-by-step practical guidance\n✅ Common mistakes to avoid\n✅ Pro tips for success\n\n⏰ Timestamps:\n0:00 Introduction\n1:30 Getting Started\n${Math.floor(duration/2)}:00 Advanced Tips\n${duration-1}:30 Conclusion & Next Steps\n\n🔔 SUBSCRIBE for more beginner-friendly tutorials!\n👍 LIKE if this video helped you!\n💬 COMMENT your biggest ${scriptData.topic} question below!\n📤 SHARE with someone who needs this!\n\n🔗 Related Videos:\n• ${scriptData.topic} Mistakes to Avoid\n• Advanced ${scriptData.topic} Strategies\n• ${scriptData.topic} Tools & Resources\n\n📱 Follow us:\n• Instagram: @YourChannel\n• Twitter: @YourChannel\n• Website: yourwebsite.com\n\n#${topicKeywords.join('').replace(/\s+/g, '')} #Tutorial #Beginners #Education #HowTo #Guide #Tips #Learn #2025`,
+            tags: [
+                ...topicKeywords,
+                `${scriptData.topic.toLowerCase()} tutorial`,
+                `${scriptData.topic.toLowerCase()} guide`,
+                `${scriptData.topic.toLowerCase()} for beginners`,
+                `how to ${scriptData.topic.toLowerCase()}`,
+                `${scriptData.topic.toLowerCase()} explained`,
+                `${scriptData.topic.toLowerCase()} tips`,
+                `${scriptData.topic.toLowerCase()} 2025`,
+                'tutorial',
+                'guide',
+                'beginners',
+                'education',
+                'how to',
+                'explained',
+                'tips',
+                'step by step',
+                'complete guide',
+                'beginner friendly'
+            ],
+            primaryKeywords: [scriptData.topic.toLowerCase(), `${scriptData.topic.toLowerCase()} tutorial`, `how to ${scriptData.topic.toLowerCase()}`],
+            secondaryKeywords: [`${scriptData.topic.toLowerCase()} guide`, `${scriptData.topic.toLowerCase()} for beginners`, `${scriptData.topic.toLowerCase()} tips`],
+            hashtags: [`#${topicKeywords.join('').replace(/\s+/g, '')}`, '#Tutorial', '#Beginners', '#Education', '#HowTo'],
+            category: 'Education',
+            thumbnailSuggestions: [
+                `Bold text: "${scriptData.topic.toUpperCase()}" with excited person pointing`,
+                `"COMPLETE GUIDE" with step numbers 1,2,3 and topic imagery`,
+                `Before/After split with "${scriptData.topic} MASTERY" text overlay`
+            ],
+            timestamps: [
+                {"time": "0:00", "title": "Introduction", "description": `Welcome to ${scriptData.topic} guide`},
+                {"time": "1:30", "title": "Getting Started", "description": "Basic concepts and setup"},
+                {"time": `${Math.floor(duration/2)}:00`, "title": "Advanced Tips", "description": "Pro strategies and techniques"},
+                {"time": `${duration-1}:30`, "title": "Conclusion", "description": "Summary and next steps"}
+            ],
+            callToActions: {
+                subscribe: `🔔 Subscribe for more ${scriptData.topic.toLowerCase()} content and beginner tutorials!`,
+                like: "👍 Like this video if it helped you understand the topic better!",
+                comment: `💬 What's your biggest ${scriptData.topic.toLowerCase()} challenge? Share it in the comments!`,
+                share: "📤 Share this guide with someone who's just getting started!"
+            },
+            seoOptimization: {
+                searchVolume: "Medium",
+                competition: "Medium",
+                trendingScore: "6",
+                clickThroughRate: "Expected 6-10%",
+                watchTimeOptimization: "Educational hooks every 45 seconds"
+            },
+            bestPostingTime: 'Tuesday-Thursday 2-4 PM EST',
+            estimatedPerformance: {
+                views: '5K-15K in first month',
+                retention: '60-70% average',
+                engagement: '3-5% engagement rate'
+            },
+            generatedAt: new Date().toISOString(),
+            scriptId: scriptData.scriptId,
+            originalTopic: scriptData.topic,
+            estimatedDuration: scriptData.estimatedDuration,
+            wordCount: scriptData.wordCount
+        };
+    }
 }
 
 /**

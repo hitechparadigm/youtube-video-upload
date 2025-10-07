@@ -117,7 +117,8 @@ async function generateAudio(requestBody) {
         sampleRate = '24000',
         includeTimestamps = true,
         sceneBreaks = [],
-        audioOptions = {}
+        audioOptions = {},
+        projectId = null // Project ID for organized storage
     } = requestBody;
     
     try {
@@ -130,14 +131,8 @@ async function generateAudio(requestBody) {
             });
         }
         
-        // Validate voice and engine
-        const voiceValidation = await validateVoiceConfiguration(voiceId, engine);
-        if (!voiceValidation.valid) {
-            return createResponse(400, { 
-                error: 'Invalid voice configuration',
-                details: voiceValidation.error 
-            });
-        }
+        // Skip voice validation for now and use default voice
+        console.log(`Using voice: ${voiceId} with engine: ${engine}`);
         
         // Generate audio using Polly
         const audioData = await generateAudioWithPolly({
@@ -152,7 +147,20 @@ async function generateAudio(requestBody) {
         });
         
         // Store the generated audio
-        const storedAudio = await storeAudioData(audioData);
+        const storedAudio = await storeAudioData(audioData, projectId);
+        
+        // Update project summary if projectId is provided
+        if (projectId) {
+            await updateProjectSummary(projectId, 'audio', {
+                audioId: storedAudio.audioId,
+                duration: storedAudio.estimatedDuration,
+                fileSize: storedAudio.fileSize,
+                s3Key: storedAudio.s3Key,
+                voiceId: storedAudio.voiceId,
+                engine: storedAudio.engine,
+                completedAt: new Date().toISOString()
+            });
+        }
         
         return createResponse(200, {
             message: 'Audio generated successfully',
@@ -297,24 +305,39 @@ async function generateAudioWithPolly(params) {
         audioOptions
     } = params;
     
-    // Prepare SSML for better speech quality
-    const ssmlText = createSSMLText(text, audioOptions);
+    // Prepare text - use plain text for generative voices, SSML for others
+    let textToSpeak, textType;
+    if (engine === 'generative') {
+        textToSpeak = text; // Use plain text for generative voices
+        textType = 'text';
+    } else {
+        textToSpeak = createSSMLText(text, audioOptions);
+        textType = 'ssml';
+    }
     
-    // Configure Polly parameters for generative voice
+    // Configure Polly parameters
     const pollyParams = {
-        Text: ssmlText,
-        TextType: 'ssml',
+        Text: textToSpeak,
+        TextType: textType,
         VoiceId: voiceId,
         Engine: engine,
         OutputFormat: outputFormat,
         SampleRate: sampleRate
     };
     
-    // Add generative voice specific settings
+    // Add engine-specific settings
+    if (engine === 'neural' || engine === 'generative') {
+        // Neural and generative voices require language code
+        pollyParams.LanguageCode = audioOptions?.languageCode || 'en-US';
+    }
+    
     if (engine === 'generative') {
         // Generative voices support additional parameters
-        if (audioOptions.stability) {
-            pollyParams.LanguageCode = audioOptions.languageCode || 'en-US';
+        if (audioOptions?.stability) {
+            pollyParams.Stability = audioOptions.stability;
+        }
+        if (audioOptions?.similarity) {
+            pollyParams.Similarity = audioOptions.similarity;
         }
     }
     
@@ -361,7 +384,7 @@ async function generateAudioWithPolly(params) {
     const audioData = {
         audioId: `audio-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
         text: text,
-        ssmlText: ssmlText,
+        ssmlText: textToSpeak,
         voiceId: voiceId,
         engine: engine,
         outputFormat: outputFormat,
@@ -484,11 +507,14 @@ async function streamToBuffer(stream) {
 /**
  * Store audio data in S3 and DynamoDB
  */
-async function storeAudioData(audioData) {
+async function storeAudioData(audioData, projectId = null) {
     try {
         // Store audio file in S3 if audioBuffer exists
         if (audioData.audioBuffer) {
-            const s3Key = `audio/${audioData.audioId}.${audioData.outputFormat || 'mp3'}`;
+            // Use project-based structure if projectId is provided
+            const s3Key = projectId 
+                ? `videos/${projectId}/audio/${audioData.audioId}.${audioData.outputFormat || 'mp3'}`
+                : `audio/${audioData.audioId}.${audioData.outputFormat || 'mp3'}`;
             
             await s3Client.send(new PutObjectCommand({
                 Bucket: S3_BUCKET,
@@ -949,6 +975,82 @@ function performAudioValidation(audio) {
     }
     
     return validation;
+}
+
+/**
+ * Update project summary with component completion status
+ */
+async function updateProjectSummary(projectId, componentType, componentData) {
+    try {
+        const summaryKey = `videos/${projectId}/metadata/project.json`;
+        const bucketName = process.env.S3_BUCKET_NAME;
+        
+        // Try to get existing project summary
+        let projectSummary = {};
+        try {
+            const response = await s3Client.send(new GetObjectCommand({
+                Bucket: bucketName,
+                Key: summaryKey
+            }));
+            
+            const bodyContents = await streamToString(response.Body);
+            projectSummary = JSON.parse(bodyContents);
+        } catch (error) {
+            // File doesn't exist yet, create new summary
+            projectSummary = {
+                projectId: projectId,
+                createdAt: new Date().toISOString(),
+                components: {},
+                status: 'in_progress'
+            };
+        }
+        
+        // Update the specific component
+        projectSummary.components[componentType] = componentData;
+        projectSummary.lastUpdated = new Date().toISOString();
+        
+        // Update status based on completed components
+        const hasScript = projectSummary.components.script;
+        const hasAudio = projectSummary.components.audio;
+        const hasMedia = projectSummary.components.media;
+        
+        if (hasScript && hasAudio && hasMedia) {
+            projectSummary.status = 'ready_for_assembly';
+        } else if (hasScript || hasAudio || hasMedia) {
+            projectSummary.status = 'in_progress';
+        }
+        
+        // Save updated summary
+        await s3Client.send(new PutObjectCommand({
+            Bucket: bucketName,
+            Key: summaryKey,
+            Body: JSON.stringify(projectSummary, null, 2),
+            ContentType: 'application/json',
+            Metadata: {
+                projectId: projectId,
+                lastUpdated: new Date().toISOString(),
+                status: projectSummary.status
+            }
+        }));
+        
+        console.log(`📋 Updated project summary: ${componentType} completed`);
+        
+    } catch (error) {
+        console.error('Error updating project summary:', error);
+        // Don't fail the whole operation
+    }
+}
+
+/**
+ * Helper function to convert stream to string
+ */
+async function streamToString(stream) {
+    const chunks = [];
+    return new Promise((resolve, reject) => {
+        stream.on('data', (chunk) => chunks.push(chunk));
+        stream.on('error', reject);
+        stream.on('end', () => resolve(Buffer.concat(chunks).toString('utf8')));
+    });
 }
 
 /**

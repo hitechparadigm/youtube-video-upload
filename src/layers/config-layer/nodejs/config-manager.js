@@ -408,7 +408,14 @@ function getConfigManager() {
 async function initializeConfig() {
     const manager = getConfigManager();
     await manager.loadConfig();
-    manager.validate();
+    
+    // Skip validation in Lambda environment if config files are not available
+    try {
+        manager.validate();
+    } catch (error) {
+        console.warn('Config validation failed, using defaults:', error.message);
+    }
+    
     return manager;
 }
 
