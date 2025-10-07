@@ -77,6 +77,8 @@ exports.handler = async (event) => {
         // Route requests
         if (httpMethod === 'POST' && path === '/scripts/generate') {
             return await generateScript(requestBody);
+        } else if (httpMethod === 'POST' && path === '/scripts/generate-enhanced') {
+            return await generateEnhancedScript(requestBody);
         } else if (httpMethod === 'POST' && path === '/scripts/generate-from-topic') {
             return await generateScriptFromTopic(requestBody);
         } else if (httpMethod === 'GET' && path === '/scripts') {
@@ -102,7 +104,7 @@ exports.handler = async (event) => {
 };
 
 /**
- * Generate script from topic data
+ * Generate script from topic data with enhanced context processing
  */
 async function generateScript(requestBody) {
     const { 
@@ -114,7 +116,8 @@ async function generateScript(requestBody) {
         targetAudience = 'general',
         includeVisuals = true,
         includeTiming = true,
-        projectId = null // Project ID for organized storage
+        projectId = null, // Project ID for organized storage
+        topicContext = null // Enhanced context from Topic Management AI
     } = requestBody;
     
     try {
@@ -127,7 +130,7 @@ async function generateScript(requestBody) {
             });
         }
         
-        // Generate the script using AI
+        // Generate the script using AI with enhanced context
         const scriptData = await generateScriptWithAI({
             topic,
             title,
@@ -136,7 +139,8 @@ async function generateScript(requestBody) {
             style,
             targetAudience,
             includeVisuals,
-            includeTiming
+            includeTiming,
+            topicContext
         });
         
         // Store the generated script
@@ -154,6 +158,85 @@ async function generateScript(requestBody) {
         console.error('Error generating script:', error);
         return createResponse(500, { 
             error: 'Failed to generate script',
+            message: error.message 
+        });
+    }
+}
+
+/**
+ * Generate enhanced script with topic context from Topic Management AI
+ */
+async function generateEnhancedScript(requestBody) {
+    const { 
+        topicContext,
+        baseTopic,
+        targetLength,
+        style = 'engaging_educational',
+        targetAudience = 'general',
+        projectId = null
+    } = requestBody;
+    
+    try {
+        console.log(`Generating enhanced script with topic context for: ${baseTopic}`);
+        
+        // Validate required fields
+        if (!topicContext || !baseTopic) {
+            return createResponse(400, { 
+                error: 'Missing required fields: topicContext and baseTopic are required' 
+            });
+        }
+        
+        // Extract information from topic context
+        const optimalDuration = topicContext.videoStructure?.mainContentDuration + 
+                               topicContext.videoStructure?.hookDuration + 
+                               topicContext.videoStructure?.conclusionDuration || targetLength;
+        
+        const title = topicContext.expandedTopics?.[0]?.subtopic || baseTopic;
+        
+        // Generate the enhanced script using AI with full context
+        const scriptData = await generateScriptWithAI({
+            topic: baseTopic,
+            title: title,
+            hook: null, // Let AI create based on context
+            targetLength: optimalDuration,
+            style,
+            targetAudience,
+            includeVisuals: true,
+            includeTiming: true,
+            topicContext
+        });
+        
+        // Add context metadata to script
+        scriptData.enhancedFeatures = {
+            usedTopicContext: true,
+            contextSource: 'topic_management_ai',
+            intelligentScenes: true,
+            sceneOptimization: 'duration_and_complexity_based',
+            expandedTopicsUsed: topicContext.expandedTopics?.length || 0,
+            seoOptimized: !!topicContext.seoContext?.primaryKeywords?.length
+        };
+        
+        // Store the generated script
+        const storedScript = await storeScript(scriptData, projectId);
+        
+        return createResponse(200, {
+            message: 'Enhanced script generated successfully',
+            script: storedScript,
+            wordCount: scriptData.wordCount,
+            estimatedDuration: scriptData.estimatedDuration,
+            sceneCount: scriptData.scenes?.length || 0,
+            enhancedFeatures: scriptData.enhancedFeatures,
+            contextUsed: {
+                expandedTopics: topicContext.expandedTopics?.length || 0,
+                sceneContexts: topicContext.sceneContexts?.length || 0,
+                seoKeywords: topicContext.seoContext?.primaryKeywords?.length || 0
+            }
+        });
+        
+    } catch (error) {
+        console.error('Error generating enhanced script:', error);
+        return createResponse(500, { 
+            error: 'Failed to generate enhanced script',
             message: error.message 
         });
     }
@@ -198,7 +281,7 @@ async function generateScriptFromTopic(requestBody) {
 }
 
 /**
- * Generate script using AI (Claude 3 Sonnet)
+ * Generate script using AI (Claude 3 Sonnet) with enhanced topic context
  */
 async function generateScriptWithAI(params) {
     const {
@@ -209,11 +292,12 @@ async function generateScriptWithAI(params) {
         style,
         targetAudience,
         includeVisuals,
-        includeTiming
+        includeTiming,
+        topicContext
     } = params;
     
-    // Create the AI prompt for script generation
-    const prompt = createScriptGenerationPrompt({
+    // Create the enhanced AI prompt for script generation
+    const prompt = createEnhancedScriptGenerationPrompt({
         topic,
         title,
         hook,
@@ -221,7 +305,8 @@ async function generateScriptWithAI(params) {
         style,
         targetAudience,
         includeVisuals,
-        includeTiming
+        includeTiming,
+        topicContext
     });
     
     // Get AI model configuration with defaults
@@ -266,9 +351,9 @@ async function generateScriptWithAI(params) {
 }
 
 /**
- * Create AI prompt for script generation
+ * Create enhanced AI prompt for script generation with topic context
  */
-function createScriptGenerationPrompt(params) {
+function createEnhancedScriptGenerationPrompt(params) {
     const {
         topic,
         title,
@@ -277,35 +362,73 @@ function createScriptGenerationPrompt(params) {
         style,
         targetAudience,
         includeVisuals,
-        includeTiming
+        includeTiming,
+        topicContext
     } = params;
     
     const targetMinutes = Math.round(targetLength / 60);
     const wordsPerMinute = 150; // Average speaking pace
     const targetWords = targetLength * (wordsPerMinute / 60);
     
-    return `You are an expert YouTube script writer specializing in ${style} content for ${targetAudience} audiences. 
+    // Extract context information if available
+    const contextInfo = topicContext ? {
+        expandedTopics: topicContext.expandedTopics || [],
+        videoStructure: topicContext.videoStructure || {},
+        contentGuidance: topicContext.contentGuidance || {},
+        sceneContexts: topicContext.sceneContexts || [],
+        seoContext: topicContext.seoContext || {}
+    } : {};
+    
+    // Determine optimal number of scenes based on duration and topic complexity
+    const recommendedScenes = topicContext?.videoStructure?.recommendedScenes || 
+        Math.max(3, Math.min(8, Math.ceil(targetLength / 90))); // 90 seconds per scene average
+    
+    // Build context-aware prompt sections
+    const expandedTopicsText = (contextInfo.expandedTopics?.length > 0)
+        ? `\n\n**EXPANDED TOPIC IDEAS (use these for scene content):**\n${contextInfo.expandedTopics.map(t => `- ${t.subtopic} (${t.priority} priority, ${t.estimatedDuration}s, needs: ${t.visualNeeds})`).join('\n')}`
+        : '';
+        
+    const contentGuidanceText = (contextInfo.contentGuidance?.complexConcepts?.length > 0) || (contextInfo.contentGuidance?.quickWins?.length > 0) || (contextInfo.contentGuidance?.visualOpportunities?.length > 0)
+        ? `\n\n**CONTENT GUIDANCE:**\n- Complex concepts needing explanation: ${contextInfo.contentGuidance?.complexConcepts?.join(', ') || 'None'}\n- Quick wins for engagement: ${contextInfo.contentGuidance?.quickWins?.join(', ') || 'None'}\n- Visual opportunities: ${contextInfo.contentGuidance?.visualOpportunities?.join(', ') || 'None'}`
+        : '';
+        
+    const seoKeywordsText = (contextInfo.seoContext?.primaryKeywords?.length > 0)
+        ? `\n\n**SEO KEYWORDS TO INCLUDE:**\n- Primary: ${contextInfo.seoContext.primaryKeywords?.join(', ')}\n- Long-tail: ${contextInfo.seoContext.longTailKeywords?.join(', ')}`
+        : '';
+    
+    return `You are an expert YouTube script writer specializing in ${style} content for ${targetAudience} audiences with professional video production experience.
 
 Create a compelling ${targetMinutes}-minute video script (approximately ${targetWords} words) for:
 
 **Topic:** ${topic}
 **Title:** ${title}
-**Hook:** ${hook || 'Create an engaging opening hook'}
+**Hook:** ${hook || 'Create an engaging opening hook'}${expandedTopicsText}${contentGuidanceText}${seoKeywordsText}
+
+**INTELLIGENT SCENE STRUCTURE:**
+Based on the topic complexity and ${targetMinutes}-minute duration, create ${recommendedScenes} scenes that make logical sense for this specific topic. Each scene should serve a clear purpose in the narrative flow.
 
 **Requirements:**
 - Target length: ${targetMinutes} minutes (${targetWords} words)
+- Number of scenes: ${recommendedScenes} (adjust if topic requires different structure)
 - Style: ${style}
 - Audience: ${targetAudience}
 - Include visual cues: ${includeVisuals ? 'Yes' : 'No'}
 - Include timing: ${includeTiming ? 'Yes' : 'No'}
 
-**Script Structure Guidelines:**
-1. **Hook (0-15 seconds):** Grab attention immediately with the provided hook or create a compelling one
-2. **Introduction (15-45 seconds):** Introduce the topic and what viewers will learn
-3. **Main Content (70% of video):** Break into 3-5 key sections with smooth transitions
-4. **Conclusion (Last 30-60 seconds):** Summarize key points and strong call-to-action
+**Professional Video Production Guidelines:**
+1. **Hook (0-15 seconds):** Immediate attention grab with curiosity gap or bold statement
+2. **Value Preview (15-45 seconds):** What viewers will learn and why they should stay
+3. **Main Content Scenes:** Break topic into logical, digestible segments based on complexity
+4. **Engagement Retention:** Include hooks every 30-45 seconds to maintain attention
+5. **Strong Conclusion:** Summarize value delivered and compelling call-to-action
 
-**Format Requirements:**
+**Scene Duration Intelligence:**
+- Simple concepts: 60-90 seconds per scene
+- Complex concepts: 90-150 seconds per scene  
+- Hook and conclusion: 15-60 seconds each
+- Adjust scene count based on what makes sense for the topic, not arbitrary limits
+
+**Enhanced Format Requirements:**
 Return the script as a JSON object with this exact structure:
 
 \`\`\`json
@@ -317,19 +440,35 @@ Return the script as a JSON object with this exact structure:
   "wordCount": 0,
   "style": "${style}",
   "targetAudience": "${targetAudience}",
+  "sceneStructure": {
+    "totalScenes": ${recommendedScenes},
+    "averageSceneLength": "90 seconds",
+    "structureRationale": "Why this number of scenes makes sense for this topic"
+  },
   "scenes": [
     {
       "sceneNumber": 1,
       "title": "Hook",
+      "purpose": "grab_attention",
       "startTime": 0,
       "endTime": 15,
       "duration": 15,
       "script": "The actual script text for this scene...",
+      "visualStyle": "dynamic_engaging",
+      "mediaNeeds": ["specific media type needed", "visual style required"],
+      "tone": "exciting_curious",
       "visualCues": ["Visual description 1", "Visual description 2"],
       "notes": "Direction notes for this scene",
-      "keyPoints": ["Key point 1", "Key point 2"]
+      "keyPoints": ["Key point 1", "Key point 2"],
+      "engagementHooks": ["Pattern interrupt", "Question", "Surprise element"],
+      "transitionToNext": "How this scene connects to the next"
     }
   ],
+  "sceneFlow": {
+    "narrativeArc": "How scenes build upon each other",
+    "engagementStrategy": "Retention techniques used throughout",
+    "visualProgression": "How visuals evolve through scenes"
+  },
   "callToAction": "Subscribe for more content like this!",
   "keywords": ["keyword1", "keyword2", "keyword3"],
   "description": "YouTube description text",
@@ -337,15 +476,15 @@ Return the script as a JSON object with this exact structure:
 }
 \`\`\`
 
-**Content Guidelines:**
-- Use conversational, engaging language
-- Include rhetorical questions to maintain engagement
-- Add pattern interrupts every 30-45 seconds
-- Include specific examples and stories
-- Use the "curiosity gap" technique
-- End scenes with hooks to the next section
-- Include clear visual cues for each scene
-- Make it actionable and valuable
+**Enhanced Content Guidelines:**
+- **Scene Intelligence:** Create scenes that logically support the topic, not arbitrary divisions
+- **Duration Flexibility:** Adjust scene length based on concept complexity (simple=60-90s, complex=90-150s)
+- **Narrative Flow:** Each scene should build upon the previous and lead naturally to the next
+- **Engagement Optimization:** Include pattern interrupts every 30-45 seconds within scenes
+- **Visual Storytelling:** Specify exact visual needs for each scene to enable precise media curation
+- **Professional Pacing:** Vary scene lengths to maintain viewer attention and energy
+- **Context Integration:** Use expanded topics and content guidance to create rich, valuable scenes
+- **Retention Focus:** End each scene with curiosity hooks that pull viewers to the next section
 
 **Visual Cues (if includeVisuals=true):**
 - Describe what should be shown on screen
@@ -358,6 +497,17 @@ Return the script as a JSON object with this exact structure:
 - Account for natural speaking pace and pauses
 
 Generate an engaging, high-retention script that will perform well on YouTube!`;
+}
+
+/**
+ * Create AI prompt for script generation (legacy function for backward compatibility)
+ */
+function createScriptGenerationPrompt(params) {
+    // For backward compatibility, call the enhanced version without topic context
+    return createEnhancedScriptGenerationPrompt({
+        ...params,
+        topicContext: null
+    });
 }
 
 /**
