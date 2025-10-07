@@ -58,6 +58,8 @@ This implementation plan converts the automated video pipeline design into actio
 
 - [x] 2.1 Create topic management Lambda function (Node.js 20.x)
 
+
+
   - Implement CRUD operations for topics (create, read, update, delete)
   - Add topic validation with keyword extraction
   - Implement priority-based scheduling logic
@@ -180,6 +182,8 @@ This implementation plan converts the automated video pipeline design into actio
   - _Requirements: 4.1, 4.2, 4.3_
 
 - [x] 5.1 Create configurable media source manager
+
+
 
 
 

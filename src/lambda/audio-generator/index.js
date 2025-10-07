@@ -620,6 +620,16 @@ async function getAvailableVoices(queryParams) {
  */
 async function validateVoiceConfiguration(voiceId, engine) {
     try {
+        // Excluded voices list - avoid as requested
+        const excludedVoices = ['Kajal'];
+        
+        if (excludedVoices.includes(voiceId)) {
+            return {
+                valid: false,
+                error: `Voice '${voiceId}' is not available. Please use Ruth, Stephen, or Aria for generative voices.`
+            };
+        }
+        
         const command = new DescribeVoicesCommand({});
         const response = await pollyClient.send(command);
         

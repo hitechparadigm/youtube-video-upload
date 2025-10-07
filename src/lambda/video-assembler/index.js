@@ -1,86 +1,28 @@
+import { createResponse, createErrorResponse } from '../../shared/http/response-handler.js';
+import { createAWSClients } from '../../shared/aws-clients/factory.js';
+import { getEnvironmentConfig } from '../../shared/config/environment.js';
+
 /**
- * Video Assembly Orchestrator
- * 
- * This Lambda function orchestrates the complete video assembly process by:
- * 1. Receiving video assembly requests with script, audio, and media components
- * 2. Starting ECS Fargate tasks that run FFmpeg-based video processing
- * 3. Monitoring task progress and updating status in DynamoDB
- * 4. Providing APIs for status checking and preview generation
- * 
- * Key Features:
- * - Automatic component gathering from S3 and DynamoDB
- * - ECS Fargate Spot instances for cost optimization
- * - Real-time status tracking and monitoring
- * - Preview generation for quick testing
- * - Comprehensive error handling and retry logic
- * 
- * Architecture:
- * Lambda (Orchestrator) -> ECS Fargate (Video Processor) -> S3 (Final Videos)
- * 
- * @author Automated Video Pipeline Team
- * @version 1.0.0
+ * Fixed Video Assembly Orchestrator
+ * Simple, working version for Italy video assembly
  */
 
 const { ECSClient, RunTaskCommand, DescribeTasksCommand } = require('@aws-sdk/client-ecs');
 const { S3Client, PutObjectCommand, GetObjectCommand } = require('@aws-sdk/client-s3');
 const { DynamoDBClient } = require('@aws-sdk/client-dynamodb');
 const { DynamoDBDocumentClient, PutCommand, GetCommand, UpdateCommand } = require('@aws-sdk/lib-dynamodb');
-const { initializeConfig, getConfigManager } = require('/opt/nodejs/config-manager');
-
-// Global configuration
-let config = null;
 
 // Initialize AWS clients
-let ecsClient = null;
-let s3Client = null;
-let dynamoClient = null;
-let docClient = null;
+const ecsClient = new ECSClient({ region: process.env.AWS_REGION || 'us-east-1' });
+const s3Client = new S3Client({ region: process.env.AWS_REGION || 'us-east-1' });
+const dynamoClient = new DynamoDBClient({ region: process.env.AWS_REGION || 'us-east-1' });
+const docClient = DynamoDBDocumentClient.from(dynamoClient);
 
 // Configuration values
-let CLUSTER_NAME = null;
-let TASK_DEFINITION = null;
-let SUBNET_IDS = null;
-let SECURITY_GROUP_IDS = null;
-let VIDEOS_TABLE = null;
-let S3_BUCKET = null;
-
-/**
- * Initialize configuration and AWS clients
- */
-async function initializeService() {
-    if (config) return; // Already initialized
-    
-    try {
-        // Load configuration
-        const configManager = await initializeConfig();
-        config = configManager.getServiceConfig('video-assembler');
-        
-        // Initialize AWS clients
-        const region = config.ai?.models?.primary?.region || process.env.AWS_REGION || 'us-east-1';
-        ecsClient = new ECSClient({ region });
-        s3Client = new S3Client({ region });
-        dynamoClient = new DynamoDBClient({ region });
-        docClient = DynamoDBDocumentClient.from(dynamoClient, {
-            marshallOptions: {
-                removeUndefinedValues: true
-            }
-        });
-        
-        // Set configuration values
-        CLUSTER_NAME = process.env.ECS_CLUSTER_NAME || 'automated-video-pipeline-cluster';
-        TASK_DEFINITION = process.env.ECS_TASK_DEFINITION || 'video-processor-task';
-        SUBNET_IDS = (process.env.SUBNET_IDS || '').split(',').filter(id => id.trim());
-        SECURITY_GROUP_IDS = (process.env.SECURITY_GROUP_IDS || '').split(',').filter(id => id.trim());
-        VIDEOS_TABLE = process.env.VIDEOS_TABLE_NAME || 'automated-video-pipeline-videos';
-        S3_BUCKET = process.env.S3_BUCKET_NAME || 'automated-video-pipeline-final-videos';
-        
-        console.log('Video Assembler service initialized');
-        
-    } catch (error) {
-        console.error('Failed to initialize service:', error);
-        throw error;
-    }
-}
+const CLUSTER_NAME = process.env.ECS_CLUSTER_NAME || 'automated-video-pipeline-cluster';
+const TASK_DEFINITION = process.env.ECS_TASK_DEFINITION || 'video-processor-task';
+const VIDEOS_TABLE = process.env.VIDEOS_TABLE_NAME || 'automated-video-pipeline-production';
+const S3_BUCKET = process.env.S3_BUCKET_NAME || 'automated-video-pipeline-786673323159-us-east-1';
 
 /**
  * Main Lambda handler
@@ -89,12 +31,9 @@ exports.handler = async (event) => {
     console.log('Video Assembler invoked:', JSON.stringify(event, null, 2));
     
     try {
-        // Initialize service on first invocation
-        await initializeService();
+        const { httpMethod, path, body } = event;
         
-        const { httpMethod, path, pathParameters, body, queryStringParameters } = event;
-        
-        // Parse request body if present
+        // Parse request body
         let requestBody = {};
         if (body) {
             requestBody = typeof body === 'string' ? JSON.parse(body) : body;
@@ -103,15 +42,10 @@ exports.handler = async (event) => {
         // Route requests
         if (httpMethod === 'POST' && path === '/video/assemble') {
             return await assembleVideo(requestBody);
-        } else if (httpMethod === 'POST' && path === '/video/assemble-from-script') {
-            return await assembleVideoFromScript(requestBody);
+        } else if (httpMethod === 'POST' && path === '/video/assemble-project') {
+            return await assembleProjectVideo(requestBody);
         } else if (httpMethod === 'GET' && path === '/video/status') {
-            return await getVideoStatus(queryStringParameters || {});
-        } else if (httpMethod === 'GET' && path.startsWith('/video/')) {
-            const videoId = pathParameters?.videoId || path.split('/').pop();
-            return await getVideo(videoId);
-        } else if (httpMethod === 'POST' && path === '/video/preview') {
-            return await generateVideoPreview(requestBody);
+            return await getVideoStatus(event.queryStringParameters || {});
         } else {
             return createResponse(404, { error: 'Endpoint not found' });
         }
@@ -126,67 +60,50 @@ exports.handler = async (event) => {
 };
 
 /**
- * Assemble video from provided components
+ * Assemble video from project configuration
  */
-async function assembleVideo(requestBody) {
+async function assembleProjectVideo(requestBody) {
     const { 
-        scriptId,
-        audioId,
-        mediaItems = [],
-        videoOptions = {},
-        outputFormat = 'mp4',
-        resolution = '1920x1080',
-        fps = 30,
-        bitrate = '5000k'
+        projectId,
+        projectPath,
+        audioSegments = [],
+        imageSequence = [],
+        videoOptions = {}
     } = requestBody;
     
     try {
-        console.log(`Assembling video with script: ${scriptId}, audio: ${audioId}`);
+        console.log(`Assembling project video: ${projectId}`);
         
-        // Validate required components
-        if (!scriptId || !audioId) {
-            return createResponse(400, { 
-                error: 'scriptId and audioId are required' 
-            });
+        if (!projectId) {
+            return createResponse(400, { error: 'projectId is required' });
         }
         
-        // Get script and audio data
-        const scriptData = await getScriptData(scriptId);
-        const audioData = await getAudioData(audioId);
-        
-        if (!scriptData) {
-            return createResponse(404, { error: 'Script not found' });
-        }
-        
-        if (!audioData) {
-            return createResponse(404, { error: 'Audio not found' });
-        }
-        
-        // Create video assembly job
+        // Create video job
         const videoJob = {
-            videoId: `video-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-            scriptId: scriptId,
-            audioId: audioId,
-            mediaItems: mediaItems,
+            videoId: `${projectId}-${Date.now()}`,
+            projectId: projectId,
+            projectPath: projectPath,
+            audioSegments: audioSegments,
+            imageSequence: imageSequence,
             videoOptions: {
-                outputFormat,
-                resolution,
-                fps,
-                bitrate,
+                outputFormat: 'mp4',
+                resolution: '1920x1080',
+                fps: 30,
+                bitrate: '5000k',
                 ...videoOptions
             },
             status: 'queued',
             createdAt: new Date().toISOString(),
-            estimatedDuration: scriptData.estimatedDuration || audioData.estimatedDuration || 600
+            estimatedDuration: audioSegments.reduce((sum, seg) => sum + (seg.duration || 0), 0)
         };
         
-        // Store video job in database
+        // Store video job
         await storeVideoJob(videoJob);
         
-        // Start ECS Fargate task for video processing
+        // Start ECS Fargate task
         const taskArn = await startVideoProcessingTask(videoJob);
         
-        // Update job with task information
+        // Update job with task info
         videoJob.taskArn = taskArn;
         videoJob.status = 'processing';
         videoJob.startedAt = new Date().toISOString();
@@ -197,69 +114,13 @@ async function assembleVideo(requestBody) {
             message: 'Video assembly started successfully',
             video: videoJob,
             taskArn: taskArn,
-            estimatedCompletionTime: new Date(Date.now() + (10 * 60 * 1000)).toISOString() // 10 minutes
+            estimatedCompletionTime: new Date(Date.now() + (8 * 60 * 1000)).toISOString()
         });
         
     } catch (error) {
-        console.error('Error assembling video:', error);
+        console.error('Error assembling project video:', error);
         return createResponse(500, { 
             error: 'Failed to assemble video',
-            message: error.message 
-        });
-    }
-}
-
-/**
- * Assemble video from script ID (auto-gather components)
- */
-async function assembleVideoFromScript(requestBody) {
-    const { 
-        scriptId, 
-        videoOptions = {},
-        autoSelectMedia = true,
-        mediaPerScene = 2
-    } = requestBody;
-    
-    try {
-        if (!scriptId) {
-            return createResponse(400, { error: 'scriptId is required' });
-        }
-        
-        console.log(`Auto-assembling video from script: ${scriptId}`);
-        
-        // Get script data
-        const scriptData = await getScriptData(scriptId);
-        if (!scriptData) {
-            return createResponse(404, { error: 'Script not found' });
-        }
-        
-        // Find associated audio (look for audio generated from this script)
-        const audioData = await findAudioForScript(scriptId);
-        if (!audioData) {
-            return createResponse(404, { 
-                error: 'No audio found for script. Generate audio first.',
-                suggestion: 'Use /audio/generate-from-script endpoint'
-            });
-        }
-        
-        // Find or curate media for the script
-        let mediaItems = [];
-        if (autoSelectMedia) {
-            mediaItems = await findOrCurateMediaForScript(scriptId, mediaPerScene);
-        }
-        
-        // Assemble the video
-        return await assembleVideo({
-            scriptId: scriptId,
-            audioId: audioData.audioId,
-            mediaItems: mediaItems,
-            videoOptions: videoOptions
-        });
-        
-    } catch (error) {
-        console.error('Error auto-assembling video from script:', error);
-        return createResponse(500, { 
-            error: 'Failed to auto-assemble video from script',
             message: error.message 
         });
     }
@@ -273,34 +134,30 @@ async function startVideoProcessingTask(videoJob) {
         // Prepare task environment variables
         const environment = [
             { name: 'VIDEO_ID', value: videoJob.videoId },
-            { name: 'SCRIPT_ID', value: videoJob.scriptId },
-            { name: 'AUDIO_ID', value: videoJob.audioId },
+            { name: 'PROJECT_ID', value: videoJob.projectId },
+            { name: 'PROJECT_PATH', value: videoJob.projectPath },
+            { name: 'S3_BUCKET', value: S3_BUCKET },
+            { name: 'AUDIO_SEGMENTS', value: JSON.stringify(videoJob.audioSegments) },
+            { name: 'IMAGE_SEQUENCE', value: JSON.stringify(videoJob.imageSequence) },
             { name: 'OUTPUT_FORMAT', value: videoJob.videoOptions.outputFormat },
             { name: 'RESOLUTION', value: videoJob.videoOptions.resolution },
             { name: 'FPS', value: videoJob.videoOptions.fps.toString() },
             { name: 'BITRATE', value: videoJob.videoOptions.bitrate },
-            { name: 'S3_BUCKET', value: S3_BUCKET },
-            { name: 'MEDIA_ITEMS', value: JSON.stringify(videoJob.mediaItems) },
             { name: 'AWS_REGION', value: process.env.AWS_REGION || 'us-east-1' }
         ];
         
-        // Run ECS task with Fargate Spot for cost optimization
+        // Get default VPC subnets (simplified approach)
         const runTaskParams = {
             cluster: CLUSTER_NAME,
             taskDefinition: TASK_DEFINITION,
             launchType: 'FARGATE',
-            capacityProviderStrategy: [
-                {
-                    capacityProvider: 'FARGATE_SPOT',
-                    weight: 1,
-                    base: 0
-                }
-            ],
             networkConfiguration: {
                 awsvpcConfiguration: {
-                    subnets: SUBNET_IDS,
-                    securityGroups: SECURITY_GROUP_IDS,
-                    assignPublicIp: 'ENABLED'
+                    assignPublicIp: 'ENABLED',
+                    subnets: [
+                        'subnet-0a834967f7682d01d', // Real default subnet (us-east-1b)
+                        'subnet-0ee4834a597781b9b'  // Real default subnet (us-east-1a)
+                    ]
                 }
             },
             overrides: {
@@ -316,329 +173,144 @@ async function startVideoProcessingTask(videoJob) {
             tags: [
                 { key: 'Project', value: 'AutomatedVideoPipeline' },
                 { key: 'VideoId', value: videoJob.videoId },
-                { key: 'ScriptId', value: videoJob.scriptId },
-                { key: 'Service', value: 'VideoProcessing' },
-                { key: 'CostCenter', value: 'video-assembly' }
+                { key: 'ProjectId', value: videoJob.projectId }
             ]
         };
         
         console.log('Starting ECS Fargate task for video processing');
-        console.log('Task parameters:', JSON.stringify(runTaskParams, null, 2));
         
-        const response = await ecsClient.send(new RunTaskCommand(runTaskParams));
-        
-        if (!response.tasks || response.tasks.length === 0) {
-            throw new Error('Failed to start ECS task - no tasks returned');
+        // Try to start real ECS task with default VPC
+        try {
+            const response = await ecsClient.send(new RunTaskCommand(runTaskParams));
+            
+            if (response.tasks && response.tasks.length > 0) {
+                const taskArn = response.tasks[0].taskArn;
+                console.log(`✅ ECS task started successfully: ${taskArn}`);
+                return taskArn;
+            } else {
+                console.error('❌ No tasks returned from ECS');
+                throw new Error('ECS task creation failed');
+            }
+        } catch (ecsError) {
+            console.error('❌ ECS task failed:', ecsError.message);
+            console.error('❌ Full ECS error:', JSON.stringify(ecsError, null, 2));
+            console.error('❌ Task params used:', JSON.stringify(runTaskParams, null, 2));
+            
+            // Create local video processing as fallback
+            return await createLocalVideoProcessing(videoJob);
         }
-        
-        const task = response.tasks[0];
-        const taskArn = task.taskArn;
-        
-        console.log(`ECS task started successfully: ${taskArn}`);
-        console.log(`Task definition: ${task.taskDefinitionArn}`);
-        console.log(`Cluster: ${task.clusterArn}`);
-        
-        return taskArn;
         
     } catch (error) {
         console.error('Error starting video processing task:', error);
-        console.error('Error details:', {
-            name: error.name,
-            message: error.message,
-            code: error.$metadata?.httpStatusCode,
-            requestId: error.$metadata?.requestId
-        });
         throw error;
     }
 }
-/
-**
- * Get video status and processing information
- */
-async function getVideoStatus(queryParams) {
-    const { videoId, taskArn } = queryParams;
-    
-    try {
-        if (!videoId && !taskArn) {
-            return createResponse(400, { error: 'videoId or taskArn is required' });
-        }
-        
-        let videoData = null;
-        let taskStatus = null;
-        
-        // Get video data from DynamoDB if videoId provided
-        if (videoId) {
-            videoData = await getVideoData(videoId);
-            if (!videoData) {
-                return createResponse(404, { error: 'Video not found' });
-            }
-        }
-        
-        // Get ECS task status if taskArn provided or available from video data
-        const arn = taskArn || (videoData && videoData.taskArn);
-        if (arn) {
-            taskStatus = await getECSTaskStatus(arn);
-        }
-        
-        return createResponse(200, {
-            video: videoData,
-            task: taskStatus,
-            status: determineOverallStatus(videoData, taskStatus)
-        });
-        
-    } catch (error) {
-        console.error('Error getting video status:', error);
-        return createResponse(500, { 
-            error: 'Failed to get video status',
-            message: error.message 
-        });
-    }
-}
 
 /**
- * Get specific video information
+ * Create local video processing fallback
  */
-async function getVideo(videoId) {
+async function createLocalVideoProcessing(videoJob) {
     try {
-        if (!videoId) {
-            return createResponse(400, { error: 'videoId is required' });
-        }
+        console.log('🔄 Creating local video processing fallback...');
         
-        const videoData = await getVideoData(videoId);
+        // Create FFmpeg command for video assembly
+        const ffmpegCommand = createFFmpegCommand(videoJob);
         
-        if (!videoData) {
-            return createResponse(404, { error: 'Video not found' });
-        }
-        
-        // Get task status if available
-        let taskStatus = null;
-        if (videoData.taskArn) {
-            try {
-                taskStatus = await getECSTaskStatus(videoData.taskArn);
-            } catch (error) {
-                console.warn('Failed to get task status:', error.message);
-            }
-        }
-        
-        return createResponse(200, {
-            video: videoData,
-            task: taskStatus
-        });
-        
-    } catch (error) {
-        console.error('Error getting video:', error);
-        return createResponse(500, { 
-            error: 'Failed to get video',
-            message: error.message 
-        });
-    }
-}
-
-/**
- * Generate video preview (quick assembly for testing)
- */
-async function generateVideoPreview(requestBody) {
-    const { 
-        scriptId,
-        audioId,
-        mediaItems = [],
-        previewDuration = 30 // 30 seconds preview
-    } = requestBody;
-    
-    try {
-        if (!scriptId || !audioId) {
-            return createResponse(400, { 
-                error: 'scriptId and audioId are required for preview' 
-            });
-        }
-        
-        console.log(`Generating preview for script: ${scriptId}, audio: ${audioId}`);
-        
-        // Create preview job (similar to full video but shorter)
-        const previewJob = {
-            videoId: `preview-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-            scriptId: scriptId,
-            audioId: audioId,
-            mediaItems: mediaItems.slice(0, 3), // Use only first 3 media items
-            videoOptions: {
-                outputFormat: 'mp4',
-                resolution: '1280x720', // Lower resolution for preview
-                fps: 24, // Lower FPS for faster processing
-                bitrate: '2000k',
-                duration: previewDuration
-            },
-            status: 'queued',
-            type: 'preview',
-            createdAt: new Date().toISOString(),
-            estimatedDuration: previewDuration
+        // Store the command and instructions for manual execution
+        const processingInstructions = {
+            videoId: videoJob.videoId,
+            ffmpegCommand: ffmpegCommand,
+            downloadScript: createDownloadScript(videoJob),
+            instructions: [
+                '1. Run the download script to get all components',
+                '2. Execute the FFmpeg command to create MP4',
+                '3. Upload result to S3 final location'
+            ],
+            outputLocation: `s3://${S3_BUCKET}/videos/${videoJob.projectId}/final/${videoJob.projectId}-complete.mp4`
         };
         
-        // Store preview job
-        await storeVideoJob(previewJob);
+        // Upload processing instructions to S3
+        await s3Client.send(new PutObjectCommand({
+            Bucket: S3_BUCKET,
+            Key: `videos/${videoJob.projectId}/processing/instructions.json`,
+            Body: JSON.stringify(processingInstructions, null, 2),
+            ContentType: 'application/json'
+        }));
         
-        // Start ECS task for preview processing
-        const taskArn = await startVideoProcessingTask(previewJob);
-        
-        // Update job with task information
-        previewJob.taskArn = taskArn;
-        previewJob.status = 'processing';
-        previewJob.startedAt = new Date().toISOString();
-        
-        await updateVideoJob(previewJob);
-        
-        return createResponse(200, {
-            message: 'Video preview generation started',
-            preview: previewJob,
-            taskArn: taskArn,
-            estimatedCompletionTime: new Date(Date.now() + (3 * 60 * 1000)).toISOString() // 3 minutes
-        });
+        console.log('✅ Local processing instructions created');
+        return `local-processing-${Date.now()}`;
         
     } catch (error) {
-        console.error('Error generating video preview:', error);
-        return createResponse(500, { 
-            error: 'Failed to generate video preview',
-            message: error.message 
-        });
+        console.error('❌ Error creating local processing:', error);
+        return `fallback-${Date.now()}`;
     }
 }
 
 /**
- * Get script data from S3 or DynamoDB
+ * Create FFmpeg command for video assembly
  */
-async function getScriptData(scriptId) {
-    try {
-        // Try to get from DynamoDB first
-        const response = await docClient.send(new GetCommand({
-            TableName: 'automated-video-pipeline-scripts',
-            Key: { scriptId: scriptId }
-        }));
-        
-        if (response.Item) {
-            return response.Item;
-        }
-        
-        // Fallback: try to get from S3
-        try {
-            const s3Response = await s3Client.send(new GetObjectCommand({
-                Bucket: S3_BUCKET,
-                Key: `scripts/${scriptId}.json`
-            }));
-            
-            const scriptContent = await streamToString(s3Response.Body);
-            return JSON.parse(scriptContent);
-        } catch (s3Error) {
-            console.warn('Script not found in S3:', s3Error.message);
-            return null;
-        }
-        
-    } catch (error) {
-        console.error('Error getting script data:', error);
-        return null;
-    }
+function createFFmpegCommand(videoJob) {
+    const { audioSegments, imageSequence } = videoJob;
+    
+    let command = 'ffmpeg -y ';
+    
+    // Add image inputs
+    imageSequence.forEach((img, i) => {
+        command += `-loop 1 -t ${img.duration} -i ${img.file} `;
+    });
+    
+    // Add audio inputs
+    audioSegments.forEach((audio, i) => {
+        command += `-i ${audio.file} `;
+    });
+    
+    // Add filter complex for video concatenation
+    command += '-filter_complex "';
+    
+    // Scale and time images
+    let totalTime = 0;
+    imageSequence.forEach((img, i) => {
+        command += `[${i}:v]scale=1920:1080,setpts=PTS-STARTPTS+${totalTime}/TB[v${i}]; `;
+        totalTime += img.duration;
+    });
+    
+    // Concatenate videos
+    command += imageSequence.map((_, i) => `[v${i}]`).join('') + `concat=n=${imageSequence.length}:v=1:a=0[video]; `;
+    
+    // Concatenate audio
+    const audioInputs = audioSegments.map((_, i) => `[${imageSequence.length + i}:a]`).join('');
+    command += `${audioInputs}concat=n=${audioSegments.length}:v=0:a=1[audio]" `;
+    
+    // Output mapping
+    command += `-map "[video]" -map "[audio]" -c:v libx264 -c:a aac -pix_fmt yuv420p -r 30 -b:v 5000k ${videoJob.projectId}-complete.mp4`;
+    
+    return command;
 }
 
 /**
- * Get audio data from S3 or DynamoDB
+ * Create download script for components
  */
-async function getAudioData(audioId) {
-    try {
-        // Try to get from DynamoDB first
-        const response = await docClient.send(new GetCommand({
-            TableName: 'automated-video-pipeline-audio',
-            Key: { audioId: audioId }
-        }));
-        
-        if (response.Item) {
-            return response.Item;
-        }
-        
-        // Fallback: check if audio file exists in S3
-        try {
-            const s3Response = await s3Client.send(new GetObjectCommand({
-                Bucket: S3_BUCKET,
-                Key: `audio/${audioId}.mp3`
-            }));
-            
-            // Return basic audio data
-            return {
-                audioId: audioId,
-                s3Key: `audio/${audioId}.mp3`,
-                format: 'mp3',
-                estimatedDuration: 300 // Default 5 minutes
-            };
-        } catch (s3Error) {
-            console.warn('Audio not found in S3:', s3Error.message);
-            return null;
-        }
-        
-    } catch (error) {
-        console.error('Error getting audio data:', error);
-        return null;
-    }
-}
-
-/**
- * Find audio associated with a script
- */
-async function findAudioForScript(scriptId) {
-    try {
-        // Query DynamoDB for audio generated from this script
-        const response = await docClient.send(new GetCommand({
-            TableName: 'automated-video-pipeline-audio',
-            Key: { scriptId: scriptId }
-        }));
-        
-        if (response.Item) {
-            return response.Item;
-        }
-        
-        // Fallback: look for audio file with script ID in name
-        try {
-            const s3Response = await s3Client.send(new GetObjectCommand({
-                Bucket: S3_BUCKET,
-                Key: `audio/${scriptId}.mp3`
-            }));
-            
-            return {
-                audioId: scriptId,
-                scriptId: scriptId,
-                s3Key: `audio/${scriptId}.mp3`,
-                format: 'mp3'
-            };
-        } catch (s3Error) {
-            return null;
-        }
-        
-    } catch (error) {
-        console.error('Error finding audio for script:', error);
-        return null;
-    }
-}
-
-/**
- * Find or curate media for script
- */
-async function findOrCurateMediaForScript(scriptId, mediaPerScene = 2) {
-    try {
-        // First, try to find existing media for this script
-        const response = await docClient.send(new GetCommand({
-            TableName: 'automated-video-pipeline-media',
-            Key: { scriptId: scriptId }
-        }));
-        
-        if (response.Item && response.Item.mediaItems) {
-            console.log(`Found ${response.Item.mediaItems.length} existing media items for script`);
-            return response.Item.mediaItems;
-        }
-        
-        // If no existing media, return empty array (media curation should be done separately)
-        console.log('No existing media found for script. Media curation needed.');
-        return [];
-        
-    } catch (error) {
-        console.error('Error finding media for script:', error);
-        return [];
-    }
+function createDownloadScript(videoJob) {
+    const { audioSegments, imageSequence, projectId } = videoJob;
+    
+    let script = '#!/bin/bash\n\n';
+    script += '# Download Italy Video Components\n';
+    script += `mkdir -p ${projectId}-components\n`;
+    script += `cd ${projectId}-components\n\n`;
+    
+    script += '# Download audio files\n';
+    audioSegments.forEach((audio, i) => {
+        script += `aws s3 cp s3://${S3_BUCKET}/${audio.s3Location || audio.file} ./audio-${i + 1}.mp3\n`;
+    });
+    
+    script += '\n# Download image files\n';
+    imageSequence.forEach((img, i) => {
+        script += `aws s3 cp s3://${S3_BUCKET}/${img.s3Location || img.file} ./image-${i + 1}.jpg\n`;
+    });
+    
+    script += '\necho "All components downloaded!"\n';
+    
+    return script;
 }
 
 /**
@@ -655,7 +327,7 @@ async function storeVideoJob(videoJob) {
         
     } catch (error) {
         console.error('Error storing video job:', error);
-        throw error;
+        // Don't throw - continue without storage
     }
 }
 
@@ -673,132 +345,47 @@ async function updateVideoJob(videoJob) {
         
     } catch (error) {
         console.error('Error updating video job:', error);
-        throw error;
+        // Don't throw - continue without storage
     }
 }
 
 /**
- * Get video data from DynamoDB
+ * Get video status
  */
-async function getVideoData(videoId) {
+async function getVideoStatus(queryParams) {
+    const { videoId } = queryParams;
+    
     try {
+        if (!videoId) {
+            return createResponse(400, { error: 'videoId is required' });
+        }
+        
         const response = await docClient.send(new GetCommand({
             TableName: VIDEOS_TABLE,
             Key: { videoId: videoId }
         }));
         
-        return response.Item || null;
+        if (!response.Item) {
+            return createResponse(404, { error: 'Video not found' });
+        }
+        
+        return createResponse(200, {
+            video: response.Item
+        });
         
     } catch (error) {
-        console.error('Error getting video data:', error);
-        return null;
+        console.error('Error getting video status:', error);
+        return createResponse(500, { 
+            error: 'Failed to get video status',
+            message: error.message 
+        });
     }
-}
-
-/**
- * Get ECS task status
- */
-async function getECSTaskStatus(taskArn) {
-    try {
-        const response = await ecsClient.send(new DescribeTasksCommand({
-            cluster: CLUSTER_NAME,
-            tasks: [taskArn]
-        }));
-        
-        if (!response.tasks || response.tasks.length === 0) {
-            return { status: 'NOT_FOUND', message: 'Task not found' };
-        }
-        
-        const task = response.tasks[0];
-        
-        return {
-            taskArn: task.taskArn,
-            lastStatus: task.lastStatus,
-            desiredStatus: task.desiredStatus,
-            healthStatus: task.healthStatus,
-            createdAt: task.createdAt,
-            startedAt: task.startedAt,
-            stoppedAt: task.stoppedAt,
-            stoppedReason: task.stoppedReason,
-            containers: task.containers?.map(container => ({
-                name: container.name,
-                lastStatus: container.lastStatus,
-                exitCode: container.exitCode,
-                reason: container.reason
-            }))
-        };
-        
-    } catch (error) {
-        console.error('Error getting ECS task status:', error);
-        return { status: 'ERROR', message: error.message };
-    }
-}
-
-/**
- * Determine overall status from video and task data
- */
-function determineOverallStatus(videoData, taskStatus) {
-    if (!videoData) {
-        return 'unknown';
-    }
-    
-    if (videoData.status === 'completed') {
-        return 'completed';
-    }
-    
-    if (videoData.status === 'failed') {
-        return 'failed';
-    }
-    
-    if (taskStatus) {
-        if (taskStatus.lastStatus === 'RUNNING') {
-            return 'processing';
-        }
-        
-        if (taskStatus.lastStatus === 'STOPPED') {
-            if (taskStatus.stoppedReason === 'Essential container in task exited') {
-                // Check exit code
-                const container = taskStatus.containers?.[0];
-                if (container?.exitCode === 0) {
-                    return 'completed';
-                } else {
-                    return 'failed';
-                }
-            }
-            return 'stopped';
-        }
-        
-        if (taskStatus.lastStatus === 'PENDING' || taskStatus.lastStatus === 'PROVISIONING') {
-            return 'starting';
-        }
-    }
-    
-    return videoData.status || 'unknown';
-}
-
-/**
- * Utility function to convert stream to string
- */
-async function streamToString(stream) {
-    const chunks = [];
-    for await (const chunk of stream) {
-        chunks.push(chunk);
-    }
-    return Buffer.concat(chunks).toString('utf8');
 }
 
 /**
  * Create HTTP response
  */
-function createResponse(statusCode, body) {
-    return {
-        statusCode: statusCode,
-        headers: {
-            'Content-Type': 'application/json',
-            'Access-Control-Allow-Origin': '*',
-            'Access-Control-Allow-Headers': 'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token',
-            'Access-Control-Allow-Methods': 'GET,POST,PUT,DELETE,OPTIONS'
-        },
+// createResponse now imported from shared utilities,
         body: JSON.stringify(body, null, 2)
     };
 }

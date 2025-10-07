@@ -9,7 +9,7 @@
   "containerDefinitions": [
     {
       "name": "video-processor",
-      "image": "786673323159.dkr.ecr.us-east-1.amazonaws.com/automated-video-pipeline/video-processor:latest",
+      "image": "786673323159.dkr.ecr.us-east-1.amazonaws.com/automated-video-pipeline/video-processor:1759776716571",
       "essential": true,
       "cpu": 2048,
       "memory": 4096,
