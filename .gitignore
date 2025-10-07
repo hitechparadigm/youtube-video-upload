@@ -115,6 +115,14 @@ sample-*.json
 build/
 dist/
 
+# Lambda function dependencies (managed by CDK)
+src/lambda/*/node_modules/
+src/lambda/*/package-lock.json
+
+# Layer dependencies (managed by CDK)
+src/layers/*/nodejs/node_modules/
+src/layers/*/nodejs/package-lock.json
+
 # AWS SAM
 .aws-sam/
 

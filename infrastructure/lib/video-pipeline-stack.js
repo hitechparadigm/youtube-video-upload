@@ -4,7 +4,7 @@
  */
 
 import { Stack, Duration, RemovalPolicy, CfnOutput } from 'aws-cdk-lib';
-import { Function, Runtime, Code } from 'aws-cdk-lib/aws-lambda';
+import { Function, Runtime, Code, LayerVersion } from 'aws-cdk-lib/aws-lambda';
 import { Bucket, BucketEncryption } from 'aws-cdk-lib/aws-s3';
 import { Table, AttributeType, BillingMode } from 'aws-cdk-lib/aws-dynamodb';
 import { RestApi, LambdaIntegration, Cors, ApiKey, UsagePlan } from 'aws-cdk-lib/aws-apigateway';
@@ -138,6 +138,19 @@ export class VideoPipelineStack extends Stack {
     }));
 
     // ========================================
+    // Lambda Layers
+    // ========================================
+
+    // Configuration Layer for shared configuration management
+    const configLayer = new LayerVersion(this, 'ConfigLayer', {
+      layerVersionName: 'automated-video-pipeline-config',
+      code: Code.fromAsset(join(process.cwd(), '../src/layers/config-layer')),
+      compatibleRuntimes: [Runtime.NODEJS_20_X],
+      description: 'Shared configuration management layer',
+      removalPolicy: RemovalPolicy.RETAIN
+    });
+
+    // ========================================
     // Lambda Functions
     // ========================================
 
@@ -166,6 +179,7 @@ export class VideoPipelineStack extends Stack {
       timeout: Duration.minutes(5),
       memorySize: 1024,
       role: lambdaRole,
+      layers: [configLayer],
       environment: {
         S3_BUCKET_NAME: primaryBucket.bucketName,
         BEDROCK_MODEL_ID: 'anthropic.claude-3-sonnet-20240229-v1:0',
@@ -199,6 +213,7 @@ export class VideoPipelineStack extends Stack {
       timeout: Duration.minutes(5),
       memorySize: 512,
       role: lambdaRole,
+      layers: [configLayer],
       environment: {
         S3_BUCKET_NAME: primaryBucket.bucketName,
         NODE_ENV: environment

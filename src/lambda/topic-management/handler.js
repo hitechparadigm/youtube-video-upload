@@ -3,6 +3,6 @@
  * Wrapper for the existing index.js implementation
  */
 
-const { handler } = require('./index.js');
+import { handler } from './index.js';
 
-module.exports = { handler };
+export { handler };

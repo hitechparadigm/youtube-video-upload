@@ -4,30 +4,17 @@
   "description": "AWS-based automated video generation pipeline with configurable media sources, Node.js 20.x runtime, and complete project isolation",
   "main": "index.js",
   "scripts": {
-    "build": "tsc",
-    "watch": "tsc -w",
-    "test": "jest",
+    "test": "node scripts/test-functions.js",
     "test:infrastructure": "node scripts/validate-infrastructure.js",
-    "test:integration": "jest --config test/integration/jest.config.js",
-    "test:integration:watch": "jest --config test/integration/jest.config.js --watch",
-    "test:integration:coverage": "jest --config test/integration/jest.config.js --coverage",
-    "cdk": "cdk",
-    "deploy": "cdk deploy",
-    "destroy": "cdk destroy",
-    "synth": "cdk synth",
-    "diff": "cdk diff",
-    "bootstrap": "cdk bootstrap"
+    "deploy": "cd infrastructure && npm run deploy",
+    "destroy": "cd infrastructure && npm run destroy",
+    "synth": "cd infrastructure && npm run synth",
+    "diff": "cd infrastructure && npm run diff",
+    "upload-video": "node scripts/upload-first-video.js",
+    "sync-sheets": "node scripts/sync-spreadsheet.js"
   },
   "devDependencies": {
-    "@aws-cdk/assertions": "^1.203.0",
-    "@types/aws-lambda": "^8.10.130",
-    "@types/jest": "^29.5.8",
-    "@types/node": "^20.9.0",
-    "aws-cdk": "^2.110.0",
-    "aws-cdk-lib": "^2.219.0",
-    "jest": "^29.7.0",
-    "ts-jest": "^29.1.1",
-    "typescript": "^5.9.3"
+    "aws-cdk": "^2.110.0"
   },
   "dependencies": {
     "@aws-sdk/client-dynamodb": "^3.450.0",

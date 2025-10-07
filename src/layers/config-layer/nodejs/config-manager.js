@@ -339,6 +339,17 @@ class ConfigManager {
                 'publishing.youtube',
                 'publishing.thumbnails',
                 'monitoring.logging'
+            ],
+            'script-generator': [
+                'ai.models',
+                'ai.prompts',
+                'content.generation',
+                'monitoring.logging'
+            ],
+            'audio-generator': [
+                'audio.tts',
+                'ai.models',
+                'monitoring.logging'
             ]
         };
 
