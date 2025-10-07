@@ -2,6 +2,7 @@
   "name": "automated-video-pipeline",
   "version": "1.0.0",
   "description": "AWS-based automated video generation pipeline with configurable media sources, Node.js 20.x runtime, and complete project isolation",
+  "type": "module",
   "main": "index.js",
   "scripts": {
     "test": "node scripts/test-functions.js",
