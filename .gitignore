@@ -4,8 +4,30 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 
+# Environment variables
+.env
+.env.local
+.env.development
+.env.staging
+.env.production
+
+# AWS
+.aws/
+aws-exports.js
+
+# CDK
+cdk.out/
+cdk.context.json
+
+# Deployment outputs (contain sensitive information)
+deployment-outputs*.json
+
+# Logs
+logs/
+*.log
+
 # Runtime data
-pids
+pids/
 *.pid
 *.seed
 *.pid.lock
@@ -17,29 +39,20 @@ coverage/
 # nyc test coverage
 .nyc_output
 
-# Grunt intermediate storage
-.grunt
-
-# Bower dependency directory
-bower_components
-
-# node-waf configuration
-.lock-wscript
-
-# Compiled binary addons
-build/Release
-
 # Dependency directories
 jspm_packages/
-
-# TypeScript v1 declaration files
-typings/
 
 # Optional npm cache directory
 .npm
 
 # Optional eslint cache
 .eslintcache
+
+# Microbundle cache
+.rpt2_cache/
+.rts2_cache_cjs/
+.rts2_cache_es/
+.rts2_cache_umd/
 
 # Optional REPL history
 .node_repl_history
@@ -50,49 +63,30 @@ typings/
 # Yarn Integrity file
 .yarn-integrity
 
-# dotenv environment variables file
-.env
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
-.env.deployment
-
-# parcel-bundler cache
+# parcel-bundler cache (https://parceljs.org/)
 .cache
 .parcel-cache
 
-# next.js build output
+# Next.js build output
 .next
 
-# nuxt.js build output
+# Nuxt.js build / generate output
 .nuxt
+dist
 
-# vuepress build output
-.vuepress/dist
+# Gatsby files
+.cache/
+public
 
-# Serverless directories
-.serverless
+# Storybook build outputs
+.out
+.storybook-out
 
-# FuseBox cache
-.fusebox/
+# Temporary folders
+tmp/
+temp/
 
-# DynamoDB Local files
-.dynamodb/
-
-# AWS CDK
-cdk.out/
-cdk.context.json
-
-# AWS SAM
-.aws-sam/
-
-# Terraform
-*.tfstate
-*.tfstate.*
-.terraform/
-
-# IDE files
+# Editor directories and files
 .vscode/
 .idea/
 *.swp
@@ -108,116 +102,27 @@ cdk.context.json
 ehthumbs.db
 Thumbs.db
 
-# Logs
-logs
-*.log
+# Security - API keys and secrets
+**/api-keys.json
+**/secrets.json
+**/*-credentials.json
 
-# Test files
+# Local test files
 test-*.json
-*-response.json
-*-test-*.json
-
-# Deployment artifacts
-deployment-config.json
-*.zip
-*.tar.gz
-
-# Docker
-.dockerignore
-
-# Temporary files
-tmp/
-temp/
-*.tmp
-
-# AWS credentials (should never be committed)
-credentials
-config
-
-# Local development
-local/
-dev/
+sample-*.json
 
 # Build artifacts
-dist/
 build/
+dist/
 
-# Lambda deployment packages
-*.zip
+# AWS SAM
+.aws-sam/
 
-# CDK bootstrap
-cdk-bootstrap-*
+# Terraform
+*.tfstate
+*.tfstate.*
+.terraform/
 
-# Secrets and keys
-secrets.json
-api-keys.json
-*.pem
-*.key
-
-# Media files (too large for git)
-*.mp4
-*.mp3
-*.wav
-*.avi
-*.mov
-*.jpg
-*.jpeg
-*.png
-*.gif
-
-# Database files
-*.db
-*.sqlite
-*.sqlite3
-
-# Backup files
-*.bak
-*.backup
-
-# Editor files
-*.sublime-project
-*.sublime-workspace
-
-# JetBrains
-.idea/
-*.iml
-*.iws
-
-# Visual Studio Code
-.vscode/
-!.vscode/settings.json
-!.vscode/tasks.json
-!.vscode/launch.json
-!.vscode/extensions.json
-
-# Windows
-Thumbs.db
-ehthumbs.db
-Desktop.ini
-
-# macOS
-.DS_Store
-.AppleDouble
-.LSOverride
-
-# Linux
-*~
-
-# Vim
-*.swp
-*.swo
-
-# Emacs
-*~
-\#*\#
-/.emacs.desktop
-/.emacs.desktop.lock
-*.elc
-auto-save-list
-tramp
-.\#*
-
-# Project specific
-infrastructure/cdk.out/
-src/lambda/*/node_modules/
-docker/*/node_modules/
+# Local development
+local-config.json
+dev-settings.json

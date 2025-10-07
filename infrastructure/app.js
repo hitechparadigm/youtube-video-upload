@@ -6,32 +6,32 @@
  */
 
 import { App, Tags } from 'aws-cdk-lib';
-import { TopicManagementStack } from './lib/topic-management-stack.js';
+import { VideoPipelineStack } from './lib/video-pipeline-stack.js';
 
 const app = new App();
 
-// Get environment configuration
+// Simple single-account configuration
 const account = process.env.CDK_DEFAULT_ACCOUNT || '786673323159';
 const region = process.env.CDK_DEFAULT_REGION || 'us-east-1';
-const environment = process.env.ENVIRONMENT || 'production';
 
-// Deploy Topic Management Stack
-const topicManagementStack = new TopicManagementStack(app, 'TopicManagementStack', {
+// Deploy single production stack
+const videoPipelineStack = new VideoPipelineStack(app, 'VideoPipelineStack', {
   env: {
     account,
     region
   },
-  description: 'Topic Management infrastructure for Automated YouTube Video Pipeline',
+  environment: 'production',
+  description: 'Automated YouTube Video Pipeline Infrastructure',
   tags: {
     Project: 'automated-video-pipeline',
-    Environment: environment,
-    ManagedBy: 'aws-cdk',
+    Environment: 'production',
+    ManagedBy: 'github-actions',
     CostCenter: 'content-creation'
   }
 });
 
 // Apply global tags
 Tags.of(app).add('Project', 'automated-video-pipeline');
-Tags.of(app).add('Environment', environment);
-Tags.of(app).add('ManagedBy', 'aws-cdk');
+Tags.of(app).add('Environment', 'production');
+Tags.of(app).add('ManagedBy', 'github-actions');
 Tags.of(app).add('Owner', 'video-automation-team');

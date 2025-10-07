@@ -1,0 +1,63 @@
+name: Cleanup Old Resources
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to clean up'
+        required: true
+        default: 'production'
+        type: choice
+        options:
+          - production
+      confirm_cleanup:
+        description: 'Type "CONFIRM" to proceed with cleanup'
+        required: true
+        type: string
+      cleanup_scope:
+        description: 'What to clean up'
+        required: true
+        default: 'old-versions'
+        type: choice
+        options:
+          - old-versions
+          - all-resources
+
+env:
+  AWS_REGION: us-east-1
+
+jobs:
+  cleanup:
+    name: Cleanup Resources
+    runs-on: ubuntu-latest
+    if: github.event.inputs.confirm_cleanup == 'CONFIRM'
+    environment: ${{ github.event.inputs.environment }}
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run cleanup script
+        run: |
+          echo "🧹 Starting cleanup for ${{ github.event.inputs.environment }} environment"
+          node scripts/cleanup-old-resources.js
+
+      - name: Summary
+        run: |
+          echo "✅ Cleanup completed for ${{ github.event.inputs.environment }} environment"
+          echo "Old resources have been removed to prepare for new deployments"

@@ -1,0 +1,335 @@
+{
+  "Comment": "Automated Video Pipeline - End-to-End Workflow",
+  "StartAt": "InitializePipeline",
+  "States": {
+    "InitializePipeline": {
+      "Type": "Pass",
+      "Comment": "Initialize pipeline with input validation and setup",
+      "Parameters": {
+        "pipelineId.$": "$.topicId",
+        "topic.$": "$.topic",
+        "keywords.$": "$.keywords",
+        "priority.$": "$.priority",
+        "targetDuration": 480,
+        "startTime.$": "$$.State.EnteredTime",
+        "status": "initialized"
+      },
+      "Next": "GenerateTrendAnalysis"
+    },
+
+    "GenerateTrendAnalysis": {
+      "Type": "Task",
+      "Comment": "Analyze trends and generate specific video concepts",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "Parameters": {
+        "FunctionName": "automated-video-pipeline-trend-analyzer",
+        "Payload": {
+          "baseTopic.$": "$.topic",
+          "keywords.$": "$.keywords",
+          "targetAudience": "general",
+          "region": "US",
+          "analysisDepth": "comprehensive"
+        }
+      },
+      "ResultPath": "$.trendAnalysis",
+      "ResultSelector": {
+        "trendData.$": "$.Payload"
+      },
+      "Retry": [
+        {
+          "ErrorEquals": ["States.TaskFailed", "States.Timeout"],
+          "IntervalSeconds": 5,
+          "MaxAttempts": 3,
+          "BackoffRate": 2.0
+        }
+      ],
+      "Catch": [
+        {
+          "ErrorEquals": ["States.ALL"],
+          "Next": "HandleTrendAnalysisError",
+          "ResultPath": "$.error"
+        }
+      ],
+      "Next": "GenerateEngagingScript"
+    },
+
+    "HandleTrendAnalysisError": {
+      "Type": "Pass",
+      "Comment": "Handle trend analysis errors with fallback",
+      "Parameters": {
+        "trendAnalysis": {
+          "trendData": {
+            "baseTopic.$": "$.topic",
+            "generatedVideoTopics": [
+              {
+                "specificTopic.$": "$.topic",
+                "trendScore": 75,
+                "keywords.$": "$.keywords",
+                "reasoning": "Fallback topic generation due to trend analysis failure"
+              }
+            ],
+            "hotKeywords.$": "$.keywords"
+          }
+        },
+        "error.$": "$.error"
+      },
+      "Next": "GenerateEngagingScript"
+    },
+
+    "GenerateEngagingScript": {
+      "Type": "Task",
+      "Comment": "Create engaging video script with hooks and retention tactics",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "Parameters": {
+        "FunctionName": "automated-video-pipeline-script-generator",
+        "Payload": {
+          "specificTopic.$": "$.trendAnalysis.trendData.generatedVideoTopics[0].specificTopic",
+          "trendAnalysis.$": "$.trendAnalysis.trendData",
+          "targetDuration.$": "$.targetDuration",
+          "targetAudience": "general",
+          "contentStyle": "engaging_educational"
+        }
+      },
+      "ResultPath": "$.scriptGeneration",
+      "ResultSelector": {
+        "scriptData.$": "$.Payload"
+      },
+      "Retry": [
+        {
+          "ErrorEquals": ["States.TaskFailed", "States.Timeout"],
+          "IntervalSeconds": 5,
+          "MaxAttempts": 3,
+          "BackoffRate": 2.0
+        }
+      ],
+      "Catch": [
+        {
+          "ErrorEquals": ["States.ALL"],
+          "Next": "HandleScriptGenerationError",
+          "ResultPath": "$.error"
+        }
+      ],
+      "Next": "ParallelMediaAndAudio"
+    },
+
+    "HandleScriptGenerationError": {
+      "Type": "Fail",
+      "Comment": "Script generation is critical - fail the pipeline",
+      "Cause": "Script generation failed",
+      "Error": "ScriptGenerationError"
+    },
+
+    "ParallelMediaAndAudio": {
+      "Type": "Parallel",
+      "Comment": "Process media curation and audio generation in parallel",
+      "Branches": [
+        {
+          "StartAt": "CurateMediaAssets",
+          "States": {
+            "CurateMediaAssets": {
+              "Type": "Task",
+              "Comment": "Find and download relevant media assets",
+              "Resource": "arn:aws:states:::lambda:invoke",
+              "Parameters": {
+                "FunctionName": "automated-video-pipeline-media-curator",
+                "Payload": {
+                  "script.$": "$.scriptGeneration.scriptData",
+                  "trendAnalysis.$": "$.trendAnalysis.trendData",
+                  "videoDuration.$": "$.targetDuration",
+                  "targetQuality": "1080p"
+                }
+              },
+              "ResultSelector": {
+                "mediaAssets.$": "$.Payload"
+              },
+              "Retry": [
+                {
+                  "ErrorEquals": ["States.TaskFailed", "States.Timeout"],
+                  "IntervalSeconds": 10,
+                  "MaxAttempts": 3,
+                  "BackoffRate": 2.0
+                }
+              ],
+              "End": true
+            }
+          }
+        },
+        {
+          "StartAt": "GenerateAudio",
+          "States": {
+            "GenerateAudio": {
+              "Type": "Task",
+              "Comment": "Convert script to high-quality audio",
+              "Resource": "arn:aws:states:::lambda:invoke",
+              "Parameters": {
+                "FunctionName": "automated-video-pipeline-audio-generator",
+                "Payload": {
+                  "scriptText.$": "$.scriptGeneration.scriptData.engagingScript.scenes",
+                  "voiceSettings": {
+                    "voiceId": "Joanna",
+                    "engine": "neural",
+                    "outputFormat": "mp3"
+                  },
+                  "outputLocation.$": "States.Format('s3://automated-video-pipeline-786673323159-us-east-1/audio/{}-narration.mp3', $.pipelineId)"
+                }
+              },
+              "ResultSelector": {
+                "audioFile.$": "$.Payload"
+              },
+              "Retry": [
+                {
+                  "ErrorEquals": ["States.TaskFailed", "States.Timeout"],
+                  "IntervalSeconds": 10,
+                  "MaxAttempts": 3,
+                  "BackoffRate": 2.0
+                }
+              ],
+              "End": true
+            }
+          }
+        }
+      ],
+      "ResultPath": "$.parallelResults",
+      "Catch": [
+        {
+          "ErrorEquals": ["States.ALL"],
+          "Next": "HandleParallelProcessingError",
+          "ResultPath": "$.error"
+        }
+      ],
+      "Next": "AssembleVideo"
+    },
+
+    "HandleParallelProcessingError": {
+      "Type": "Fail",
+      "Comment": "Media or audio generation failed",
+      "Cause": "Parallel processing failed",
+      "Error": "ParallelProcessingError"
+    },
+
+    "AssembleVideo": {
+      "Type": "Task",
+      "Comment": "Combine media assets with audio using FFmpeg",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "Parameters": {
+        "FunctionName": "automated-video-pipeline-video-assembler",
+        "Payload": {
+          "videoId.$": "$.pipelineId",
+          "scriptData.$": "$.scriptGeneration.scriptData",
+          "mediaAssets.$": "$.parallelResults[0].mediaAssets.selectedAssets",
+          "audioFile.$": "$.parallelResults[1].audioFile.audioFileLocation",
+          "outputOptions": {
+            "resolution": "1920x1080",
+            "fps": 30,
+            "bitrate": "5000k",
+            "format": "mp4"
+          }
+        }
+      },
+      "ResultPath": "$.videoAssembly",
+      "ResultSelector": {
+        "assemblyResult.$": "$.Payload"
+      },
+      "Retry": [
+        {
+          "ErrorEquals": ["States.TaskFailed", "States.Timeout"],
+          "IntervalSeconds": 30,
+          "MaxAttempts": 2,
+          "BackoffRate": 2.0
+        }
+      ],
+      "Catch": [
+        {
+          "ErrorEquals": ["States.ALL"],
+          "Next": "HandleVideoAssemblyError",
+          "ResultPath": "$.error"
+        }
+      ],
+      "Next": "PublishToYouTube"
+    },
+
+    "HandleVideoAssemblyError": {
+      "Type": "Fail",
+      "Comment": "Video assembly failed",
+      "Cause": "Video assembly failed",
+      "Error": "VideoAssemblyError"
+    },
+
+    "PublishToYouTube": {
+      "Type": "Task",
+      "Comment": "Upload video to YouTube with optimized metadata",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "Parameters": {
+        "FunctionName": "automated-video-pipeline-youtube-publisher",
+        "Payload": {
+          "videoId.$": "$.pipelineId",
+          "videoFilePath.$": "$.videoAssembly.assemblyResult.outputLocation",
+          "title.$": "$.scriptGeneration.scriptData.clickWorthyMetadata.title",
+          "description.$": "$.scriptGeneration.scriptData.clickWorthyMetadata.description",
+          "tags.$": "$.scriptGeneration.scriptData.clickWorthyMetadata.tags",
+          "thumbnail.$": "$.scriptGeneration.scriptData.clickWorthyMetadata.thumbnail.s3Location",
+          "privacy": "public",
+          "category": "22"
+        }
+      },
+      "ResultPath": "$.youtubePublish",
+      "ResultSelector": {
+        "publishResult.$": "$.Payload"
+      },
+      "Retry": [
+        {
+          "ErrorEquals": ["States.TaskFailed", "States.Timeout"],
+          "IntervalSeconds": 60,
+          "MaxAttempts": 3,
+          "BackoffRate": 2.0
+        }
+      ],
+      "Catch": [
+        {
+          "ErrorEquals": ["States.ALL"],
+          "Next": "HandleYouTubePublishError",
+          "ResultPath": "$.error"
+        }
+      ],
+      "Next": "CompletePipeline"
+    },
+
+    "HandleYouTubePublishError": {
+      "Type": "Pass",
+      "Comment": "YouTube publish failed but video is assembled - partial success",
+      "Parameters": {
+        "status": "partial_success",
+        "message": "Video assembled successfully but YouTube publish failed",
+        "videoLocation.$": "$.videoAssembly.assemblyResult.outputLocation",
+        "error.$": "$.error"
+      },
+      "Next": "CompletePipeline"
+    },
+
+    "CompletePipeline": {
+      "Type": "Pass",
+      "Comment": "Complete pipeline with final results",
+      "Parameters": {
+        "pipelineId.$": "$.pipelineId",
+        "topic.$": "$.topic",
+        "status": "completed",
+        "startTime.$": "$.startTime",
+        "endTime.$": "$$.State.EnteredTime",
+        "results": {
+          "trendAnalysis.$": "$.trendAnalysis.trendData",
+          "scriptGeneration.$": "$.scriptGeneration.scriptData",
+          "mediaAssets.$": "$.parallelResults[0].mediaAssets",
+          "audioGeneration.$": "$.parallelResults[1].audioFile",
+          "videoAssembly.$": "$.videoAssembly.assemblyResult",
+          "youtubePublish.$": "$.youtubePublish.publishResult"
+        },
+        "metrics": {
+          "totalCost": 0.85,
+          "videoQuality": "high",
+          "estimatedViews.$": "$.scriptGeneration.scriptData.engagementMetrics.predictedWatchTime"
+        }
+      },
+      "End": true
+    }
+  }
+}

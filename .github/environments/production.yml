@@ -1,0 +1,21 @@
+# Production Environment Configuration
+name: production
+description: Production environment for live video generation
+
+# Environment variables
+variables:
+  ENVIRONMENT: production
+  AWS_REGION: us-east-1
+  STACK_VERSION: v3
+  
+# Protection rules
+protection_rules:
+  required_reviewers: 1
+  wait_timer: 5 # 5 minute wait before deployment
+
+# Deployment settings
+deployment:
+  auto_deploy: false
+  retain_resources: true
+  enable_monitoring: true
+  enable_backup: true
