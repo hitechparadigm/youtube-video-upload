@@ -265,6 +265,9 @@ The remaining work focuses on:
   - Implement audio quality validation and optimization
   - _Requirements: 5.1, 5.2_
 
+
+
+
 - [ ] 6.2 Create audio synchronization and timing system
 
   - Implement scene-based audio segmentation
@@ -306,8 +309,13 @@ The remaining work focuses on:
 
 
 
-- [x] 7.2 Implement precise scene-media synchronization using enhanced context
+- [ ] 7.2 Implement actual video processing execution with FFmpeg
 
+  - **CRITICAL**: Implement actual FFmpeg command execution (currently only generates commands)
+  - Add ECS Fargate task execution or Lambda-based video processing
+  - Execute generated FFmpeg commands to produce actual MP4 video files
+  - Implement file upload to S3 after successful video processing
+  - Add processing status tracking and error handling for video assembly
   - Modify existing FFmpeg pipeline to consume detailed scene-media mapping from Media Curator AI
   - Implement precise media asset synchronization with exact scene timestamps from scene breakdown
   - Ensure each media asset appears at correct time and duration as specified in scene context

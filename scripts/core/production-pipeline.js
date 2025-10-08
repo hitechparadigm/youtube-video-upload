@@ -25,31 +25,71 @@ class ProductionPipeline {
         
         const executionInput = {
             topicId: projectId,
-            topic: config.topic || "AI Tools for Content Creation",
+            baseTopic: config.topic || "AI Tools for Content Creation",
             keywords: config.keywords || ["AI tools", "content creation", "productivity", "automation"],
             priority: config.priority || "high",
-            targetDuration: config.targetDuration || 480
+            targetDuration: config.targetDuration || 480,
+            action: 'start-direct'
         };
 
         console.log('📋 Execution Input:');
         console.log(`   📁 Project ID: ${executionInput.topicId}`);
-        console.log(`   📋 Topic: ${executionInput.topic}`);
+        console.log(`   📋 Topic: ${executionInput.baseTopic}`);
         console.log(`   🏷️  Keywords: ${executionInput.keywords.join(', ')}`);
 
         try {
-            // Run Step Functions pipeline
-            const stepFunctionsResult = await this.runStepFunctionsPipeline(executionInput);
+            // Use direct orchestration instead of Step Functions
+            console.log('🚀 Using Direct Orchestration (no Step Functions)...');
+            const result = await this.runDirectOrchestration(executionInput);
             
-            if (stepFunctionsResult.success) {
-                console.log('✅ Step Functions pipeline completed successfully');
-                return stepFunctionsResult;
+            if (result.success) {
+                console.log('✅ Direct orchestration completed successfully');
+                return result;
             } else {
-                console.log('⚠️  Step Functions failed, trying direct Lambda pipeline...');
+                console.log('⚠️  Direct orchestration had issues, trying fallback...');
                 return await this.runDirectLambdaPipeline(executionInput);
             }
         } catch (error) {
             console.log('💥 Full pipeline failed:', error.message);
             throw error;
+        }
+    }
+
+    async runDirectOrchestration(executionInput) {
+        console.log('\n🎯 Running Direct Orchestration...');
+        
+        try {
+            const result = await this.lambdaInvoker.invokeWithHTTP(
+                'automated-video-pipeline-workflow-orchestrator-v2',
+                'POST',
+                '/workflow/start',
+                executionInput
+            );
+
+            if (result.success && result.data) {
+                const responseData = typeof result.data.body === 'string' 
+                    ? JSON.parse(result.data.body) 
+                    : result.data.body || result.data;
+
+                return {
+                    success: true,
+                    type: 'direct-orchestration',
+                    projectId: executionInput.topicId,
+                    executionId: responseData.executionId,
+                    workingAgents: responseData.result?.workingAgents || 0,
+                    details: responseData
+                };
+            } else {
+                return {
+                    success: false,
+                    error: 'Orchestrator invocation failed',
+                    details: result
+                };
+            }
+
+        } catch (error) {
+            console.log(`❌ Direct orchestration error: ${error.message}`);
+            return { success: false, error: error.message };
         }
     }
 

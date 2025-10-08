@@ -25,7 +25,7 @@
         "validateOnSynth": false,
         "assumeRoleArn": "arn:${AWS::Partition}:iam::786673323159:role/cdk-hnb659fds-deploy-role-786673323159-us-east-1",
         "cloudFormationExecutionRoleArn": "arn:${AWS::Partition}:iam::786673323159:role/cdk-hnb659fds-cfn-exec-role-786673323159-us-east-1",
-        "stackTemplateAssetObjectUrl": "s3://cdk-hnb659fds-assets-786673323159-us-east-1/055f462a7bea65f9a6a695546fbc1ba07f20fb9c5b0f6aac7005fba7b5121dc8.json",
+        "stackTemplateAssetObjectUrl": "s3://cdk-hnb659fds-assets-786673323159-us-east-1/6eea2e81dd96c60a329660c422673a20cb6a93883560c2175da26f612802b61f.json",
         "requiresBootstrapStackVersion": 6,
         "bootstrapStackVersionSsmParameter": "/cdk-bootstrap/hnb659fds/version",
         "additionalDependencies": [
@@ -122,6 +122,20 @@
             "data": "ExecutionsTableA2EE59C2"
           }
         ],
+        "/VideoPipelineStack/ContextTable": [
+          {
+            "type": "aws:cdk:hasPhysicalName",
+            "data": {
+              "Ref": "ContextTableE95A339A"
+            }
+          }
+        ],
+        "/VideoPipelineStack/ContextTable/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "ContextTableE95A339A"
+          }
+        ],
         "/VideoPipelineStack/LambdaExecutionRole/Resource": [
           {
             "type": "aws:cdk:logicalId",
@@ -138,6 +152,12 @@
           {
             "type": "aws:cdk:logicalId",
             "data": "ConfigLayer1A4B087F"
+          }
+        ],
+        "/VideoPipelineStack/ContextLayer/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "ContextLayerBFE43D68"
           }
         ],
         "/VideoPipelineStack/TopicManagementFunction/Resource": [
@@ -180,24 +200,6 @@
           {
             "type": "aws:cdk:logicalId",
             "data": "WorkflowOrchestratorFunction392225F6"
-          }
-        ],
-        "/VideoPipelineStack/StepFunctionsRole/Resource": [
-          {
-            "type": "aws:cdk:logicalId",
-            "data": "StepFunctionsRole575CBBE2"
-          }
-        ],
-        "/VideoPipelineStack/StepFunctionsRole/DefaultPolicy/Resource": [
-          {
-            "type": "aws:cdk:logicalId",
-            "data": "StepFunctionsRoleDefaultPolicy14E0B433"
-          }
-        ],
-        "/VideoPipelineStack/VideoPipelineStateMachine/Resource": [
-          {
-            "type": "aws:cdk:logicalId",
-            "data": "VideoPipelineStateMachine25F8993E"
           }
         ],
         "/VideoPipelineStack/VideoPipelineAPI/Resource": [
@@ -668,10 +670,10 @@
             "data": "APIKeyId"
           }
         ],
-        "/VideoPipelineStack/StateMachineArn": [
+        "/VideoPipelineStack/WorkflowOrchestratorArn": [
           {
             "type": "aws:cdk:logicalId",
-            "data": "StateMachineArn"
+            "data": "WorkflowOrchestratorArn"
           }
         ],
         "/VideoPipelineStack/TopicsTableName": [

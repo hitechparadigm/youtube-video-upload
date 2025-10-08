@@ -8,8 +8,8 @@ import { Function, Runtime, Code, LayerVersion } from 'aws-cdk-lib/aws-lambda';
 import { Bucket, BucketEncryption } from 'aws-cdk-lib/aws-s3';
 import { Table, AttributeType, BillingMode } from 'aws-cdk-lib/aws-dynamodb';
 import { RestApi, LambdaIntegration, Cors, ApiKey, UsagePlan } from 'aws-cdk-lib/aws-apigateway';
-import { StateMachine, DefinitionBody, StateMachineType } from 'aws-cdk-lib/aws-stepfunctions';
-import { Rule, Schedule } from 'aws-cdk-lib/aws-events';
+// Step Functions removed - using direct orchestration
+import { Rule, Schedule, RuleTargetInput } from 'aws-cdk-lib/aws-events';
 import { LambdaFunction } from 'aws-cdk-lib/aws-events-targets';
 import { Cluster } from 'aws-cdk-lib/aws-ecs';
 import { Role, ServicePrincipal, PolicyStatement, Effect } from 'aws-cdk-lib/aws-iam';
@@ -249,7 +249,7 @@ export class VideoPipelineStack extends Stack {
     const videoAssemblerFunction = new Function(this, 'VideoAssemblerFunction', {
       functionName: `${projectName}-video-assembler-v2`,
       runtime: Runtime.NODEJS_20_X,
-      handler: 'index.handler',
+      handler: 'handler.handler',
       code: Code.fromAsset(join(process.cwd(), '../src/lambda/video-assembler')),
       timeout: Duration.minutes(15),
       memorySize: 1024,
@@ -301,51 +301,59 @@ export class VideoPipelineStack extends Stack {
     });
 
     // ========================================
-    // Step Functions State Machine
+    // Automatic Scheduling with EventBridge
     // ========================================
-
-    // Read the state machine definition
-    const stateMachineDefinition = readFileSync(
-      join(process.cwd(), '../src/step-functions/video-pipeline-workflow.json'),
-      'utf8'
-    );
-
-    // Replace function ARNs in the definition
-    const processedDefinition = stateMachineDefinition
-      .replace(/automated-video-pipeline-trend-analyzer/g, scriptGeneratorFunction.functionArn)
-      .replace(/automated-video-pipeline-script-generator/g, scriptGeneratorFunction.functionArn)
-      .replace(/automated-video-pipeline-media-curator/g, mediaCuratorFunction.functionArn)
-      .replace(/automated-video-pipeline-audio-generator/g, audioGeneratorFunction.functionArn)
-      .replace(/automated-video-pipeline-video-assembler/g, videoAssemblerFunction.functionArn)
-      .replace(/automated-video-pipeline-youtube-publisher/g, youtubePublisherFunction.functionArn);
-
-    // Create Step Functions role
-    const stepFunctionsRole = new Role(this, 'StepFunctionsRole', {
-      assumedBy: new ServicePrincipal('states.amazonaws.com')
+    
+    // Schedule automatic video production based on Google Sheets
+    const videoProductionSchedule = new Rule(this, 'VideoProductionSchedule', {
+      ruleName: `${projectName}-auto-schedule`,
+      description: 'Automatically triggers video production based on Google Sheets schedule',
+      schedule: Schedule.rate(Duration.hours(8)), // Every 8 hours
+      enabled: true
     });
 
-    stepFunctionsRole.addToPolicy(new PolicyStatement({
-      effect: Effect.ALLOW,
-      actions: ['lambda:InvokeFunction'],
-      resources: [
-        scriptGeneratorFunction.functionArn,
-        mediaCuratorFunction.functionArn,
-        audioGeneratorFunction.functionArn,
-        videoAssemblerFunction.functionArn,
-        youtubePublisherFunction.functionArn
-      ]
+    // Target the workflow orchestrator for scheduled executions
+    videoProductionSchedule.addTarget(new LambdaFunction(workflowOrchestratorFunction, {
+      event: RuleTargetInput.fromObject({
+        action: 'start-scheduled',
+        source: 'eventbridge-schedule',
+        baseTopic: 'Auto-scheduled from Google Sheets',
+        scheduledBy: 'eventbridge',
+        useGoogleSheets: true,
+        timestamp: new Date().toISOString()
+      })
     }));
 
-    // Create the state machine
-    const stateMachine = new StateMachine(this, 'VideoPipelineStateMachine', {
-      stateMachineName: `${projectName}-state-machine`,
-      definitionBody: DefinitionBody.fromString(processedDefinition),
-      role: stepFunctionsRole,
-      stateMachineType: StateMachineType.STANDARD
+    // Optional: Additional schedule for high-priority content (every 4 hours)
+    const highPrioritySchedule = new Rule(this, 'HighPriorityVideoSchedule', {
+      ruleName: `${projectName}-high-priority-schedule`,
+      description: 'More frequent schedule for high-priority video topics',
+      schedule: Schedule.rate(Duration.hours(4)), // Every 4 hours
+      enabled: false // Disabled by default - can be enabled via AWS Console
     });
 
-    // Update workflow orchestrator with state machine ARN
-    workflowOrchestratorFunction.addEnvironment('STATE_MACHINE_ARN', stateMachine.stateMachineArn);
+    highPrioritySchedule.addTarget(new LambdaFunction(workflowOrchestratorFunction, {
+      event: RuleTargetInput.fromObject({
+        action: 'start-scheduled',
+        source: 'eventbridge-high-priority',
+        baseTopic: 'High-priority auto-scheduled',
+        scheduledBy: 'eventbridge-priority',
+        useGoogleSheets: true,
+        priorityOnly: true,
+        timestamp: new Date().toISOString()
+      })
+    }));
+
+    // Grant EventBridge permission to invoke the workflow orchestrator
+    workflowOrchestratorFunction.addPermission('AllowEventBridgeInvoke', {
+      principal: new ServicePrincipal('events.amazonaws.com'),
+      sourceArn: videoProductionSchedule.ruleArn
+    });
+
+    workflowOrchestratorFunction.addPermission('AllowEventBridgeHighPriorityInvoke', {
+      principal: new ServicePrincipal('events.amazonaws.com'),
+      sourceArn: highPrioritySchedule.ruleArn
+    });
 
     // ========================================
     // API Gateway
@@ -451,9 +459,9 @@ export class VideoPipelineStack extends Stack {
       description: 'API Key ID for authentication'
     });
 
-    this.addOutput('StateMachineArn', {
-      value: stateMachine.stateMachineArn,
-      description: 'Step Functions state machine ARN'
+    this.addOutput('WorkflowOrchestratorArn', {
+      value: workflowOrchestratorFunction.functionArn,
+      description: 'Workflow Orchestrator Lambda ARN (replaces Step Functions)'
     });
 
     this.addOutput('TopicsTableName', {
@@ -464,6 +472,16 @@ export class VideoPipelineStack extends Stack {
     this.addOutput('VideosTableName', {
       value: videosTable.tableName,
       description: 'DynamoDB videos table name'
+    });
+
+    this.addOutput('AutoScheduleRuleArn', {
+      value: videoProductionSchedule.ruleArn,
+      description: 'EventBridge rule for automatic video production (every 8 hours)'
+    });
+
+    this.addOutput('HighPriorityScheduleRuleArn', {
+      value: highPrioritySchedule.ruleArn,
+      description: 'EventBridge rule for high-priority videos (every 4 hours, disabled by default)'
     });
   }
 

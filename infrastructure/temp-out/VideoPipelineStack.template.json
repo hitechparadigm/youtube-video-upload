@@ -241,6 +241,60 @@
     "aws:cdk:path": "VideoPipelineStack/ExecutionsTable/Resource"
    }
   },
+  "ContextTableE95A339A": {
+   "Type": "AWS::DynamoDB::Table",
+   "Properties": {
+    "AttributeDefinitions": [
+     {
+      "AttributeName": "PK",
+      "AttributeType": "S"
+     },
+     {
+      "AttributeName": "SK",
+      "AttributeType": "S"
+     }
+    ],
+    "BillingMode": "PAY_PER_REQUEST",
+    "KeySchema": [
+     {
+      "AttributeName": "PK",
+      "KeyType": "HASH"
+     },
+     {
+      "AttributeName": "SK",
+      "KeyType": "RANGE"
+     }
+    ],
+    "TableName": "automated-video-pipeline-context-v2",
+    "Tags": [
+     {
+      "Key": "Environment",
+      "Value": "production"
+     },
+     {
+      "Key": "ManagedBy",
+      "Value": "github-actions"
+     },
+     {
+      "Key": "Owner",
+      "Value": "video-automation-team"
+     },
+     {
+      "Key": "Project",
+      "Value": "automated-video-pipeline"
+     }
+    ],
+    "TimeToLiveSpecification": {
+     "AttributeName": "ttl",
+     "Enabled": true
+    }
+   },
+   "UpdateReplacePolicy": "Delete",
+   "DeletionPolicy": "Delete",
+   "Metadata": {
+    "aws:cdk:path": "VideoPipelineStack/ContextTable/Resource"
+   }
+  },
   "LambdaExecutionRoleD5C26073": {
    "Type": "AWS::IAM::Role",
    "Properties": {
@@ -344,11 +398,31 @@
     "Description": "Shared configuration management layer",
     "LayerName": "automated-video-pipeline-config"
    },
-   "UpdateReplacePolicy": "Retain",
-   "DeletionPolicy": "Retain",
    "Metadata": {
     "aws:cdk:path": "VideoPipelineStack/ConfigLayer/Resource",
     "aws:asset:path": "asset.6cbd6c36eff6225d00758983cec0028638fd58cd9b03ba8a393dd7d5ccbcc895",
+    "aws:asset:is-bundled": false,
+    "aws:asset:property": "Content"
+   }
+  },
+  "ContextLayerBFE43D68": {
+   "Type": "AWS::Lambda::LayerVersion",
+   "Properties": {
+    "CompatibleRuntimes": [
+     "nodejs20.x"
+    ],
+    "Content": {
+     "S3Bucket": "cdk-hnb659fds-assets-786673323159-us-east-1",
+     "S3Key": "8570dd6e05f66e50488ee55e42a09d721f835d5ca3e3ecb65130eab1516b46cf.zip"
+    },
+    "Description": "Context integration layer for AI agent communication",
+    "LayerName": "automated-video-pipeline-context"
+   },
+   "UpdateReplacePolicy": "Retain",
+   "DeletionPolicy": "Retain",
+   "Metadata": {
+    "aws:cdk:path": "VideoPipelineStack/ContextLayer/Resource",
+    "aws:asset:path": "asset.8570dd6e05f66e50488ee55e42a09d721f835d5ca3e3ecb65130eab1516b46cf",
     "aws:asset:is-bundled": false,
     "aws:asset:property": "Content"
    }
@@ -358,7 +432,7 @@
    "Properties": {
     "Code": {
      "S3Bucket": "cdk-hnb659fds-assets-786673323159-us-east-1",
-     "S3Key": "bc2459fd4bea3da96feb5ac1797c52f4664180ed6e6e1fb387169db5c35cf08a.zip"
+     "S3Key": "2250fe1badba8e360f918d9345d599b5d204a248255e989aa243e3cec4c27c62.zip"
     },
     "Environment": {
      "Variables": {
@@ -368,11 +442,19 @@
       "S3_BUCKET_NAME": {
        "Ref": "PrimaryBucket2E757879"
       },
+      "CONTEXT_TABLE_NAME": {
+       "Ref": "ContextTableE95A339A"
+      },
       "NODE_ENV": "production"
      }
     },
     "FunctionName": "automated-video-pipeline-topic-management-v2",
     "Handler": "handler.handler",
+    "Layers": [
+     {
+      "Ref": "ContextLayerBFE43D68"
+     }
+    ],
     "MemorySize": 256,
     "Role": {
      "Fn::GetAtt": [
@@ -407,7 +489,7 @@
    ],
    "Metadata": {
     "aws:cdk:path": "VideoPipelineStack/TopicManagementFunction/Resource",
-    "aws:asset:path": "asset.bc2459fd4bea3da96feb5ac1797c52f4664180ed6e6e1fb387169db5c35cf08a",
+    "aws:asset:path": "asset.2250fe1badba8e360f918d9345d599b5d204a248255e989aa243e3cec4c27c62",
     "aws:asset:is-bundled": false,
     "aws:asset:property": "Code"
    }
@@ -417,12 +499,15 @@
    "Properties": {
     "Code": {
      "S3Bucket": "cdk-hnb659fds-assets-786673323159-us-east-1",
-     "S3Key": "238a0850cec58e564ffb2c68b5e32c852950009dcd37af98b777aa8ef4ee108b.zip"
+     "S3Key": "d8bf63696de6399715f163d1157d7d1611ce4291db2705dbdea2f45b0bb4e972.zip"
     },
     "Environment": {
      "Variables": {
       "S3_BUCKET_NAME": {
        "Ref": "PrimaryBucket2E757879"
+      },
+      "CONTEXT_TABLE_NAME": {
+       "Ref": "ContextTableE95A339A"
       },
       "BEDROCK_MODEL_ID": "anthropic.claude-3-sonnet-20240229-v1:0",
       "BEDROCK_MODEL_REGION": "us-east-1",
@@ -434,6 +519,9 @@
     "Layers": [
      {
       "Ref": "ConfigLayer1A4B087F"
+     },
+     {
+      "Ref": "ContextLayerBFE43D68"
      }
     ],
     "MemorySize": 1024,
@@ -470,7 +558,7 @@
    ],
    "Metadata": {
     "aws:cdk:path": "VideoPipelineStack/ScriptGeneratorFunction/Resource",
-    "aws:asset:path": "asset.238a0850cec58e564ffb2c68b5e32c852950009dcd37af98b777aa8ef4ee108b",
+    "aws:asset:path": "asset.d8bf63696de6399715f163d1157d7d1611ce4291db2705dbdea2f45b0bb4e972",
     "aws:asset:is-bundled": false,
     "aws:asset:property": "Code"
    }
@@ -480,12 +568,15 @@
    "Properties": {
     "Code": {
      "S3Bucket": "cdk-hnb659fds-assets-786673323159-us-east-1",
-     "S3Key": "3830673111c3505c61326c94acbc3d06c553c26f9c1f65eefb5eb557c2b65373.zip"
+     "S3Key": "db8fe834b7346f2e6cebbaee042add74214907db24d46c6d6df6849f50403730.zip"
     },
     "Environment": {
      "Variables": {
       "S3_BUCKET_NAME": {
        "Ref": "PrimaryBucket2E757879"
+      },
+      "CONTEXT_TABLE_NAME": {
+       "Ref": "ContextTableE95A339A"
       },
       "API_KEYS_SECRET_NAME": "automated-video-pipeline/api-keys",
       "NODE_ENV": "production"
@@ -493,6 +584,11 @@
     },
     "FunctionName": "automated-video-pipeline-media-curator-v2",
     "Handler": "index.handler",
+    "Layers": [
+     {
+      "Ref": "ContextLayerBFE43D68"
+     }
+    ],
     "MemorySize": 512,
     "Role": {
      "Fn::GetAtt": [
@@ -527,7 +623,7 @@
    ],
    "Metadata": {
     "aws:cdk:path": "VideoPipelineStack/MediaCuratorFunction/Resource",
-    "aws:asset:path": "asset.3830673111c3505c61326c94acbc3d06c553c26f9c1f65eefb5eb557c2b65373",
+    "aws:asset:path": "asset.db8fe834b7346f2e6cebbaee042add74214907db24d46c6d6df6849f50403730",
     "aws:asset:is-bundled": false,
     "aws:asset:property": "Code"
    }
@@ -537,12 +633,15 @@
    "Properties": {
     "Code": {
      "S3Bucket": "cdk-hnb659fds-assets-786673323159-us-east-1",
-     "S3Key": "36cf0f1710133ba613db8db3e33ee8af8ff4a8e26d1e5e9d88aa29777f532791.zip"
+     "S3Key": "ad5d47b42f08c954327f8a014984cb85febe67b09fbc2750f620dff3f6e27f24.zip"
     },
     "Environment": {
      "Variables": {
       "S3_BUCKET_NAME": {
        "Ref": "PrimaryBucket2E757879"
+      },
+      "CONTEXT_TABLE_NAME": {
+       "Ref": "ContextTableE95A339A"
       },
       "NODE_ENV": "production"
      }
@@ -552,6 +651,9 @@
     "Layers": [
      {
       "Ref": "ConfigLayer1A4B087F"
+     },
+     {
+      "Ref": "ContextLayerBFE43D68"
      }
     ],
     "MemorySize": 512,
@@ -588,7 +690,7 @@
    ],
    "Metadata": {
     "aws:cdk:path": "VideoPipelineStack/AudioGeneratorFunction/Resource",
-    "aws:asset:path": "asset.36cf0f1710133ba613db8db3e33ee8af8ff4a8e26d1e5e9d88aa29777f532791",
+    "aws:asset:path": "asset.ad5d47b42f08c954327f8a014984cb85febe67b09fbc2750f620dff3f6e27f24",
     "aws:asset:is-bundled": false,
     "aws:asset:property": "Code"
    }
@@ -598,12 +700,15 @@
    "Properties": {
     "Code": {
      "S3Bucket": "cdk-hnb659fds-assets-786673323159-us-east-1",
-     "S3Key": "c0062530e20ae578d65b459b997fad05af3783fc40f65928fdb55d703cc7e8e6.zip"
+     "S3Key": "8f0b4c640482c82875f193ecea1a135dcabf99c90b1a27a163ca1d74555dc555.zip"
     },
     "Environment": {
      "Variables": {
       "S3_BUCKET_NAME": {
        "Ref": "PrimaryBucket2E757879"
+      },
+      "CONTEXT_TABLE_NAME": {
+       "Ref": "ContextTableE95A339A"
       },
       "VIDEOS_TABLE_NAME": {
        "Ref": "VideosTable19B3D0C4"
@@ -614,7 +719,12 @@
      }
     },
     "FunctionName": "automated-video-pipeline-video-assembler-v2",
-    "Handler": "index.handler",
+    "Handler": "handler.handler",
+    "Layers": [
+     {
+      "Ref": "ContextLayerBFE43D68"
+     }
+    ],
     "MemorySize": 1024,
     "Role": {
      "Fn::GetAtt": [
@@ -649,7 +759,7 @@
    ],
    "Metadata": {
     "aws:cdk:path": "VideoPipelineStack/VideoAssemblerFunction/Resource",
-    "aws:asset:path": "asset.c0062530e20ae578d65b459b997fad05af3783fc40f65928fdb55d703cc7e8e6",
+    "aws:asset:path": "asset.8f0b4c640482c82875f193ecea1a135dcabf99c90b1a27a163ca1d74555dc555",
     "aws:asset:is-bundled": false,
     "aws:asset:property": "Code"
    }
@@ -666,6 +776,9 @@
       "S3_BUCKET_NAME": {
        "Ref": "PrimaryBucket2E757879"
       },
+      "CONTEXT_TABLE_NAME": {
+       "Ref": "ContextTableE95A339A"
+      },
       "VIDEOS_TABLE_NAME": {
        "Ref": "VideosTable19B3D0C4"
       },
@@ -675,6 +788,11 @@
     },
     "FunctionName": "automated-video-pipeline-youtube-publisher-v2",
     "Handler": "handler.handler",
+    "Layers": [
+     {
+      "Ref": "ContextLayerBFE43D68"
+     }
+    ],
     "MemorySize": 1024,
     "Role": {
      "Fn::GetAtt": [
@@ -719,7 +837,7 @@
    "Properties": {
     "Code": {
      "S3Bucket": "cdk-hnb659fds-assets-786673323159-us-east-1",
-     "S3Key": "47c03f9ad5dcf0f78950a4ead8083e1828f6ab5422e99ba9a693343cc63449b9.zip"
+     "S3Key": "1cdab11a5861316526dee47b528c21203816ec77bf0043e8361817de3fe091f8.zip"
     },
     "Environment": {
      "Variables": {
@@ -729,10 +847,7 @@
       "TOPICS_TABLE_NAME": {
        "Ref": "TopicsTableB8A0263C"
       },
-      "NODE_ENV": "production",
-      "STATE_MACHINE_ARN": {
-       "Ref": "VideoPipelineStateMachine25F8993E"
-      }
+      "NODE_ENV": "production"
      }
     },
     "FunctionName": "automated-video-pipeline-workflow-orchestrator-v2",
@@ -771,192 +886,9 @@
    ],
    "Metadata": {
     "aws:cdk:path": "VideoPipelineStack/WorkflowOrchestratorFunction/Resource",
-    "aws:asset:path": "asset.47c03f9ad5dcf0f78950a4ead8083e1828f6ab5422e99ba9a693343cc63449b9",
+    "aws:asset:path": "asset.1cdab11a5861316526dee47b528c21203816ec77bf0043e8361817de3fe091f8",
     "aws:asset:is-bundled": false,
     "aws:asset:property": "Code"
-   }
-  },
-  "StepFunctionsRole575CBBE2": {
-   "Type": "AWS::IAM::Role",
-   "Properties": {
-    "AssumeRolePolicyDocument": {
-     "Statement": [
-      {
-       "Action": "sts:AssumeRole",
-       "Effect": "Allow",
-       "Principal": {
-        "Service": "states.amazonaws.com"
-       }
-      }
-     ],
-     "Version": "2012-10-17"
-    },
-    "Tags": [
-     {
-      "Key": "Environment",
-      "Value": "production"
-     },
-     {
-      "Key": "ManagedBy",
-      "Value": "github-actions"
-     },
-     {
-      "Key": "Owner",
-      "Value": "video-automation-team"
-     },
-     {
-      "Key": "Project",
-      "Value": "automated-video-pipeline"
-     }
-    ]
-   },
-   "Metadata": {
-    "aws:cdk:path": "VideoPipelineStack/StepFunctionsRole/Resource"
-   }
-  },
-  "StepFunctionsRoleDefaultPolicy14E0B433": {
-   "Type": "AWS::IAM::Policy",
-   "Properties": {
-    "PolicyDocument": {
-     "Statement": [
-      {
-       "Action": "lambda:InvokeFunction",
-       "Effect": "Allow",
-       "Resource": [
-        {
-         "Fn::GetAtt": [
-          "AudioGeneratorFunction17C7247E",
-          "Arn"
-         ]
-        },
-        {
-         "Fn::GetAtt": [
-          "MediaCuratorFunction9523771D",
-          "Arn"
-         ]
-        },
-        {
-         "Fn::GetAtt": [
-          "ScriptGeneratorFunction7EE3FEE4",
-          "Arn"
-         ]
-        },
-        {
-         "Fn::GetAtt": [
-          "VideoAssemblerFunction398C3D15",
-          "Arn"
-         ]
-        },
-        {
-         "Fn::GetAtt": [
-          "YouTubePublisherFunction16400ECB",
-          "Arn"
-         ]
-        }
-       ]
-      }
-     ],
-     "Version": "2012-10-17"
-    },
-    "PolicyName": "StepFunctionsRoleDefaultPolicy14E0B433",
-    "Roles": [
-     {
-      "Ref": "StepFunctionsRole575CBBE2"
-     }
-    ]
-   },
-   "Metadata": {
-    "aws:cdk:path": "VideoPipelineStack/StepFunctionsRole/DefaultPolicy/Resource"
-   }
-  },
-  "VideoPipelineStateMachine25F8993E": {
-   "Type": "AWS::StepFunctions::StateMachine",
-   "Properties": {
-    "DefinitionString": {
-     "Fn::Join": [
-      "",
-      [
-       "{\r\n  \"Comment\": \"Automated Video Pipeline - End-to-End Workflow\",\r\n  \"StartAt\": \"InitializePipeline\",\r\n  \"States\": {\r\n    \"InitializePipeline\": {\r\n      \"Type\": \"Pass\",\r\n      \"Comment\": \"Initialize pipeline with input validation and setup\",\r\n      \"Parameters\": {\r\n        \"pipelineId.$\": \"$.topicId\",\r\n        \"topic.$\": \"$.topic\",\r\n        \"keywords.$\": \"$.keywords\",\r\n        \"priority.$\": \"$.priority\",\r\n        \"targetDuration\": 480,\r\n        \"startTime.$\": \"$$.State.EnteredTime\",\r\n        \"status\": \"initialized\"\r\n      },\r\n      \"Next\": \"GenerateTrendAnalysis\"\r\n    },\r\n\r\n    \"GenerateTrendAnalysis\": {\r\n      \"Type\": \"Task\",\r\n      \"Comment\": \"Analyze trends and generate specific video concepts\",\r\n      \"Resource\": \"arn:aws:states:::lambda:invoke\",\r\n      \"Parameters\": {\r\n        \"FunctionName\": \"",
-       {
-        "Fn::GetAtt": [
-         "ScriptGeneratorFunction7EE3FEE4",
-         "Arn"
-        ]
-       },
-       "\",\r\n        \"Payload\": {\r\n          \"baseTopic.$\": \"$.topic\",\r\n          \"keywords.$\": \"$.keywords\",\r\n          \"targetAudience\": \"general\",\r\n          \"region\": \"US\",\r\n          \"analysisDepth\": \"comprehensive\"\r\n        }\r\n      },\r\n      \"ResultPath\": \"$.trendAnalysis\",\r\n      \"ResultSelector\": {\r\n        \"trendData.$\": \"$.Payload\"\r\n      },\r\n      \"Retry\": [\r\n        {\r\n          \"ErrorEquals\": [\"States.TaskFailed\", \"States.Timeout\"],\r\n          \"IntervalSeconds\": 5,\r\n          \"MaxAttempts\": 3,\r\n          \"BackoffRate\": 2.0\r\n        }\r\n      ],\r\n      \"Catch\": [\r\n        {\r\n          \"ErrorEquals\": [\"States.ALL\"],\r\n          \"Next\": \"HandleTrendAnalysisError\",\r\n          \"ResultPath\": \"$.error\"\r\n        }\r\n      ],\r\n      \"Next\": \"GenerateEngagingScript\"\r\n    },\r\n\r\n    \"HandleTrendAnalysisError\": {\r\n      \"Type\": \"Pass\",\r\n      \"Comment\": \"Handle trend analysis errors with fallback\",\r\n      \"Parameters\": {\r\n        \"trendAnalysis\": {\r\n          \"trendData\": {\r\n            \"baseTopic.$\": \"$.topic\",\r\n            \"generatedVideoTopics\": [\r\n              {\r\n                \"specificTopic.$\": \"$.topic\",\r\n                \"trendScore\": 75,\r\n                \"keywords.$\": \"$.keywords\",\r\n                \"reasoning\": \"Fallback topic generation due to trend analysis failure\"\r\n              }\r\n            ],\r\n            \"hotKeywords.$\": \"$.keywords\"\r\n          }\r\n        },\r\n        \"error.$\": \"$.error\"\r\n      },\r\n      \"Next\": \"GenerateEngagingScript\"\r\n    },\r\n\r\n    \"GenerateEngagingScript\": {\r\n      \"Type\": \"Task\",\r\n      \"Comment\": \"Create engaging video script with hooks and retention tactics\",\r\n      \"Resource\": \"arn:aws:states:::lambda:invoke\",\r\n      \"Parameters\": {\r\n        \"FunctionName\": \"",
-       {
-        "Fn::GetAtt": [
-         "ScriptGeneratorFunction7EE3FEE4",
-         "Arn"
-        ]
-       },
-       "\",\r\n        \"Payload\": {\r\n          \"specificTopic.$\": \"$.trendAnalysis.trendData.generatedVideoTopics[0].specificTopic\",\r\n          \"trendAnalysis.$\": \"$.trendAnalysis.trendData\",\r\n          \"targetDuration.$\": \"$.targetDuration\",\r\n          \"targetAudience\": \"general\",\r\n          \"contentStyle\": \"engaging_educational\"\r\n        }\r\n      },\r\n      \"ResultPath\": \"$.scriptGeneration\",\r\n      \"ResultSelector\": {\r\n        \"scriptData.$\": \"$.Payload\"\r\n      },\r\n      \"Retry\": [\r\n        {\r\n          \"ErrorEquals\": [\"States.TaskFailed\", \"States.Timeout\"],\r\n          \"IntervalSeconds\": 5,\r\n          \"MaxAttempts\": 3,\r\n          \"BackoffRate\": 2.0\r\n        }\r\n      ],\r\n      \"Catch\": [\r\n        {\r\n          \"ErrorEquals\": [\"States.ALL\"],\r\n          \"Next\": \"HandleScriptGenerationError\",\r\n          \"ResultPath\": \"$.error\"\r\n        }\r\n      ],\r\n      \"Next\": \"ParallelMediaAndAudio\"\r\n    },\r\n\r\n    \"HandleScriptGenerationError\": {\r\n      \"Type\": \"Fail\",\r\n      \"Comment\": \"Script generation is critical - fail the pipeline\",\r\n      \"Cause\": \"Script generation failed\",\r\n      \"Error\": \"ScriptGenerationError\"\r\n    },\r\n\r\n    \"ParallelMediaAndAudio\": {\r\n      \"Type\": \"Parallel\",\r\n      \"Comment\": \"Process media curation and audio generation in parallel\",\r\n      \"Branches\": [\r\n        {\r\n          \"StartAt\": \"CurateMediaAssets\",\r\n          \"States\": {\r\n            \"CurateMediaAssets\": {\r\n              \"Type\": \"Task\",\r\n              \"Comment\": \"Find and download relevant media assets\",\r\n              \"Resource\": \"arn:aws:states:::lambda:invoke\",\r\n              \"Parameters\": {\r\n                \"FunctionName\": \"",
-       {
-        "Fn::GetAtt": [
-         "MediaCuratorFunction9523771D",
-         "Arn"
-        ]
-       },
-       "\",\r\n                \"Payload\": {\r\n                  \"script.$\": \"$.scriptGeneration.scriptData\",\r\n                  \"trendAnalysis.$\": \"$.trendAnalysis.trendData\",\r\n                  \"videoDuration.$\": \"$.targetDuration\",\r\n                  \"targetQuality\": \"1080p\"\r\n                }\r\n              },\r\n              \"ResultSelector\": {\r\n                \"mediaAssets.$\": \"$.Payload\"\r\n              },\r\n              \"Retry\": [\r\n                {\r\n                  \"ErrorEquals\": [\"States.TaskFailed\", \"States.Timeout\"],\r\n                  \"IntervalSeconds\": 10,\r\n                  \"MaxAttempts\": 3,\r\n                  \"BackoffRate\": 2.0\r\n                }\r\n              ],\r\n              \"End\": true\r\n            }\r\n          }\r\n        },\r\n        {\r\n          \"StartAt\": \"GenerateAudio\",\r\n          \"States\": {\r\n            \"GenerateAudio\": {\r\n              \"Type\": \"Task\",\r\n              \"Comment\": \"Convert script to high-quality audio\",\r\n              \"Resource\": \"arn:aws:states:::lambda:invoke\",\r\n              \"Parameters\": {\r\n                \"FunctionName\": \"",
-       {
-        "Fn::GetAtt": [
-         "AudioGeneratorFunction17C7247E",
-         "Arn"
-        ]
-       },
-       "\",\r\n                \"Payload\": {\r\n                  \"scriptText.$\": \"$.scriptGeneration.scriptData.engagingScript.scenes\",\r\n                  \"voiceSettings\": {\r\n                    \"voiceId\": \"Joanna\",\r\n                    \"engine\": \"neural\",\r\n                    \"outputFormat\": \"mp3\"\r\n                  },\r\n                  \"outputLocation.$\": \"States.Format('s3://automated-video-pipeline-786673323159-us-east-1/audio/{}-narration.mp3', $.pipelineId)\"\r\n                }\r\n              },\r\n              \"ResultSelector\": {\r\n                \"audioFile.$\": \"$.Payload\"\r\n              },\r\n              \"Retry\": [\r\n                {\r\n                  \"ErrorEquals\": [\"States.TaskFailed\", \"States.Timeout\"],\r\n                  \"IntervalSeconds\": 10,\r\n                  \"MaxAttempts\": 3,\r\n                  \"BackoffRate\": 2.0\r\n                }\r\n              ],\r\n              \"End\": true\r\n            }\r\n          }\r\n        }\r\n      ],\r\n      \"ResultPath\": \"$.parallelResults\",\r\n      \"Catch\": [\r\n        {\r\n          \"ErrorEquals\": [\"States.ALL\"],\r\n          \"Next\": \"HandleParallelProcessingError\",\r\n          \"ResultPath\": \"$.error\"\r\n        }\r\n      ],\r\n      \"Next\": \"AssembleVideo\"\r\n    },\r\n\r\n    \"HandleParallelProcessingError\": {\r\n      \"Type\": \"Fail\",\r\n      \"Comment\": \"Media or audio generation failed\",\r\n      \"Cause\": \"Parallel processing failed\",\r\n      \"Error\": \"ParallelProcessingError\"\r\n    },\r\n\r\n    \"AssembleVideo\": {\r\n      \"Type\": \"Task\",\r\n      \"Comment\": \"Combine media assets with audio using FFmpeg\",\r\n      \"Resource\": \"arn:aws:states:::lambda:invoke\",\r\n      \"Parameters\": {\r\n        \"FunctionName\": \"",
-       {
-        "Fn::GetAtt": [
-         "VideoAssemblerFunction398C3D15",
-         "Arn"
-        ]
-       },
-       "\",\r\n        \"Payload\": {\r\n          \"videoId.$\": \"$.pipelineId\",\r\n          \"scriptData.$\": \"$.scriptGeneration.scriptData\",\r\n          \"mediaAssets.$\": \"$.parallelResults[0].mediaAssets.selectedAssets\",\r\n          \"audioFile.$\": \"$.parallelResults[1].audioFile.audioFileLocation\",\r\n          \"outputOptions\": {\r\n            \"resolution\": \"1920x1080\",\r\n            \"fps\": 30,\r\n            \"bitrate\": \"5000k\",\r\n            \"format\": \"mp4\"\r\n          }\r\n        }\r\n      },\r\n      \"ResultPath\": \"$.videoAssembly\",\r\n      \"ResultSelector\": {\r\n        \"assemblyResult.$\": \"$.Payload\"\r\n      },\r\n      \"Retry\": [\r\n        {\r\n          \"ErrorEquals\": [\"States.TaskFailed\", \"States.Timeout\"],\r\n          \"IntervalSeconds\": 30,\r\n          \"MaxAttempts\": 2,\r\n          \"BackoffRate\": 2.0\r\n        }\r\n      ],\r\n      \"Catch\": [\r\n        {\r\n          \"ErrorEquals\": [\"States.ALL\"],\r\n          \"Next\": \"HandleVideoAssemblyError\",\r\n          \"ResultPath\": \"$.error\"\r\n        }\r\n      ],\r\n      \"Next\": \"PublishToYouTube\"\r\n    },\r\n\r\n    \"HandleVideoAssemblyError\": {\r\n      \"Type\": \"Fail\",\r\n      \"Comment\": \"Video assembly failed\",\r\n      \"Cause\": \"Video assembly failed\",\r\n      \"Error\": \"VideoAssemblyError\"\r\n    },\r\n\r\n    \"PublishToYouTube\": {\r\n      \"Type\": \"Task\",\r\n      \"Comment\": \"Upload video to YouTube with optimized metadata\",\r\n      \"Resource\": \"arn:aws:states:::lambda:invoke\",\r\n      \"Parameters\": {\r\n        \"FunctionName\": \"",
-       {
-        "Fn::GetAtt": [
-         "YouTubePublisherFunction16400ECB",
-         "Arn"
-        ]
-       },
-       "\",\r\n        \"Payload\": {\r\n          \"videoId.$\": \"$.pipelineId\",\r\n          \"videoFilePath.$\": \"$.videoAssembly.assemblyResult.outputLocation\",\r\n          \"title.$\": \"$.scriptGeneration.scriptData.clickWorthyMetadata.title\",\r\n          \"description.$\": \"$.scriptGeneration.scriptData.clickWorthyMetadata.description\",\r\n          \"tags.$\": \"$.scriptGeneration.scriptData.clickWorthyMetadata.tags\",\r\n          \"thumbnail.$\": \"$.scriptGeneration.scriptData.clickWorthyMetadata.thumbnail.s3Location\",\r\n          \"privacy\": \"public\",\r\n          \"category\": \"22\"\r\n        }\r\n      },\r\n      \"ResultPath\": \"$.youtubePublish\",\r\n      \"ResultSelector\": {\r\n        \"publishResult.$\": \"$.Payload\"\r\n      },\r\n      \"Retry\": [\r\n        {\r\n          \"ErrorEquals\": [\"States.TaskFailed\", \"States.Timeout\"],\r\n          \"IntervalSeconds\": 60,\r\n          \"MaxAttempts\": 3,\r\n          \"BackoffRate\": 2.0\r\n        }\r\n      ],\r\n      \"Catch\": [\r\n        {\r\n          \"ErrorEquals\": [\"States.ALL\"],\r\n          \"Next\": \"HandleYouTubePublishError\",\r\n          \"ResultPath\": \"$.error\"\r\n        }\r\n      ],\r\n      \"Next\": \"CompletePipeline\"\r\n    },\r\n\r\n    \"HandleYouTubePublishError\": {\r\n      \"Type\": \"Pass\",\r\n      \"Comment\": \"YouTube publish failed but video is assembled - partial success\",\r\n      \"Parameters\": {\r\n        \"status\": \"partial_success\",\r\n        \"message\": \"Video assembled successfully but YouTube publish failed\",\r\n        \"videoLocation.$\": \"$.videoAssembly.assemblyResult.outputLocation\",\r\n        \"error.$\": \"$.error\"\r\n      },\r\n      \"Next\": \"CompletePipeline\"\r\n    },\r\n\r\n    \"CompletePipeline\": {\r\n      \"Type\": \"Pass\",\r\n      \"Comment\": \"Complete pipeline with final results\",\r\n      \"Parameters\": {\r\n        \"pipelineId.$\": \"$.pipelineId\",\r\n        \"topic.$\": \"$.topic\",\r\n        \"status\": \"completed\",\r\n        \"startTime.$\": \"$.startTime\",\r\n        \"endTime.$\": \"$$.State.EnteredTime\",\r\n        \"results\": {\r\n          \"trendAnalysis.$\": \"$.trendAnalysis.trendData\",\r\n          \"scriptGeneration.$\": \"$.scriptGeneration.scriptData\",\r\n          \"mediaAssets.$\": \"$.parallelResults[0].mediaAssets\",\r\n          \"audioGeneration.$\": \"$.parallelResults[1].audioFile\",\r\n          \"videoAssembly.$\": \"$.videoAssembly.assemblyResult\",\r\n          \"youtubePublish.$\": \"$.youtubePublish.publishResult\"\r\n        },\r\n        \"metrics\": {\r\n          \"totalCost\": 0.85,\r\n          \"videoQuality\": \"high\",\r\n          \"estimatedViews.$\": \"$.scriptGeneration.scriptData.engagementMetrics.predictedWatchTime\"\r\n        }\r\n      },\r\n      \"End\": true\r\n    }\r\n  }\r\n}"
-      ]
-     ]
-    },
-    "RoleArn": {
-     "Fn::GetAtt": [
-      "StepFunctionsRole575CBBE2",
-      "Arn"
-     ]
-    },
-    "StateMachineName": "automated-video-pipeline-state-machine",
-    "StateMachineType": "STANDARD",
-    "Tags": [
-     {
-      "Key": "Environment",
-      "Value": "production"
-     },
-     {
-      "Key": "ManagedBy",
-      "Value": "github-actions"
-     },
-     {
-      "Key": "Owner",
-      "Value": "video-automation-team"
-     },
-     {
-      "Key": "Project",
-      "Value": "automated-video-pipeline"
-     }
-    ]
-   },
-   "DependsOn": [
-    "StepFunctionsRoleDefaultPolicy14E0B433",
-    "StepFunctionsRole575CBBE2"
-   ],
-   "UpdateReplacePolicy": "Delete",
-   "DeletionPolicy": "Delete",
-   "Metadata": {
-    "aws:cdk:path": "VideoPipelineStack/VideoPipelineStateMachine/Resource"
    }
   },
   "VideoPipelineAPIC7F4C465": {
@@ -3292,7 +3224,7 @@
   "CDKMetadata": {
    "Type": "AWS::CDK::Metadata",
    "Properties": {
-    "Analytics": "v2:deflate64:H4sIAAAAAAAA/22QQW/CMAyFf8vuwWPltCNs2oWhobLtitzWlECaVHUCqqL89ylp0Ji0k7+XZzn2K6B4eob5A155VjfnmZIV+J3F+izwynvPC/ArV5/JipeDzjSVFTIF0YwaO9NU4D+xUhS7EgQhsQNfmukt1a1Rsh6jnCgIhV3VIPh3HGn4poGl0dH/o9+crm027nlLQyc5tgTBiz0yk2VYxiLYUn/IvZwusrTB+ih1WudeB4G9bNHSFUfwJbFd9jLtnPGVemXGjnTK4E7tLLa3cS2Jkti4oaYYjNiQPZommplubp488bKXa0qJZPpibGmrMB34v1jTGARdSFsGX7qcr1MUwu8nKYW4ltRt9D+c7Z0NQpuG4MSPl6KAYg7zhxNLORuctrIjKKf6A5MS9HwVAgAA"
+    "Analytics": "v2:deflate64:H4sIAAAAAAAA/22QwU7DMBBEv6V3dynpiWML4lIQVQpcq02yDW4cO8rarSLL/47sGFEkTvPWs7JnXEBx/wCrBV55WTfdUskK/MFi3Qm88tHzGvzW1R1Z8XjSmWbZIlMQzaSxN00F/h0rRXErQRASe/Clmc+S7o2S9RTHmYJQ2FcNgn/BicZPGlkaHf0/87PTtc3GLe9p7CXHlSB4fURmsgybKAIH2aKlK07gS2K7GWSKkfGJBmWmnnSqdTMdLLYp8AwlsXFjTbGreCX7ZZpoZvpx880zbwa5o1Qy0wdjS3uFKfP/w46mIOhC2jL40uUvc4pC+H0kFYuxpG6j/+bs4GwQ2jQEZ767FAUUK1gtzizlcnTayp6gnPUb8gsLCegBAAA="
    },
    "Metadata": {
     "aws:cdk:path": "VideoPipelineStack/CDKMetadata/Default"
@@ -3357,10 +3289,13 @@
     "Ref": "VideoPipelineApiKey045E3C38"
    }
   },
-  "StateMachineArn": {
-   "Description": "Step Functions state machine ARN",
+  "WorkflowOrchestratorArn": {
+   "Description": "Workflow Orchestrator Lambda ARN (replaces Step Functions)",
    "Value": {
-    "Ref": "VideoPipelineStateMachine25F8993E"
+    "Fn::GetAtt": [
+     "WorkflowOrchestratorFunction392225F6",
+     "Arn"
+    ]
    }
   },
   "TopicsTableName": {

@@ -1,0 +1,103 @@
+{
+  "summary": {
+    "total": 6,
+    "working": 3,
+    "failed": 3,
+    "workingAgents": [
+      "topic-management",
+      "script-generator",
+      "media-curator"
+    ],
+    "failedAgents": [
+      "audio-generator",
+      "video-assembler",
+      "youtube-publisher"
+    ]
+  },
+  "results": {
+    "topic-management": {
+      "success": true,
+      "statusCode": 200,
+      "data": {
+        "statusCode": 200,
+        "headers": {
+          "Content-Type": "application/json",
+          "Access-Control-Allow-Origin": "*",
+          "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
+          "Access-Control-Allow-Headers": "Content-Type, Authorization, X-Api-Key"
+        },
+        "body": "{\"topics\":[{\"metadata\":{\"createdBy\":\"system\",\"source\":\"api\",\"tags\":[]},\"totalVideosGenerated\":0,\"topic\":\"Investing for beginners in the USA\",\"status\":\"active\",\"priority\":3,\"createdAt\":\"2025-10-07T13:10:10.636Z\",\"targetAudience\":\"general\",\"topicId\":\"166a7f81-6e52-477b-b91b-836b2f846e7e\",\"dailyFrequency\":2,\"updatedAt\":\"2025-10-07T13:10:10.636Z\",\"contentStyle\":\"engaging_educational\",\"keywords\":[\"investing\",\"beginners\",\"usa\"],\"region\":\"US\",\"averageEngagement\":0,\"lastProcessed\":null},{\"metadata\":{\"createdBy\":\"system\",\"source\":\"api\",\"tags\":[]},\"totalVideosGenerated\":0,\"topic\":\"October stock picks\",\"status\":\"active\",\"priority\":5,\"createdAt\":\"2025-10-07T13:10:13.362Z\",\"targetAudience\":\"general\",\"topicId\":\"7c7ffed5-ec1f-4e5c-bdf5-477d2b73bb46\",\"dailyFrequency\":1,\"updatedAt\":\"2025-10-07T13:10:13.362Z\",\"contentStyle\":\"engaging_educational\",\"keywords\":[\"october\",\"stock\",\"picks\"],\"region\":\"US\",\"averageEngagement\":0,\"lastProcessed\":null},{\"metadata\":{\"createdBy\":\"system\",\"source\":\"api\",\"tags\":[]},\"totalVideosGenerated\":0,\"topic\":\"Travel to Mexico\",\"status\":\"active\",\"priority\":5,\"createdAt\":\"2025-10-07T13:10:12.221Z\",\"targetAudience\":\"general\",\"topicId\":\"70554776-5013-4ec5-984e-38518a07a93b\",\"dailyFrequency\":1,\"updatedAt\":\"2025-10-07T13:10:12.221Z\",\"contentStyle\":\"engaging_educational\",\"keywords\":[\"travel\",\"mexico\"],\"region\":\"US\",\"averageEngagement\":0,\"lastProcessed\":null},{\"metadata\":{\"createdBy\":\"system\",\"source\":\"api\",\"tags\":[]},\"totalVideosGenerated\":0,\"topic\":\"All-weather” portfolios for uncertainty\",\"status\":\"active\",\"priority\":5,\"createdAt\":\"2025-10-07T13:10:14.506Z\",\"targetAudience\":\"general\",\"topicId\":\"296818d0-5be0-4ef6-ba89-f0b18ab16463\",\"dailyFrequency\":1,\"updatedAt\":\"2025-10-07T13:10:14.506Z\",\"contentStyle\":\"engaging_educational\",\"keywords\":[\"all\",\"weather\",\"portfolios\",\"uncertainty\"],\"region\":\"US\",\"averageEngagement\":0,\"lastProcessed\":null}],\"count\":4,\"timestamp\":\"2025-10-08T00:37:33.326Z\"}"
+      }
+    },
+    "script-generator": {
+      "success": true,
+      "statusCode": 200,
+      "data": {
+        "statusCode": 200,
+        "headers": {
+          "Content-Type": "application/json",
+          "Access-Control-Allow-Origin": "*",
+          "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
+          "Access-Control-Allow-Headers": "Content-Type, Authorization, X-Api-Key"
+        },
+        "body": "{\"message\":\"Enhanced script generated successfully\",\"script\":{\"title\":\"Test Subtopic\",\"topic\":\"Test Topic\",\"hook\":\"Have you ever wondered what it would be like to experience the Test Topic from a completely different perspective?\",\"estimatedDuration\":302,\"wordCount\":156,\"style\":\"engaging_educational\",\"targetAudience\":\"general\",\"sceneStructure\":{\"totalScenes\":4,\"averageSceneLength\":\"75 seconds\",\"structureRationale\":\"Four scenes provide a logical flow to introduce the topic, explore key concepts, address common questions, and summarize the value - all within the 5 minute duration.\"},\"scenes\":[{\"sceneNumber\":1,\"title\":\"Hook\",\"startTime\":0,\"endTime\":15,\"duration\":15,\"script\":\"Have you ever wondered what it would be like to experience the Test Topic from a completely different perspective?\",\"visualCues\":[\"Open with presenter looking directly at camera\",\"Cut to eye-catching graphics/b-roll related to topic\"],\"notes\":\"Build a curiosity gap and make the viewer want to learn more\",\"keyPoints\":[\"Introduce test topic in an intriguing way\"],\"purpose\":\"grab_attention\",\"visualStyle\":\"dynamic_engaging\",\"mediaNeeds\":[\"Attention-grabbing visuals\",\"Presenter on camera\"],\"tone\":\"exciting_curious\",\"engagementHooks\":[\"Curiosity gap\",\"Rhetorical question\"],\"transitionToNext\":\"This grabs attention and sets up the viewer to learn more in the next scene.\"},{\"sceneNumber\":2,\"title\":\"What You'll Learn\",\"startTime\":15,\"endTime\":45,\"duration\":30,\"script\":\"In this video, we're going to explore three fascinating aspects of the Test Topic that will change how you think about it forever. First, we'll dive into the secret origins that most people don't know about...\",\"visualCues\":[\"Outline the 3 main points with text/graphics\",\"Cut between presenter and supporting visuals\"],\"notes\":\"Clearly preview the value and make the content enticing\",\"keyPoints\":[\"Foreshadow 3 key points\",\"Build excitement and curiosity\"],\"purpose\":\"value_preview\",\"visualStyle\":\"engaging_educational\",\"mediaNeeds\":[\"Explanatory visuals\",\"Presenter on camera\"],\"tone\":\"enthusiastic_informative\",\"engagementHooks\":[\"Curiosity piqued by 'secret origins'\",\"Tease of mindset-changing info\"],\"transitionToNext\":\"Now that the value has been set up, we can dive into the first key concept.\"},{\"sceneNumber\":3,\"title\":\"Key Concept 1\",\"startTime\":45,\"endTime\":135,\"duration\":90,\"script\":\"Most people aren't aware that the Test Topic actually has origins dating back... [Explain Key Concept 1 in an engaging way, using examples, comparisons, etc.] This perspective completely changes how you view...and leads us to the next key insight...\",\"visualCues\":[\"Break down concepts visually with graphics/animations\",\"Show real-world examples on B-roll\",\"Sprinkle in presenter for key moments\"],\"notes\":\"Make this first key concept clear, understandable, and engaging. Use analogies if needed.\",\"keyPoints\":[\"Key Concept 1 point 1\",\"Key Concept 1 point 2\",\"Key Concept 1 point 3\"],\"purpose\":\"educate\",\"visualStyle\":\"conceptual_exploration\",\"mediaNeeds\":[\"Illustrative graphics/animations\",\"Supplementary B-roll\"],\"tone\":\"insightful_explanatory\",\"engagementHooks\":[\"Rhetorical questions\",\"Illustrative examples\",\"Startling fact/statistic\"],\"transitionToNext\":\"Ending with a curiosity hook about the 'next insight' to lead into the next scene.\"},{\"sceneNumber\":4,\"title\":\"Key Concepts 2-3 & Summary\",\"startTime\":135,\"endTime\":287,\"duration\":152,\"script\":\"Building on that first insight about the Test Topic's origins, the next crucial thing to understand is... [Explain Key Concept 2 in an engaging way]...[Transition]...This then leads to the third critical perspective... [Explain Key Concept 3 clearly and concisely]...So in summary, by looking at the Test Topic through these three lenses, we can see how... [Summarize the key takeaways and mindset shifts]\",\"visualCues\":[\"Visualize key concepts 2-3 with animations/graphics\",\"Use charts/graphs to support data references\",\"Build towards a powerful summary visualization\"],\"notes\":\"Move through the remaining two key concepts crisply while continuing to engage the viewer. Build to a strong summary that reinforces the value.\",\"keyPoints\":[\"Key Concept 2 point 1\",\"Key Concept 2 point 2\",\"Key Concept 3 point 1\",\"Key Concept 3 point 2\",\"Summary Takeaway 1\",\"Summary Takeaway 2\",\"Summary Takeaway 3\"],\"purpose\":\"educate_summarize\",\"visualStyle\":\"dynamic_conceptual\",\"mediaNeeds\":[\"Motion graphics\",\"Graphs/charts\",\"Summary visualizations\"],\"tone\":\"authoritative_engaging\",\"engagementHooks\":[\"Startling comparison\",\"Relatable analogy\",\"Rhetorical question\"],\"transitionToNext\":\"Having covered all the key concepts, transition to a strong call-to-action summary.\"}],\"sceneFlow\":{\"narrativeArc\":\"The scenes follow a logical narrative arc of grabbing attention with an intriguing hook, previewing the value to be delivered, diving deep into one key concept, then building up to the remaining two concepts and summarizing the overall mindset shifts and takeaways from the video.\",\"engagementStrategy\":\"Engagement is maintained through a variety of techniques like curiosity gaps, rhetorical questions, startling facts, relatable comparisons, and more. Each scene ends with a hook to pull the viewer into the next section.\",\"visualProgression\":\"The visuals start with an attention-grabber, move to supportive explanatory graphics, build towards more conceptual animations and visualizations, and culminate with powerful summary graphics that reinforce the key points.\"},\"callToAction\":\"Now that you understand the Test Topic from a completely new perspective, subscribe for more insightful content that will reshape how you view the world around you!\",\"keywords\":[\"test topic\",\"new perspective\",\"secret origins\",\"key insights\",\"mindset shift\"],\"description\":\"Most people look at the Test Topic the same way, but what if there was a completely different perspective that could change everything? This insightful video dives deep to uncover the secret origins and three critical insights about the Test Topic that will forever reshape how you view it. Click play to experience a profound mindset shift!\",\"tags\":[\"Test Topic\",\"New Perspective\",\"Mindset Shift\",\"Insightful\",\"Engaging Educational\"],\"scriptId\":\"script-1759883893641-ayccz9weo\",\"createdAt\":\"2025-10-08T00:38:13.641Z\",\"generatedBy\":\"ai\",\"version\":\"1.0\",\"metadata\":{\"originalParams\":{\"topic\":\"Test Topic\",\"title\":\"Test Subtopic\",\"hook\":null,\"targetLength\":300,\"style\":\"engaging_educational\",\"targetAudience\":\"general\",\"includeVisuals\":true,\"includeTiming\":true,\"topicContext\":{\"mainTopic\":\"Test Topic\",\"expandedTopics\":[{\"subtopic\":\"Test Subtopic\",\"relevanceScore\":95,\"keywords\":[\"test\",\"ai\"]}]}},\"processingTime\":\"2025-10-08T00:38:13.641Z\",\"aiModel\":\"anthropic.claude-3-sonnet-20240229-v1:0\",\"promptVersion\":\"1.0\"},\"enhancedFeatures\":{\"usedTopicContext\":true,\"contextSource\":\"topic_management_ai\",\"intelligentScenes\":true,\"sceneOptimization\":\"duration_and_complexity_based\",\"expandedTopicsUsed\":1,\"seoOptimized\":false},\"s3Key\":\"videos/test-project/script/script-1759883893641-ayccz9weo.json\",\"s3Url\":\"s3://automated-video-pipeline-v2-786673323159-us-east-1/videos/test-project/script/script-1759883893641-ayccz9weo.json\"},\"wordCount\":156,\"estimatedDuration\":302,\"sceneCount\":4,\"enhancedFeatures\":{\"usedTopicContext\":true,\"contextSource\":\"topic_management_ai\",\"intelligentScenes\":true,\"sceneOptimization\":\"duration_and_complexity_based\",\"expandedTopicsUsed\":1,\"seoOptimized\":false},\"contextUsed\":{\"expandedTopics\":1,\"sceneContexts\":0,\"seoKeywords\":0}}"
+      }
+    },
+    "media-curator": {
+      "success": true,
+      "statusCode": 200,
+      "data": {
+        "statusCode": 200,
+        "headers": {
+          "Content-Type": "application/json",
+          "Access-Control-Allow-Origin": "*",
+          "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
+          "Access-Control-Allow-Headers": "Content-Type, Authorization, X-Api-Key"
+        },
+        "body": "{\"media\":[],\"totalFound\":0,\"query\":\"AI technology\",\"sources\":[\"pexels\",\"pixabay\"],\"filters\":{\"mediaType\":\"both\",\"orientation\":\"landscape\",\"minWidth\":1920,\"minHeight\":1080}}"
+      }
+    },
+    "audio-generator": {
+      "success": false,
+      "statusCode": 200,
+      "data": {
+        "statusCode": 500,
+        "headers": {
+          "Content-Type": "application/json",
+          "Access-Control-Allow-Origin": "*",
+          "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
+          "Access-Control-Allow-Headers": "Content-Type, Authorization, X-Api-Key"
+        },
+        "body": "{\"error\":\"Failed to generate audio\",\"message\":\"Context validation failed: Unknown context type: summary\"}"
+      }
+    },
+    "video-assembler": {
+      "success": false,
+      "statusCode": 200,
+      "data": {
+        "statusCode": 500,
+        "headers": {
+          "Content-Type": "application/json",
+          "Access-Control-Allow-Origin": "*",
+          "Access-Control-Allow-Headers": "Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token",
+          "Access-Control-Allow-Methods": "GET,POST,PUT,DELETE,OPTIONS"
+        },
+        "body": "{\n  \"success\": false,\n  \"error\": \"Video assembly failed\",\n  \"message\": \"videoId is required\"\n}"
+      }
+    },
+    "youtube-publisher": {
+      "success": false,
+      "statusCode": 200,
+      "data": {
+        "statusCode": 500,
+        "headers": {
+          "Content-Type": "application/json",
+          "Access-Control-Allow-Origin": "*",
+          "Access-Control-Allow-Headers": "Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token",
+          "Access-Control-Allow-Methods": "GET,POST,PUT,DELETE,OPTIONS"
+        },
+        "body": "{\n  \"success\": false,\n  \"error\": \"YouTube publishing failed\",\n  \"message\": \"Unsupported API endpoint: POST /youtube/metadata\"\n}"
+      }
+    }
+  }
+}
