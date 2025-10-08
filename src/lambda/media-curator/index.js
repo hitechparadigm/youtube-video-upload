@@ -43,7 +43,6 @@
  * INTEGRATION FLOW:
  * Script Generator AI → Media Curator AI → Audio Generator AI (parallel) → Video Assembler AI
  */
- */
 
 const { SecretsManagerClient, GetSecretValueCommand } = require('@aws-sdk/client-secrets-manager');
 const { BedrockRuntimeClient, InvokeModelCommand } = require('@aws-sdk/client-bedrock-runtime');
