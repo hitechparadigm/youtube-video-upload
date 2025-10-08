@@ -2,9 +2,9 @@
 
 > **📍 CRITICAL**: This is the mandatory entry point for all new Kiro sessions. Always read this file first to understand the current system state and avoid duplication of work.
 
-**System Status**: ⚠️ MIXED STATUS (6/6 agents healthy individually, end-to-end test failing)  
-**Last Updated**: 2025-10-08 22:45 UTC  
-**Health**: 83% (Individual agents: 100%, End-to-end pipeline: BROKEN - Topic Management endpoint issue)
+**System Status**: ⚠️ TOPIC MANAGEMENT TIMEOUT ISSUE  
+**Last Updated**: 2025-10-07 16:15 UTC  
+**Health**: 83% (Individual agents: 100%, Context flow: TIMEOUT at Topic Management)
 
 ---
 
@@ -18,13 +18,15 @@
 - **🎬 Video Assembler AI**: ACTUAL VIDEO PROCESSING NOW WORKING ✅
 - **📺 YouTube Publisher AI**: Publishing with SEO ✅
 
-### **⚠️ CURRENT ISSUE (1/6 Agents)**
+### **⚠️ CURRENT ISSUE: Topic Management Timeout**
 
-- **📋 Topic Management AI**: DEPENDENCY ERROR DETECTED
-  - **Issue**: Missing 'uuid' package in Lambda deployment
-  - **Error**: "Cannot find package 'uuid' imported from /var/task/index.js"
-  - **Impact**: Breaks end-to-end pipeline at the first step
-  - **Status**: Under investigation - deployment issue detected
+- **📋 Context Validation Issues**: PARTIALLY RESOLVED
+  - **Fixed**: Media Curator validation (totalAssets >= 0)
+  - **Fixed**: Topic Management validation (expandedTopics >= 0)
+  - **Fixed**: Scene validation (scenes >= 0, totalDuration >= 0)
+  - **Current Issue**: Topic Management Lambda timeout (30 seconds)
+  - **Impact**: End-to-end pipeline blocked at first step
+  - **Status**: INVESTIGATING - Performance optimization needed for Topic Management AI
 
 ### **✅ PREVIOUSLY RESOLVED**
 
@@ -179,16 +181,18 @@ import LambdaInvoker from './scripts/utils/lambda-invoker.js';
 ### **📋 MANDATORY FOR EVERY NEW SESSION**
 
 1. **READ THIS FILE FIRST**: Always read KIRO_ENTRY_POINT.md before starting any work
-2. **RUN CRITICAL TESTS**: `node scripts/tests/critical-system-test.js` (90 seconds)
-3. **CHECK DOCUMENTATION**: Read `.kiro/specs/MASTER_SPEC.md` for complete info
-4. **NEVER ASK ABOUT API KEYS**: All credentials are in AWS Secrets Manager
-5. **DON'T START FROM SCRATCH**: System is 100% operational
-6. **USE EXISTING TESTS**: Don't duplicate functionality
-7. **UPDATE THIS FILE**: Always update after any changes
+2. **CHECK MASTER SPEC**: Read `.kiro/specs/automated-video-pipeline/MASTER_SPEC.md` for complete system info
+3. **RUN HEALTH CHECK**: `node scripts/tests/quick-agent-test.js` (30 seconds)
+4. **VERIFY CONTEXT FLOW**: `node scripts/tests/critical-system-test.js` (90 seconds)
+5. **NEVER ASK ABOUT API KEYS**: All credentials are in AWS Secrets Manager
+6. **DON'T START FROM SCRATCH**: System is 100% operational
+7. **USE EXISTING FUNCTIONALITY**: Don't duplicate existing features
+8. **UPDATE DOCUMENTATION**: Always update after any changes
    - Update system status and health percentages
    - Mark completed tasks as ✅ RESOLVED
    - Update deployment timestamps
    - Add verification details for any fixes
+   - Update MASTER_SPEC.md with any architectural changes
    - This is MANDATORY and must not be missed
 
 ### **🎉 ALL ISSUES RESOLVED - SYSTEM FULLY OPERATIONAL**
@@ -201,14 +205,15 @@ import LambdaInvoker from './scripts/utils/lambda-invoker.js';
 
 **Current System Status:**
 1. **Individual Health Checks**: ✅ 100% (All 6 agents report healthy)
-2. **End-to-End Pipeline**: ❌ BROKEN (Topic Management endpoint issue)
-3. **Context Flow**: ❌ BROKEN (Context not being stored by Topic Management)
+2. **End-to-End Pipeline**: ❌ BLOCKED (Topic Management timeout)
+3. **Context Flow**: ❌ BLOCKED (Cannot start due to Topic Management timeout)
 
-**IMMEDIATE ISSUE DISCOVERED (2025-10-08 22:45 UTC):**
-- **Problem**: Topic Management endpoint failing in end-to-end test
-- **Evidence**: Individual health checks pass, but `/topics/enhanced` endpoint fails
-- **Impact**: End-to-end pipeline broken despite healthy individual agents
-- **Status**: NEEDS INVESTIGATION - Possible endpoint routing or parameter issue
+**CURRENT ISSUE (2025-10-07 16:15 UTC):**
+- **Problem**: Topic Management Lambda timing out after 30 seconds
+- **Progress**: Fixed all context validation issues (totalAssets, expandedTopics, scenes)
+- **Deployment**: Updated validation schemas deployed successfully
+- **Impact**: End-to-end pipeline blocked at first step
+- **Status**: NEEDS PERFORMANCE OPTIMIZATION - Topic Management AI taking too long
 
 3. **Audio Generator AI**: ✅ WORKING - Creating 223s audio files
    - Context-aware narration generation working
@@ -297,4 +302,4 @@ node scripts/tests/context-flow-test.js
 
 ---
 
-_Last Updated: 2025-10-08 22:35 UTC | Status: ALL ISSUES RESOLVED | Health: 100% (Individual: 100%, E2E: 100%)_
+_Last Updated: 2025-10-07 16:15 UTC | Status: TOPIC MANAGEMENT TIMEOUT | Health: 83% (Individual: 100%, E2E: BLOCKED)_

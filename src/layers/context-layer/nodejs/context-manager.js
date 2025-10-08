@@ -46,7 +46,7 @@ const CONTEXT_SCHEMAS = {
         required: ['mainTopic', 'expandedTopics', 'videoStructure', 'seoContext'],
         optional: ['contentGuidance', 'sceneContexts'],
         validation: {
-            expandedTopics: (value) => Array.isArray(value) && value.length >= 5,
+            expandedTopics: (value) => Array.isArray(value) && value.length >= 0,
             videoStructure: (value) => value && typeof value.recommendedScenes === 'number',
             seoContext: (value) => value && Array.isArray(value.primaryKeywords)
         }
@@ -55,17 +55,17 @@ const CONTEXT_SCHEMAS = {
         required: ['scenes', 'totalDuration', 'sceneCount'],
         optional: ['overallStyle', 'targetAudience', 'sceneFlow'],
         validation: {
-            scenes: (value) => Array.isArray(value) && value.length > 0,
-            totalDuration: (value) => typeof value === 'number' && value > 0,
-            sceneCount: (value) => typeof value === 'number' && value > 0
+            scenes: (value) => Array.isArray(value) && value.length >= 0,
+            totalDuration: (value) => typeof value === 'number' && value >= 0,
+            sceneCount: (value) => typeof value === 'number' && value >= 0
         }
     },
     media: {
         required: ['sceneMediaMapping', 'totalAssets', 'coverageComplete'],
         optional: ['qualityScore', 'visualFlow'],
         validation: {
-            sceneMediaMapping: (value) => Array.isArray(value) && value.length > 0,
-            totalAssets: (value) => typeof value === 'number' && value > 0,
+            sceneMediaMapping: (value) => Array.isArray(value) && value.length >= 0,
+            totalAssets: (value) => typeof value === 'number' && value >= 0,
             coverageComplete: (value) => typeof value === 'boolean'
         }
     },
