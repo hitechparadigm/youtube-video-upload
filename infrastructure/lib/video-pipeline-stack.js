@@ -179,8 +179,8 @@ export class VideoPipelineStack extends Stack {
       runtime: Runtime.NODEJS_20_X,
       handler: 'handler.handler',
       code: Code.fromAsset(join(process.cwd(), '../src/lambda/topic-management')),
-      timeout: Duration.seconds(30),
-      memorySize: 256,
+      timeout: Duration.minutes(5), // Increased from 30 seconds to 5 minutes for AI processing
+      memorySize: 512, // Increased from 256MB to 512MB for better performance
       role: lambdaRole,
       layers: [contextLayer],
       environment: {
