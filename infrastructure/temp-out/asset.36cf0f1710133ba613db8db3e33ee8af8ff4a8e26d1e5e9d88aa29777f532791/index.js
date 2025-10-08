@@ -1492,7 +1492,69 @@ function performAudioValidation(audio) {
     return validation;
 }
 
-// updateProjectSummary function removed - using the one from context-integration layer
+/**
+ * Update project summary with component completion status
+ */
+async function updateProjectSummary(projectId, componentType, componentData) {
+    try {
+        const summaryKey = `videos/${projectId}/metadata/project.json`;
+        const bucketName = process.env.S3_BUCKET_NAME;
+        
+        // Try to get existing project summary
+        let projectSummary = {};
+        try {
+            const response = await s3Client.send(new GetObjectCommand({
+                Bucket: bucketName,
+                Key: summaryKey
+            }));
+            
+            const bodyContents = await streamToString(response.Body);
+            projectSummary = JSON.parse(bodyContents);
+        } catch (error) {
+            // File doesn't exist yet, create new summary
+            projectSummary = {
+                projectId: projectId,
+                createdAt: new Date().toISOString(),
+                components: {},
+                status: 'in_progress'
+            };
+        }
+        
+        // Update the specific component
+        projectSummary.components[componentType] = componentData;
+        projectSummary.lastUpdated = new Date().toISOString();
+        
+        // Update status based on completed components
+        const hasScript = projectSummary.components.script;
+        const hasAudio = projectSummary.components.audio;
+        const hasMedia = projectSummary.components.media;
+        
+        if (hasScript && hasAudio && hasMedia) {
+            projectSummary.status = 'ready_for_assembly';
+        } else if (hasScript || hasAudio || hasMedia) {
+            projectSummary.status = 'in_progress';
+        }
+        
+        // Save updated summary
+        await s3Client.send(new PutObjectCommand({
+            Bucket: bucketName,
+            Key: summaryKey,
+            Body: JSON.stringify(projectSummary, null, 2),
+            ContentType: 'application/json',
+            Metadata: {
+                projectId: projectId,
+                lastUpdated: new Date().toISOString(),
+                status: projectSummary.status
+            }
+        }));
+        
+        console.log(`📋 Updated project summary: ${componentType} completed`);
+        
+    } catch (error) {
+        console.error('Error updating project summary:', error);
+        // Don't fail the whole operation
+    }
+}
 
 /**
  * Helper function to convert stream to string

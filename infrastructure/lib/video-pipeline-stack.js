@@ -86,6 +86,16 @@ export class VideoPipelineStack extends Stack {
       removalPolicy: RemovalPolicy.DESTROY
     });
 
+    // Context table for AI agent communication
+    const contextTable = new Table(this, 'ContextTable', {
+      tableName: `${projectName}-context-v2`,
+      partitionKey: { name: 'PK', type: AttributeType.STRING },
+      sortKey: { name: 'SK', type: AttributeType.STRING },
+      billingMode: BillingMode.PAY_PER_REQUEST,
+      removalPolicy: RemovalPolicy.DESTROY,
+      timeToLiveAttribute: 'ttl'
+    });
+
     // ========================================
     // IAM Roles and Policies
     // ========================================
@@ -148,6 +158,14 @@ export class VideoPipelineStack extends Stack {
       code: Code.fromAsset(join(process.cwd(), '../src/layers/config-layer')),
       compatibleRuntimes: [Runtime.NODEJS_20_X],
       description: 'Shared configuration management layer',
+    });
+
+    // Context Integration Layer for AI agent communication
+    const contextLayer = new LayerVersion(this, 'ContextLayer', {
+      layerVersionName: 'automated-video-pipeline-context',
+      code: Code.fromAsset(join(process.cwd(), '../src/layers/context-layer')),
+      compatibleRuntimes: [Runtime.NODEJS_20_X],
+      description: 'Context integration layer for AI agent communication',
       removalPolicy: RemovalPolicy.RETAIN
     });
 
@@ -164,9 +182,11 @@ export class VideoPipelineStack extends Stack {
       timeout: Duration.seconds(30),
       memorySize: 256,
       role: lambdaRole,
+      layers: [contextLayer],
       environment: {
         TOPICS_TABLE_NAME: topicsTable.tableName,
         S3_BUCKET_NAME: primaryBucket.bucketName,
+        CONTEXT_TABLE_NAME: contextTable.tableName,
         NODE_ENV: environment
       }
     });
@@ -180,9 +200,10 @@ export class VideoPipelineStack extends Stack {
       timeout: Duration.minutes(5),
       memorySize: 1024,
       role: lambdaRole,
-      layers: [configLayer],
+      layers: [configLayer, contextLayer],
       environment: {
         S3_BUCKET_NAME: primaryBucket.bucketName,
+        CONTEXT_TABLE_NAME: contextTable.tableName,
         BEDROCK_MODEL_ID: 'anthropic.claude-3-sonnet-20240229-v1:0',
         BEDROCK_MODEL_REGION: this.region,
         NODE_ENV: environment
@@ -198,8 +219,10 @@ export class VideoPipelineStack extends Stack {
       timeout: Duration.minutes(10),
       memorySize: 512,
       role: lambdaRole,
+      layers: [contextLayer],
       environment: {
         S3_BUCKET_NAME: primaryBucket.bucketName,
+        CONTEXT_TABLE_NAME: contextTable.tableName,
         API_KEYS_SECRET_NAME: `${projectName}/api-keys`,
         NODE_ENV: environment
       }
@@ -214,9 +237,10 @@ export class VideoPipelineStack extends Stack {
       timeout: Duration.minutes(5),
       memorySize: 512,
       role: lambdaRole,
-      layers: [configLayer],
+      layers: [configLayer, contextLayer],
       environment: {
         S3_BUCKET_NAME: primaryBucket.bucketName,
+        CONTEXT_TABLE_NAME: contextTable.tableName,
         NODE_ENV: environment
       }
     });
@@ -230,8 +254,10 @@ export class VideoPipelineStack extends Stack {
       timeout: Duration.minutes(15),
       memorySize: 1024,
       role: lambdaRole,
+      layers: [contextLayer],
       environment: {
         S3_BUCKET_NAME: primaryBucket.bucketName,
+        CONTEXT_TABLE_NAME: contextTable.tableName,
         VIDEOS_TABLE_NAME: videosTable.tableName,
         ECS_CLUSTER_NAME: `${projectName}-cluster`,
         ECS_TASK_DEFINITION: 'video-processor-task',
@@ -248,8 +274,10 @@ export class VideoPipelineStack extends Stack {
       timeout: Duration.minutes(15),
       memorySize: 1024,
       role: lambdaRole,
+      layers: [contextLayer],
       environment: {
         S3_BUCKET_NAME: primaryBucket.bucketName,
+        CONTEXT_TABLE_NAME: contextTable.tableName,
         VIDEOS_TABLE_NAME: videosTable.tableName,
         YOUTUBE_SECRET_NAME: `${projectName}/youtube-credentials`,
         NODE_ENV: environment

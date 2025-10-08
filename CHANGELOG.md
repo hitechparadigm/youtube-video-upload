@@ -5,6 +5,37 @@ All notable changes to the Automated YouTube Video Pipeline project will be docu
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.1.0] - 2025-10-07 - Major Codebase Cleanup and Refactoring
+
+### 🧹 Codebase Cleanup
+- **Removed 50+ duplicate scripts**: Consolidated functionality into reusable modules
+- **Streamlined architecture**: Organized code into `core/`, `utils/`, `tests/`, and `deployment/` directories
+- **Eliminated redundancy**: Removed duplicate production, testing, and deployment scripts
+- **Cleaned temporary files**: Removed 15+ temporary result files and obsolete documentation
+
+### 🔧 New Consolidated Modules
+- **Production Pipeline** (`scripts/core/production-pipeline.js`): Unified video production workflows
+- **Agent Tester** (`scripts/core/agent-tester.js`): Comprehensive AI agent testing and validation
+- **Video Creator** (`scripts/core/video-creator.js`): Streamlined video creation workflows
+- **AWS Helpers** (`scripts/utils/aws-helpers.js`): Centralized AWS service utilities
+- **Lambda Invoker** (`scripts/utils/lambda-invoker.js`): Standardized Lambda function invocation
+
+### 📁 Improved Project Structure
+```
+scripts/
+├── core/           # Main functionality modules
+├── utils/          # Shared utilities
+├── tests/          # Integration testing
+└── deployment/     # Deployment scripts
+```
+
+### 🗑️ Removed Files
+- **Production Scripts**: 15+ duplicate pipeline scripts consolidated
+- **Testing Scripts**: 20+ test files merged into unified testing
+- **Deployment Scripts**: Multiple deployment approaches unified
+- **Temporary Files**: All result JSON files and temporary assets cleaned
+- **Obsolete Documentation**: Outdated summary files removed
+
 ## [2.0.0] - 2025-10-07 - Enhanced AI Agent Coordination
 
 ### 🚀 Major Features Added

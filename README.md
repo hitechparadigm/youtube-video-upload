@@ -6,12 +6,10 @@
 ![Node.js](https://img.shields.io/badge/node.js-20.x-green.svg)
 ![AWS](https://img.shields.io/badge/AWS-Serverless-orange.svg)
 ![AI](https://img.shields.io/badge/AI-Claude%203%20Sonnet-purple.svg)
-![Tests](https://img.shields.io/badge/tests-passing-brightgreen.svg)
-![Production](https://img.shields.io/badge/status-production--ready-success.svg)
 
-**🎥 Enterprise-grade AWS serverless system that automatically generates, produces, and publishes professional YouTube videos using advanced AI agent coordination**
+**🎥 Enterprise-grade AWS serverless system that automatically generates, produces, and publishes professional YouTube videos using AI agent coordination**
 
-[AI Agents](#-ai-agent-architecture) • [Features](#-features) • [Quick Start](#-quick-start) • [Architecture](#️-system-architecture) • [Testing](#-testing) • [Documentation](#-documentation)
+[Quick Start](#-quick-start) • [Core Scripts](#-core-scripts) • [Architecture](#️-system-architecture) • [Documentation](#-documentation)
 
 </div>
 
@@ -19,35 +17,98 @@
 
 ## 🌟 Overview
 
-The Automated YouTube Video Pipeline is a revolutionary serverless video production system that transforms simple topic ideas into professional YouTube videos through **intelligent AI agent coordination**. Built on AWS with advanced context flow management, it delivers broadcast-quality video production at scale with minimal human intervention.
+The Automated YouTube Video Pipeline is a serverless video production system that transforms topic ideas into professional YouTube videos through intelligent AI agent coordination. Built on AWS with streamlined workflows for efficient video production.
 
-### 🎯 **What Makes This Revolutionary**
+### 🎯 **Key Features**
 
-- **🤖 6 Specialized AI Agents**: Each agent handles specific aspects of video production with intelligent context sharing
-- **🔄 Enhanced Context Flow**: Seamless information passing between agents with validation and optimization
-- **📊 Google Sheets Integration**: No-code topic management with real-time synchronization
-- **🎬 Professional Quality**: Broadcast-standard video production with scene transitions and SEO optimization
-- **⚡ Serverless Architecture**: Auto-scaling, cost-optimized AWS infrastructure
-- **💰 Cost Effective**: Target <$1.00 per video with comprehensive monitoring
-- **🔄 Production Ready**: Fully tested with comprehensive error handling and recovery
+- **🤖 6 Specialized AI Agents**: Topic management, script generation, media curation, audio generation, video assembly, and YouTube publishing
+- **🔄 Unified Workflows**: Consolidated scripts for production, testing, and deployment
+- **📊 Google Sheets Integration**: Topic management with real-time synchronization
+- **⚡ Serverless Architecture**: Auto-scaling AWS infrastructure
+- **🔧 Streamlined Codebase**: Clean, maintainable code structure
 
 ---
 
+## 🚀 Quick Start
+
+### Prerequisites
+- Node.js 20.x
+- AWS CLI configured
+- AWS CDK installed
+
+### Installation
+```bash
+git clone <repository-url>
+cd automated-video-pipeline
+npm install
+```
+
+### Deploy Infrastructure
+```bash
+node scripts/deployment/deploy.js deploy
+```
+
+## 📁 Core Scripts
+
+The codebase has been streamlined into focused, reusable modules:
+
+### Production Pipeline
+```bash
+# Run full production pipeline
+node scripts/core/production-pipeline.js
+
+# Test all AI agents
+node scripts/core/agent-tester.js
+
+# Create videos
+node scripts/core/video-creator.js
+```
+
+### Testing & Deployment
+```bash
+# Run integration tests
+node scripts/tests/integration-tests.js
+
+# Deploy infrastructure
+node scripts/deployment/deploy.js deploy
+
+# Cleanup resources
+node scripts/deployment/deploy.js cleanup
+```
+
 ## 🤖 AI Agent Architecture
 
-The system employs **6 specialized AI agents** that work together through an enhanced context management system to produce professional videos:
+The system employs **6 specialized AI agents**:
 
 ### **1. 📋 Topic Management AI**
-**Purpose**: Intelligent topic selection and context generation
-- **Input**: Google Sheets topics with frequency settings
-- **AI Processing**: Claude 3 Sonnet analyzes topics and generates 10-20 related subtopics
-- **Context Output**: Comprehensive topic context with target audience, style, and content strategy
-- **Smart Features**: 
-  - Deduplication prevents repeating topics within 7 days
-  - Priority-based selection using daily frequency settings
-  - Trend analysis and topic optimization
+- Intelligent topic selection from Google Sheets
+- Context generation with target audience analysis
+- Deduplication and priority-based selection
 
-```javascript
+### **2. 📝 Script Generator AI**
+- Professional script generation using Claude 3 Sonnet
+- Scene-based structure with hooks and transitions
+- SEO-optimized content for YouTube
+
+### **3. 📸 Media Curator AI**
+- High-quality media sourcing from Pexels/Pixabay
+- Intelligent search and relevance matching
+- Automated asset organization
+
+### **4. 🎵 Audio Generator AI**
+- Professional narration using Amazon Polly
+- Multiple voice options and styles
+- Optimized audio quality for video
+
+### **5. 🎬 Video Assembler AI**
+- Automated video assembly and editing
+- Scene transitions and timing optimization
+- Professional output formatting
+
+### **6. 📺 YouTube Publisher AI**
+- SEO optimization and metadata generation
+- Automated publishing workflows
+- Performance tracking and analytics
 // Example Context Output
 {
   baseTopic: "Investment Apps for Beginners",

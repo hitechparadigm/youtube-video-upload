@@ -7,22 +7,9 @@ const { BedrockRuntimeClient, InvokeModelCommand } = require('@aws-sdk/client-be
 const { DynamoDBClient } = require('@aws-sdk/client-dynamodb');
 const { DynamoDBDocumentClient, PutCommand, QueryCommand, GetCommand } = require('@aws-sdk/lib-dynamodb');
 const { S3Client, PutObjectCommand } = require('@aws-sdk/client-s3');
-// Try to import optional dependencies
-let configManager = null;
-let contextIntegration = null;
-
-try {
-    const configModule = require('/opt/nodejs/config-manager');
-    configManager = configModule;
-} catch (error) {
-    console.log('Config manager not available, using defaults');
-}
-
-try {
-    contextIntegration = require('/opt/nodejs/context-integration');
-} catch (error) {
-    console.log('Context integration not available, using standalone mode');
-}
+const { initializeConfig, getConfigManager } = require('/opt/nodejs/config-manager');
+// Import context management functions
+const { getTopicContext, storeSceneContext, updateProjectSummary } = require('/opt/nodejs/context-integration');
 
 // Global configuration
 let config = null;
@@ -44,23 +31,9 @@ async function initializeService() {
     if (config) return; // Already initialized
     
     try {
-        // Load configuration (with fallback)
-        if (configManager) {
-            const configManagerInstance = await configManager.initializeConfig();
-            config = configManagerInstance.getServiceConfig('script-generator');
-        } else {
-            // Fallback configuration
-            config = {
-                ai: {
-                    models: {
-                        primary: {
-                            region: 'us-east-1',
-                            modelId: 'anthropic.claude-3-sonnet-20240229-v1:0'
-                        }
-                    }
-                }
-            };
-        }
+        // Load configuration
+        const configManager = await initializeConfig();
+        config = configManager.getServiceConfig('script-generator');
         
         // Initialize AWS clients
         const region = config.ai?.models?.primary?.region || process.env.AWS_REGION || 'us-east-1';
