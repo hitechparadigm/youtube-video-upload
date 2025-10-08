@@ -36,7 +36,9 @@
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
 import { DynamoDBDocumentClient, GetCommand, ScanCommand, PutCommand, DeleteCommand } from '@aws-sdk/lib-dynamodb';
 import { BedrockRuntimeClient, InvokeModelCommand } from '@aws-sdk/client-bedrock-runtime';
-import { v4 as uuidv4 } from 'uuid';
+import { randomUUID } from 'crypto';
+// Use Node.js built-in crypto.randomUUID instead of uuid package
+const uuidv4 = randomUUID;
 // Import context management functions
 import { storeTopicContext, createProject } from '/opt/nodejs/context-integration.js';
 // TextDecoder is available globally in Node.js 20.x

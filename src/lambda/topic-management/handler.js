@@ -1,8 +1,10 @@
 /**
  * Topic Management Lambda Handler
- * Wrapper for the existing index.js implementation
+ * Entry point for AWS Lambda
  */
 
-import { handler } from './index.js';
+// Import the handler from index.js
+import { handler as topicHandler } from './index.js';
 
-export { handler };
+// Export for AWS Lambda
+export const handler = topicHandler;
