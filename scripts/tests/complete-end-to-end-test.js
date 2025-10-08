@@ -17,6 +17,7 @@ async function completeEndToEndTest() {
         topicManagement: false,
         scriptGenerator: false,
         mediaCurator: false,
+        audioGenerator: false,
         videoAssembler: false,
         youtubePublisher: false
     };
@@ -102,8 +103,36 @@ async function completeEndToEndTest() {
         console.log('   ⏳ Waiting for context storage...');
         await new Promise(resolve => setTimeout(resolve, 3000));
         
-        // Step 4: Video Assembler
-        console.log('🎬 Step 4: Video Assembler AI...');
+        // Step 4: Audio Generator
+        console.log('🎵 Step 4: Audio Generator AI...');
+        const audioResponse = await lambdaClient.send(new InvokeCommand({
+            FunctionName: 'automated-video-pipeline-audio-generator-v2',
+            Payload: JSON.stringify({
+                httpMethod: 'POST',
+                path: '/audio/generate-from-project',
+                body: JSON.stringify({
+                    projectId: testProjectId,
+                    voiceId: 'Ruth',
+                    engine: 'generative'
+                })
+            })
+        }));
+        
+        const audioResult = JSON.parse(new TextDecoder().decode(audioResponse.Payload));
+        if (audioResult.statusCode === 200) {
+            results.audioGenerator = true;
+            console.log('   ✅ Audio Generator: SUCCESS');
+        } else {
+            console.log('   ❌ Audio Generator: FAILED');
+            console.log('   Error:', audioResult.body);
+        }
+        
+        // Wait for audio processing
+        console.log('   ⏳ Waiting for audio processing...');
+        await new Promise(resolve => setTimeout(resolve, 3000));
+        
+        // Step 5: Video Assembler
+        console.log('🎬 Step 5: Video Assembler AI...');
         const videoResponse = await lambdaClient.send(new InvokeCommand({
             FunctionName: 'automated-video-pipeline-video-assembler-v2',
             Payload: JSON.stringify({
@@ -127,8 +156,8 @@ async function completeEndToEndTest() {
             const videoBody = JSON.parse(videoResult.body);
             const videoPath = videoBody.finalVideoPath;
             
-            // Step 5: YouTube Publisher (optional test)
-            console.log('📺 Step 5: YouTube Publisher AI (testing readiness)...');
+            // Step 6: YouTube Publisher (optional test)
+            console.log('📺 Step 6: YouTube Publisher AI (testing readiness)...');
             const youtubeResponse = await lambdaClient.send(new InvokeCommand({
                 FunctionName: 'automated-video-pipeline-youtube-publisher-v2',
                 Payload: JSON.stringify({
@@ -163,6 +192,7 @@ async function completeEndToEndTest() {
     console.log(`   📋 Topic Management: ${results.topicManagement ? '✅' : '❌'}`);
     console.log(`   📝 Script Generator: ${results.scriptGenerator ? '✅' : '❌'}`);
     console.log(`   🎨 Media Curator: ${results.mediaCurator ? '✅' : '❌'}`);
+    console.log(`   🎵 Audio Generator: ${results.audioGenerator ? '✅' : '❌'}`);
     console.log(`   🎬 Video Assembler: ${results.videoAssembler ? '✅' : '❌'}`);
     console.log(`   📺 YouTube Publisher: ${results.youtubePublisher ? '✅' : '❌'}`);
     
@@ -170,7 +200,7 @@ async function completeEndToEndTest() {
     console.log(`📋 Test Project ID: ${testProjectId}`);
     
     if (successRate === 100) {
-        console.log('\n🎉 COMPLETE END-TO-END PIPELINE WORKING!');
+        console.log('\n🎉 COMPLETE END-TO-END PIPELINE WORKING! ALL 6 AGENTS OPERATIONAL');
     } else if (successRate >= 80) {
         console.log('\n✅ Pipeline mostly working, minor issues to address');
     } else {

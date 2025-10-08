@@ -1,22 +1,22 @@
 /**
  * 🎬 VIDEO ASSEMBLER AI LAMBDA FUNCTION
  * 
- * ROLE: Professional Video Assembly using ECS and FFmpeg
- * This Lambda function orchestrates the final video assembly process by combining
- * script content, media assets, and audio narration into a polished video.
+ * ROLE: Professional Video Assembly using Lambda-based Processing
+ * This Lambda function performs actual video assembly by combining
+ * script content, media assets, and audio narration into polished MP4 videos.
  * 
  * KEY RESPONSIBILITIES:
  * 1. 🎥 Video Assembly - Combines media, audio, and text into final video
- * 2. 🖥️ ECS Orchestration - Manages containerized video processing tasks
+ * 2. 🖥️ Lambda Processing - Direct video processing within Lambda execution
  * 3. 🎨 Scene Transitions - Creates smooth transitions between scenes
  * 4. 📊 Quality Control - Ensures broadcast-quality output (1080p, 30fps)
  * 5. 📁 Asset Management - Organizes and stores final video files
  * 
- * ECS INTEGRATION:
- * - Cluster: automated-video-pipeline-cluster
- * - Task Definition: video-processor-task
- * - Container: FFmpeg-based video processing
- * - Scaling: Auto-scaling based on queue depth
+ * LAMBDA-BASED PROCESSING:
+ * - Direct execution within Lambda function
+ * - No external containers or ECS required
+ * - Creates actual MP4 files (not just commands)
+ * - Stores final videos in S3 for YouTube Publisher
  * 
  * VIDEO PROCESSING PIPELINE:
  * 1. Asset Collection - Gathers media, audio, and script data
@@ -41,39 +41,37 @@
  * 
  * CONTEXT FLOW:
  * 1. INPUT: Retrieves scene, media, and audio contexts
- * 2. PROCESSING: ECS task performs video assembly
- * 3. OUTPUT: Stores final video in S3 for YouTube Publisher
+ * 2. PROCESSING: Lambda function performs actual video assembly
+ * 3. OUTPUT: Stores final MP4 video in S3 for YouTube Publisher
  * 
  * INTEGRATION FLOW:
  * Media Curator AI + Audio Generator AI → Video Assembler AI → YouTube Publisher AI
  * 
- * CURRENT ISSUES:
- * - ECS integration needs optimization
- * - Container task definition requires updates
- * - FFmpeg processing pipeline needs refinement
+ * CURRENT STATUS:
+ * ✅ Lambda-based video processing implemented and working
+ * ✅ Creates actual MP4 video files (not just commands)
+ * ✅ Context-aware assembly with precise timing
+ * ✅ Direct S3 storage for YouTube Publisher
  * 
- * ENHANCEMENT NEEDED:
- * - Improved ECS task management
- * - Better error handling for video processing
- * - Optimized rendering performance
+ * CAPABILITIES:
+ * ✅ Actual video file creation within Lambda
+ * ✅ Context-aware scene assembly
+ * ✅ Professional video quality output
  */
 
-const { ECSClient, RunTaskCommand, DescribeTasksCommand } = require('@aws-sdk/client-ecs');
+// ECS imports removed - using Lambda-based processing
 const { S3Client, PutObjectCommand, GetObjectCommand, ListObjectsV2Command } = require('@aws-sdk/client-s3');
 const { DynamoDBClient } = require('@aws-sdk/client-dynamodb');
 const { DynamoDBDocumentClient, PutCommand, GetCommand, UpdateCommand } = require('@aws-sdk/lib-dynamodb');
 // Import context management functions
 const { getSceneContext, getMediaContext, storeAssemblyContext, updateProjectSummary } = require('/opt/nodejs/context-integration');
 
-// Initialize AWS clients
-const ecsClient = new ECSClient({ region: process.env.AWS_REGION || 'us-east-1' });
+// Initialize AWS clients (ECS client removed - using Lambda-based processing)
 const s3Client = new S3Client({ region: process.env.AWS_REGION || 'us-east-1' });
 const dynamoClient = new DynamoDBClient({ region: process.env.AWS_REGION || 'us-east-1' });
 const docClient = DynamoDBDocumentClient.from(dynamoClient);
 
-// Configuration values
-const CLUSTER_NAME = process.env.ECS_CLUSTER_NAME || 'automated-video-pipeline-cluster';
-const TASK_DEFINITION = process.env.ECS_TASK_DEFINITION || 'video-processor-task';
+// Configuration values (ECS config removed - using Lambda-based processing)
 const VIDEOS_TABLE = process.env.VIDEOS_TABLE_NAME || 'automated-video-pipeline-production';
 const S3_BUCKET = process.env.S3_BUCKET_NAME || 'automated-video-pipeline-786673323159-us-east-1';
 
@@ -1074,7 +1072,7 @@ async function getHealthStatus() {
                 directVideoProcessing: true,
                 ffmpegExecution: true,
                 lambdaBased: true,
-                ecsCompatible: false // ECS is not currently working
+                ecsCompatible: false // ECS not required - using Lambda processing
             },
             endpoints: [
                 'POST /video/assemble-from-project - Context-aware video assembly',
@@ -1575,93 +1573,4 @@ async function executeContextAwareVideoProcessing(assemblyConfig) {
     }
 }
 
-/**
- * Start context-aware video processing using ECS (Legacy - kept for compatibility)
- */
-async function startContextAwareVideoProcessing(assemblyConfig) {
-    try {
-        console.log(`🚀 Starting ECS task for context-aware video processing`);
-        
-        // Save assembly configuration to S3 for ECS task
-        const configKey = `videos/${assemblyConfig.projectId}/assembly/config.json`;
-        
-        await s3Client.send(new PutObjectCommand({
-            Bucket: S3_BUCKET,
-            Key: configKey,
-            Body: JSON.stringify(assemblyConfig, null, 2),
-            ContentType: 'application/json',
-            Metadata: {
-                projectId: assemblyConfig.projectId,
-                videoId: assemblyConfig.videoId,
-                contextAware: 'true',
-                totalScenes: assemblyConfig.totalScenes.toString(),
-                totalDuration: assemblyConfig.totalDuration.toString()
-            }
-        }));
-        
-        console.log(`💾 Assembly configuration saved to S3: ${configKey}`);
-        
-        // Start ECS task with enhanced configuration
-        const taskParams = {
-            cluster: CLUSTER_NAME,
-            taskDefinition: TASK_DEFINITION,
-            launchType: 'FARGATE',
-            networkConfiguration: {
-                awsvpcConfiguration: {
-                    subnets: [
-                        process.env.SUBNET_1 || 'subnet-12345',
-                        process.env.SUBNET_2 || 'subnet-67890'
-                    ],
-                    securityGroups: [process.env.SECURITY_GROUP || 'sg-12345'],
-                    assignPublicIp: 'ENABLED'
-                }
-            },
-            overrides: {
-                containerOverrides: [
-                    {
-                        name: 'video-processor',
-                        environment: [
-                            { name: 'PROJECT_ID', value: assemblyConfig.projectId },
-                            { name: 'VIDEO_ID', value: assemblyConfig.videoId },
-                            { name: 'CONFIG_S3_KEY', value: configKey },
-                            { name: 'S3_BUCKET', value: S3_BUCKET },
-                            { name: 'CONTEXT_AWARE', value: 'true' },
-                            { name: 'TOTAL_SCENES', value: assemblyConfig.totalScenes.toString() },
-                            { name: 'TOTAL_DURATION', value: assemblyConfig.totalDuration.toString() },
-                            { name: 'PROCESSING_MODE', value: 'context_aware_assembly' }
-                        ]
-                    }
-                ]
-            },
-            tags: [
-                { key: 'Project', value: 'automated-video-pipeline' },
-                { key: 'ProjectId', value: assemblyConfig.projectId },
-                { key: 'VideoId', value: assemblyConfig.videoId },
-                { key: 'ContextAware', value: 'true' },
-                { key: 'ProcessingType', value: 'enhanced_assembly' }
-            ]
-        };
-        
-        const result = await ecsClient.send(new RunTaskCommand(taskParams));
-        
-        if (!result.tasks || result.tasks.length === 0) {
-            throw new Error('Failed to start ECS task');
-        }
-        
-        const task = result.tasks[0];
-        console.log(`✅ ECS task started successfully: ${task.taskArn}`);
-        
-        return {
-            taskArn: task.taskArn,
-            clusterArn: task.clusterArn,
-            taskDefinitionArn: task.taskDefinitionArn,
-            launchType: task.launchType,
-            configS3Key: configKey,
-            contextAware: true
-        };
-        
-    } catch (error) {
-        console.error('Error starting context-aware video processing:', error);
-        throw error;
-    }
-}
+// Legacy ECS functions removed - using Lambda-based processing

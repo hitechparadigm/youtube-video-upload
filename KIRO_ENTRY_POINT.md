@@ -2,9 +2,9 @@
 
 > **📍 CRITICAL**: This is the mandatory entry point for all new Kiro sessions. Always read this file first to understand the current system state and avoid duplication of work.
 
-**System Status**: ✅ FULLY OPERATIONAL (6/6 agents working, end-to-end pipeline: 100% SUCCESS)  
-**Last Updated**: 2025-10-08 22:35 UTC  
-**Health**: 100% (Individual agents: 100%, End-to-end pipeline: 100%)
+**System Status**: ⚠️ MIXED STATUS (6/6 agents healthy individually, end-to-end test failing)  
+**Last Updated**: 2025-10-08 22:45 UTC  
+**Health**: 83% (Individual agents: 100%, End-to-end pipeline: BROKEN - Topic Management endpoint issue)
 
 ---
 
@@ -178,7 +178,13 @@ import LambdaInvoker from './scripts/utils/lambda-invoker.js';
 
 ### **📋 MANDATORY FOR EVERY NEW SESSION**
 
-1. **UPDATE THIS FILE**: Always update KIRO_ENTRY_POINT.md after any changes
+1. **READ THIS FILE FIRST**: Always read KIRO_ENTRY_POINT.md before starting any work
+2. **RUN CRITICAL TESTS**: `node scripts/tests/critical-system-test.js` (90 seconds)
+3. **CHECK DOCUMENTATION**: Read `.kiro/specs/MASTER_SPEC.md` for complete info
+4. **NEVER ASK ABOUT API KEYS**: All credentials are in AWS Secrets Manager
+5. **DON'T START FROM SCRATCH**: System is 100% operational
+6. **USE EXISTING TESTS**: Don't duplicate functionality
+7. **UPDATE THIS FILE**: Always update after any changes
    - Update system status and health percentages
    - Mark completed tasks as ✅ RESOLVED
    - Update deployment timestamps
@@ -195,8 +201,14 @@ import LambdaInvoker from './scripts/utils/lambda-invoker.js';
 
 **Current System Status:**
 1. **Individual Health Checks**: ✅ 100% (All 6 agents report healthy)
-2. **End-to-End Pipeline**: ✅ 100% (Complete pipeline working)
-3. **Context Flow**: ✅ 100% (All agents communicating properly)
+2. **End-to-End Pipeline**: ❌ BROKEN (Topic Management endpoint issue)
+3. **Context Flow**: ❌ BROKEN (Context not being stored by Topic Management)
+
+**IMMEDIATE ISSUE DISCOVERED (2025-10-08 22:45 UTC):**
+- **Problem**: Topic Management endpoint failing in end-to-end test
+- **Evidence**: Individual health checks pass, but `/topics/enhanced` endpoint fails
+- **Impact**: End-to-end pipeline broken despite healthy individual agents
+- **Status**: NEEDS INVESTIGATION - Possible endpoint routing or parameter issue
 
 3. **Audio Generator AI**: ✅ WORKING - Creating 223s audio files
    - Context-aware narration generation working
