@@ -4,105 +4,43 @@ This guide walks you through setting up Google Sheets integration for the Automa
 
 ## 📋 Overview
 
-The system reads simple topic ideas from your Google Sheets document and uses AI to automatically generate engaging, subscriber-focused video content. Your spreadsheet should follow this simplified format:
+The system uses a **simplified, no-API-key approach** that reads topics directly from publicly shared Google Sheets using CSV export. No Google Cloud project or service account required!
 
-| Topic | Daily Frequency | Status | Notes |
-|-------|----------------|--------|-------|
-| Investing for beginners in the USA | 2 | active | Simple steps to start |
-| Travel to Mexico | 1 | active | Budget-friendly options |
+### **Simplified Setup**
+1. Create a Google Sheets document
+2. Set sharing to "Anyone with the link can view"
+3. Configure the sheet URL in the system
+4. The system automatically converts to CSV export format
 
-**Your Spreadsheet:** https://docs.google.com/spreadsheets/d/1WnUJredElhFEgXAhnnNtcbjmJ1l9t3i1YNnYblVOaao
+### **Required Sheet Format**
+| Topic | Daily Frequency | Priority | Status |
+|-------|----------------|----------|--------|
+| Investing for beginners in the USA | 2 | 1 | active |
+| Travel to Mexico | 1 | 3 | active |
 
-## 🔧 Setup Steps
+## 🔧 Simple Setup Steps
 
-### Step 1: Create Google Cloud Project
+### Step 1: Create Google Sheets Document
 
-1. Go to [Google Cloud Console](https://console.cloud.google.com/)
-2. Create a new project or select existing one
-3. Note your project ID
+1. Go to [Google Sheets](https://sheets.google.com)
+2. Create a new spreadsheet
+3. Set up the required columns (see format below)
+4. Add your video topics
 
-### Step 2: Enable Google Sheets API
+### Step 2: Configure Sharing
 
-1. In Google Cloud Console, go to **APIs & Services > Library**
-2. Search for "Google Sheets API"
-3. Click on it and press **Enable**
+1. Click the **Share** button in your spreadsheet
+2. Change access to **"Anyone with the link can view"**
+3. Copy the spreadsheet URL
+4. The system will automatically convert this to CSV export format
 
-### Step 3: Create Service Account
+### Step 3: Configure System
 
-1. Go to **APIs & Services > Credentials**
-2. Click **Create Credentials > Service Account**
-3. Fill in details:
-   - **Service account name**: `automated-video-pipeline`
-   - **Description**: `Service account for video pipeline Google Sheets integration`
-4. Click **Create and Continue**
-5. Skip role assignment for now (click **Continue**)
-6. Click **Done**
+The system automatically handles URL conversion:
+- **Input**: `https://docs.google.com/spreadsheets/d/ABC123/edit#gid=0`
+- **Output**: `https://docs.google.com/spreadsheets/d/ABC123/export?format=csv&gid=0`
 
-### Step 4: Generate Service Account Key
-
-1. In the **Credentials** page, find your service account
-2. Click on the service account email
-3. Go to **Keys** tab
-4. Click **Add Key > Create New Key**
-5. Select **JSON** format
-6. Click **Create** - this downloads the key file
-7. **Keep this file secure!** It contains sensitive credentials
-
-### Step 5: Share Spreadsheet with Service Account
-
-1. Open your Google Sheets document: https://docs.google.com/spreadsheets/d/1WnUJredElhFEgXAhnnNtcbjmJ1l9t3i1YNnYblVOaao
-2. Click **Share** button
-3. Add the service account email (from the JSON key file) as an editor
-4. The email looks like: `automated-video-pipeline@your-project.iam.gserviceaccount.com`
-5. Set permission to **Editor** or **Viewer** (Viewer is sufficient for reading)
-6. Click **Send**
-
-### Step 6: Configure AWS Secrets Manager
-
-Add the Google Sheets credentials to the new configurable secrets structure:
-
-```bash
-# Extract values from the downloaded JSON key file
-SERVICE_ACCOUNT_EMAIL="your-service-account@your-project.iam.gserviceaccount.com"
-PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\nYour private key here\n-----END PRIVATE KEY-----"
-
-# Update the media sources secret with Google Sheets credentials
-aws secretsmanager update-secret \
-  --secret-id automated-video-pipeline/media-sources \
-  --secret-string '{
-    "pexels": {
-      "apiKey": "[YOUR_PEXELS_API_KEY]",
-      "enabled": true
-    },
-    "pixabay": {
-      "apiKey": "[YOUR_PIXABAY_API_KEY]",
-      "enabled": true
-    },
-    "youtube": {
-      "clientId": "[YOUR_YOUTUBE_CLIENT_ID]",
-      "clientSecret": "[YOUR_YOUTUBE_CLIENT_SECRET]",
-      "refreshToken": "[YOUR_YOUTUBE_REFRESH_TOKEN]",
-      "apiKey": "[YOUR_YOUTUBE_API_KEY]"
-    },
-    "googleSheets": {
-      "serviceAccountEmail": "'$SERVICE_ACCOUNT_EMAIL'",
-      "privateKey": "'$PRIVATE_KEY'",
-      "enabled": true
-    },
-    "trends": {
-      "googleTrendsApiKey": "[OPTIONAL]",
-      "twitterBearerToken": "[OPTIONAL]",
-      "newsApiKey": "[OPTIONAL]",
-      "enabled": false
-    }
-  }'
-```
-
-**🔧 New Configurable Architecture Benefits:**
-- **Modular**: Each service has its own configuration section
-- **Extensible**: Add new media sources without code changes
-- **Flexible**: Enable/disable services independently
-- **Secure**: All credentials centralized in Secrets Manager
+**No API keys, service accounts, or Google Cloud setup required!**
 
 ## 📊 Simplified Spreadsheet Format
 

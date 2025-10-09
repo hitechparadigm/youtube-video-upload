@@ -39,11 +39,12 @@ jobs:
           npm ci
           cd infrastructure && npm ci
 
-      - name: Run Lambda function tests
+      - name: Run comprehensive test suite
         run: |
-          cd src/lambda/video-assembler && npm ci && npm test
-          cd ../youtube-publisher && npm ci && npm test
-          cd ../workflow-orchestrator && npm ci && npm test
+          # Run consolidated Jest test suite
+          npm run test:health
+          npm run test:unit
+          npm run test:integration
 
       - name: Lint code
         run: |
@@ -87,13 +88,8 @@ jobs:
 
       - name: Install Lambda dependencies
         run: |
-          cd src/lambda/topic-management && npm ci
-          cd ../script-generator && npm ci
-          cd ../media-curator && npm ci
-          cd ../audio-generator && npm ci
-          cd ../video-assembler && npm ci
-          cd ../youtube-publisher && npm ci
-          cd ../workflow-orchestrator && npm ci
+          # All Lambda functions now use shared utilities from root
+          echo "Lambda functions use shared utilities - no individual dependencies needed"
 
       - name: Bootstrap CDK (if needed)
         run: |
@@ -118,7 +114,7 @@ jobs:
       - name: Run integration tests
         run: |
           export AWS_REGION=${{ env.AWS_REGION }}
-          node scripts/test-functions.js || echo "Some functions may need fixes"
+          npm run test:health || echo "Health check completed with warnings"
 
   deploy-production:
     name: Deploy to Production
@@ -153,13 +149,8 @@ jobs:
 
       - name: Install Lambda dependencies
         run: |
-          cd src/lambda/topic-management && npm ci
-          cd ../script-generator && npm ci
-          cd ../media-curator && npm ci
-          cd ../audio-generator && npm ci
-          cd ../video-assembler && npm ci
-          cd ../youtube-publisher && npm ci
-          cd ../workflow-orchestrator && npm ci
+          # All Lambda functions now use shared utilities from root
+          echo "Lambda functions use shared utilities - no individual dependencies needed"
 
       - name: Bootstrap CDK (if needed)
         run: |
@@ -184,7 +175,7 @@ jobs:
       - name: Run production health checks
         run: |
           export AWS_REGION=${{ env.AWS_REGION }}
-          node scripts/test-functions.js
+          npm run test:health
 
   cleanup-old-resources:
     name: Cleanup Old Resources

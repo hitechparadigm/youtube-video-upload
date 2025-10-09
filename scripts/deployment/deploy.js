@@ -22,9 +22,9 @@ class Deployer {
             execSync('npm install', { cwd: this.infraPath, stdio: 'inherit' });
 
             console.log('🏗️  Deploying CDK stack...');
-            execSync('npx cdk deploy --require-approval never', { 
-                cwd: this.infraPath, 
-                stdio: 'inherit' 
+            execSync('npx cdk deploy --require-approval never', {
+                cwd: this.infraPath,
+                stdio: 'inherit'
             });
 
             console.log('✅ Infrastructure deployment completed');
@@ -42,9 +42,9 @@ class Deployer {
 
         try {
             console.log('🗑️  Destroying CDK stack...');
-            execSync('npx cdk destroy --force', { 
-                cwd: this.infraPath, 
-                stdio: 'inherit' 
+            execSync('npx cdk destroy --force', {
+                cwd: this.infraPath,
+                stdio: 'inherit'
             });
 
             console.log('✅ Cleanup completed');
@@ -58,7 +58,7 @@ class Deployer {
 
     getDeploymentOutputs() {
         const outputsPath = path.resolve('deployment-outputs.json');
-        
+
         if (fs.existsSync(outputsPath)) {
             const outputs = JSON.parse(fs.readFileSync(outputsPath, 'utf8'));
             console.log('📊 Deployment Outputs:');

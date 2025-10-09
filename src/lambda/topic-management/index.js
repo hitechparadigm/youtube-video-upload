@@ -1,5 +1,5 @@
 /**
- * 📋 TOPIC MANAGEMENT AI LAMBDA FUNCTION
+ * 📋 TOPIC MANAGEMENT AI LAMBDA FUNCTION - REFACTORED WITH SHARED UTILITIES
  * 
  * ROLE: Google Sheets Integration & Topic Selection
  * This Lambda function serves as the entry point for the video production pipeline.
@@ -13,11 +13,11 @@
  * 4. 🔄 Context Storage - Stores topic context for Script Generator AI
  * 5. 📈 Usage Tracking - Prevents duplicate topics within timeframes
  * 
- * GOOGLE SHEETS STRUCTURE:
- * | Topic | Daily Frequency | Last Used | Priority |
- * |-------|----------------|-----------|----------|
- * | AI Tools Guide | 2 | 2025-01-07 | High |
- * | Investment Apps | 1 | 2025-01-06 | Medium |
+ * REFACTORED FEATURES:
+ * - Uses shared context-manager for context validation and storage
+ * - Uses shared aws-service-manager for DynamoDB and Secrets Manager operations
+ * - Uses shared error-handler for consistent error handling and logging
+ * - Maintains all enhanced context generation capabilities
  * 
  * ENDPOINTS:
  * - GET /topics - List all topics
@@ -27,190 +27,181 @@
  * 
  * INTEGRATION FLOW:
  * EventBridge Schedule → Workflow Orchestrator → Topic Management AI → Script Generator AI
- * 
- * CONTEXT OUTPUT:
- * Creates rich topic context including target audience, keywords, and content strategy
- * that guides all downstream AI agents in the video production pipeline.
  */
 
-import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
-import { DynamoDBDocumentClient, GetCommand, ScanCommand, PutCommand, DeleteCommand } from '@aws-sdk/lib-dynamodb';
 import { BedrockRuntimeClient, InvokeModelCommand } from '@aws-sdk/client-bedrock-runtime';
 import { randomUUID } from 'crypto';
+
+// Import shared utilities
+import { 
+  storeContext, 
+  retrieveContext, 
+  createProject, 
+  validateContext 
+} from '../../shared/context-manager.js';
+import { 
+  queryDynamoDB, 
+  putDynamoDBItem, 
+  updateDynamoDBItem, 
+  deleteDynamoDBItem, 
+  scanDynamoDB,
+  executeWithRetry 
+} from '../../shared/aws-service-manager.js';
+import { 
+  wrapHandler, 
+  AppError, 
+  ERROR_TYPES, 
+  validateRequiredParams,
+  withTimeout,
+  monitorPerformance 
+} from '../../shared/error-handler.js';
+
 // Use Node.js built-in crypto.randomUUID instead of uuid package
 const uuidv4 = randomUUID;
-// Import context management functions
-import { storeTopicContext, createProject } from '/opt/nodejs/context-integration.js';
-// TextDecoder is available globally in Node.js 20.x
 
 // Initialize AWS clients
-const dynamoClient = new DynamoDBClient({ region: process.env.AWS_REGION || 'us-east-1' });
-const docClient = DynamoDBDocumentClient.from(dynamoClient);
 const bedrockClient = new BedrockRuntimeClient({ region: process.env.AWS_REGION || 'us-east-1' });
 
 // Configuration
 const TOPICS_TABLE = process.env.TOPICS_TABLE_NAME || 'automated-video-pipeline-topics-v2';
 
 /**
- * Main Lambda handler
+ * Main Lambda handler with shared error handling
  */
-const handler = async (event) => {
+const handler = async (event, context) => {
   console.log('Topic Management invoked:', JSON.stringify(event, null, 2));
-  
-  // Force flush console output
-  process.stdout.write('🚀 Handler starting...\n');
-  
-  console.log('🔍 Event keys:', Object.keys(event));
-  console.log('🔍 Event httpMethod:', event.httpMethod);
-  console.log('🔍 Event path:', event.path);
 
-  try {
-    console.log('📝 Parsing event...');
-    const { httpMethod, pathParameters, queryStringParameters, body } = event;
-    console.log('🔍 HTTP Method:', httpMethod);
-    console.log('🔍 Path:', event.path);
+  const { httpMethod, pathParameters, queryStringParameters, body } = event;
 
-    // Parse request body if present
-    let requestBody = {};
-    if (body) {
-      requestBody = typeof body === 'string' ? JSON.parse(body) : body;
-    }
+  // Parse request body if present
+  let requestBody = {};
+  if (body) {
+    requestBody = typeof body === 'string' ? JSON.parse(body) : body;
+  }
 
-    // Route requests based on HTTP method and path
-    switch (httpMethod) {
-      case 'GET':
-        if (event.path === '/health') {
-          return createResponse(200, {
+  // Route requests based on HTTP method and path
+  switch (httpMethod) {
+    case 'GET':
+      if (event.path === '/health') {
+        return {
+          statusCode: 200,
+          headers: {
+            'Content-Type': 'application/json',
+            'Access-Control-Allow-Origin': '*'
+          },
+          body: JSON.stringify({
             success: true,
             result: {
               service: 'topic-management',
               status: 'healthy',
               timestamp: new Date().toISOString(),
-              version: '2.0.0',
-              type: 'google-sheets-integration'
+              version: '3.0.0-refactored',
+              type: 'google-sheets-integration',
+              sharedUtilities: true
             }
-          });
-        }
-        return pathParameters?.topicId
-          ? await getTopicById(pathParameters.topicId)
-          : await getTopics(queryStringParameters || {});
+          })
+        };
+      }
+      return pathParameters?.topicId
+        ? await getTopicById(pathParameters.topicId)
+        : await getTopics(queryStringParameters || {});
 
-      case 'POST':
-        // Check if this is an enhanced topic generation request
-        console.log('🔍 Checking path:', event.path);
-        if (event.path && event.path.includes('/enhanced')) {
-          console.log('🎯 Enhanced topic generation requested');
-          return await generateEnhancedTopicContext(requestBody);
-        }
-        console.log('📝 Regular topic creation requested');
-        return await createTopic(requestBody);
+    case 'POST':
+      if (event.path && event.path.includes('/enhanced')) {
+        return await generateEnhancedTopicContext(requestBody, context);
+      }
+      return await createTopic(requestBody);
 
-      case 'PUT':
-        const topicId = pathParameters?.topicId;
-        if (!topicId) {
-          return createErrorResponse(400, 'Topic ID is required');
-        }
-        return await updateTopic(topicId, requestBody);
+    case 'PUT':
+      validateRequiredParams(pathParameters || {}, ['topicId'], 'topic update');
+      return await updateTopic(pathParameters.topicId, requestBody);
 
-      case 'DELETE':
-        const deleteTopicId = pathParameters?.topicId;
-        if (!deleteTopicId) {
-          return createErrorResponse(400, 'Topic ID is required');
-        }
-        return await deleteTopic(deleteTopicId);
+    case 'DELETE':
+      validateRequiredParams(pathParameters || {}, ['topicId'], 'topic deletion');
+      return await deleteTopic(pathParameters.topicId);
 
-      default:
-        return createErrorResponse(405, 'Method not allowed');
-    }
-
-  } catch (error) {
-    console.error('Error in Topic Management:', error);
-    console.error('Error type:', typeof error);
-    console.error('Error message:', error?.message);
-    console.error('Error stack:', error?.stack);
-    console.error('Error string:', String(error));
-    return createErrorResponse(500, {
-      error: 'Internal server error',
-      message: error?.message || String(error),
-      type: typeof error,
-      stack: error?.stack
-    });
+    default:
+      throw new AppError('Method not allowed', ERROR_TYPES.VALIDATION, 405);
   }
 };
 
 /**
- * Get topic by ID
+ * Get topic by ID using shared utilities
  */
 const getTopicById = async (topicId) => {
-  try {
-    const result = await docClient.send(new GetCommand({
-      TableName: TOPICS_TABLE,
-      Key: { topicId: topicId }
-    }));
+  return await monitorPerformance(async () => {
+    const topics = await queryDynamoDB(TOPICS_TABLE, {
+      KeyConditionExpression: 'topicId = :topicId',
+      ExpressionAttributeValues: { ':topicId': topicId }
+    });
 
-    if (!result.Item) {
-      return createErrorResponse(404, 'Topic not found');
+    if (!topics || topics.length === 0) {
+      throw new AppError('Topic not found', ERROR_TYPES.NOT_FOUND, 404);
     }
 
-    return createResponse(200, result.Item);
-  } catch (error) {
-    console.error('Error getting topic by ID:', error);
-    return createErrorResponse(500, 'Failed to get topic');
-  }
+    return {
+      statusCode: 200,
+      headers: {
+        'Content-Type': 'application/json',
+        'Access-Control-Allow-Origin': '*'
+      },
+      body: JSON.stringify(topics[0])
+    };
+  }, 'getTopicById', { topicId });
 };
 
 /**
- * Get topics with filtering
+ * Get topics with filtering using shared utilities
  */
 const getTopics = async (queryParams) => {
-  try {
+  return await monitorPerformance(async () => {
     const { status, priority, limit = '50' } = queryParams;
 
-    const params = {
-      TableName: TOPICS_TABLE,
+    const scanParams = {
       Limit: parseInt(limit)
     };
 
     // Add filters if provided
     if (status) {
-      params.FilterExpression = '#status = :status';
-      params.ExpressionAttributeNames = { '#status': 'status' };
-      params.ExpressionAttributeValues = { ':status': status };
+      scanParams.FilterExpression = '#status = :status';
+      scanParams.ExpressionAttributeNames = { '#status': 'status' };
+      scanParams.ExpressionAttributeValues = { ':status': status };
     }
 
     if (priority) {
       const priorityFilter = 'priority = :priority';
-      if (params.FilterExpression) {
-        params.FilterExpression += ' AND ' + priorityFilter;
-        params.ExpressionAttributeValues[':priority'] = parseInt(priority);
+      if (scanParams.FilterExpression) {
+        scanParams.FilterExpression += ' AND ' + priorityFilter;
+        scanParams.ExpressionAttributeValues[':priority'] = parseInt(priority);
       } else {
-        params.FilterExpression = priorityFilter;
-        params.ExpressionAttributeValues = { ':priority': parseInt(priority) };
+        scanParams.FilterExpression = priorityFilter;
+        scanParams.ExpressionAttributeValues = { ':priority': parseInt(priority) };
       }
     }
 
-    const result = await docClient.send(new ScanCommand(params));
+    const topics = await scanDynamoDB(TOPICS_TABLE, scanParams);
 
-    return createResponse(200, {
-      topics: result.Items || [],
-      count: result.Items?.length || 0,
-      timestamp: new Date().toISOString()
-    });
-  } catch (error) {
-    console.error('Error getting topics:', error);
-    return createErrorResponse(500, 'Failed to get topics');
-  }
+    return {
+      statusCode: 200,
+      headers: {
+        'Content-Type': 'application/json',
+        'Access-Control-Allow-Origin': '*'
+      },
+      body: JSON.stringify({
+        topics: topics || [],
+        count: topics?.length || 0,
+        timestamp: new Date().toISOString()
+      })
+    };
+  }, 'getTopics', { queryParams });
 };
 
 /**
- * Create new topic
+ * Create new topic using shared utilities
  */
 const createTopic = async (requestBody) => {
-  try {
-    // Validate required fields
-    if (!requestBody.topic) {
-      return createErrorResponse(400, { error: 'Topic is required' });
-    }
+  return await monitorPerformance(async () => {
+    validateRequiredParams(requestBody, ['topic'], 'topic creation');
 
     const topicId = uuidv4();
     const topic = {
@@ -235,37 +226,41 @@ const createTopic = async (requestBody) => {
       }
     };
 
-    await docClient.send(new PutCommand({
-      TableName: TOPICS_TABLE,
-      Item: topic,
+    await putDynamoDBItem(TOPICS_TABLE, topic, {
       ConditionExpression: 'attribute_not_exists(topicId)'
-    }));
+    });
 
-    return createResponse(201, topic);
-  } catch (error) {
-    console.error('Error creating topic:', error);
-    return createErrorResponse(500, 'Failed to create topic');
-  }
+    return {
+      statusCode: 201,
+      headers: {
+        'Content-Type': 'application/json',
+        'Access-Control-Allow-Origin': '*'
+      },
+      body: JSON.stringify(topic)
+    };
+  }, 'createTopic', { topicId });
 };
 
 /**
- * Update existing topic
+ * Update existing topic using shared utilities
  */
 const updateTopic = async (topicId, requestBody) => {
-  try {
+  return await monitorPerformance(async () => {
     // Get existing topic first
-    const existing = await docClient.send(new GetCommand({
-      TableName: TOPICS_TABLE,
-      Key: { topicId: topicId }
-    }));
+    const existingTopics = await queryDynamoDB(TOPICS_TABLE, {
+      KeyConditionExpression: 'topicId = :topicId',
+      ExpressionAttributeValues: { ':topicId': topicId }
+    });
 
-    if (!existing.Item) {
-      return createErrorResponse(404, 'Topic not found');
+    if (!existingTopics || existingTopics.length === 0) {
+      throw new AppError('Topic not found', ERROR_TYPES.NOT_FOUND, 404);
     }
+
+    const existing = existingTopics[0];
 
     // Update fields
     const updatedTopic = {
-      ...existing.Item,
+      ...existing,
       ...requestBody,
       topicId: topicId, // Ensure ID doesn't change
       updatedAt: new Date().toISOString()
@@ -276,63 +271,68 @@ const updateTopic = async (topicId, requestBody) => {
       updatedTopic.keywords = extractKeywords(requestBody.topic);
     }
 
-    await docClient.send(new PutCommand({
-      TableName: TOPICS_TABLE,
-      Item: updatedTopic
-    }));
+    await putDynamoDBItem(TOPICS_TABLE, updatedTopic);
 
-    return createResponse(200, updatedTopic);
-  } catch (error) {
-    console.error('Error updating topic:', error);
-    return createErrorResponse(500, 'Failed to update topic');
-  }
+    return {
+      statusCode: 200,
+      headers: {
+        'Content-Type': 'application/json',
+        'Access-Control-Allow-Origin': '*'
+      },
+      body: JSON.stringify(updatedTopic)
+    };
+  }, 'updateTopic', { topicId });
 };
 
 /**
- * Delete topic
+ * Delete topic using shared utilities
  */
 const deleteTopic = async (topicId) => {
-  try {
+  return await monitorPerformance(async () => {
     // Check if topic exists
-    const existing = await docClient.send(new GetCommand({
-      TableName: TOPICS_TABLE,
-      Key: { topicId: topicId }
-    }));
+    const existingTopics = await queryDynamoDB(TOPICS_TABLE, {
+      KeyConditionExpression: 'topicId = :topicId',
+      ExpressionAttributeValues: { ':topicId': topicId }
+    });
 
-    if (!existing.Item) {
-      return createErrorResponse(404, 'Topic not found');
+    if (!existingTopics || existingTopics.length === 0) {
+      throw new AppError('Topic not found', ERROR_TYPES.NOT_FOUND, 404);
     }
 
-    await docClient.send(new DeleteCommand({
-      TableName: TOPICS_TABLE,
-      Key: { topicId: topicId }
-    }));
+    await deleteDynamoDBItem(TOPICS_TABLE, { topicId: topicId });
 
-    return createResponse(200, { message: 'Topic deleted successfully', topicId });
-  } catch (error) {
-    console.error('Error deleting topic:', error);
-    return createErrorResponse(500, 'Failed to delete topic');
-  }
+    return {
+      statusCode: 200,
+      headers: {
+        'Content-Type': 'application/json',
+        'Access-Control-Allow-Origin': '*'
+      },
+      body: JSON.stringify({ 
+        message: 'Topic deleted successfully', 
+        topicId 
+      })
+    };
+  }, 'deleteTopic', { topicId });
 };
 
 /**
- * Generate enhanced topic context with comprehensive AI analysis and week-based deduplication
+ * Generate enhanced topic context using shared utilities
  */
-const generateEnhancedTopicContext = async (requestBody) => {
-  try {
+const generateEnhancedTopicContext = async (requestBody, context) => {
+  return await monitorPerformance(async () => {
     const {
-      projectId, // Use provided projectId if available
+      projectId,
       baseTopic,
       targetAudience = 'general',
       contentType = 'educational',
-      videoDuration = 480, // 8 minutes default
+      videoDuration = 480,
       videoStyle = 'engaging_educational',
       useGoogleSheets = true,
       avoidRecentTopics = true
     } = requestBody;
 
     if (!baseTopic && !useGoogleSheets) {
-      return createErrorResponse(400, { error: 'Base topic is required when not using Google Sheets' });
+      throw new AppError('Base topic is required when not using Google Sheets', ERROR_TYPES.VALIDATION, 400);
     }
 
     console.log(`🎯 Generating enhanced context for topic: ${baseTopic || 'from Google Sheets'}`);
@@ -343,81 +343,80 @@ const generateEnhancedTopicContext = async (requestBody) => {
     // Step 1: Read from Google Sheets if requested
     if (useGoogleSheets) {
       console.log('📊 Reading topics from Google Sheets...');
-      sheetsTopics = await readTopicsFromGoogleSheets();
+      sheetsTopics = await executeWithRetry(
+        () => readTopicsFromGoogleSheets(),
+        3,
+        1000
+      );
       
       if (!baseTopic && sheetsTopics.length > 0) {
-        // Select a topic from sheets that hasn't been used recently
         finalBaseTopic = await selectUnusedTopic(sheetsTopics);
         console.log(`📝 Selected topic from sheets: ${finalBaseTopic}`);
       }
     }
 
     if (!finalBaseTopic) {
-      return createErrorResponse(400, { error: 'No topic available from Google Sheets or provided' });
+      throw new AppError('No topic available from Google Sheets or provided', ERROR_TYPES.VALIDATION, 400);
     }
 
     // Step 2: Check for recent generated subtopics to avoid repetition
     let recentSubtopics = [];
     if (avoidRecentTopics) {
-      recentSubtopics = await getRecentGeneratedSubtopics(7); // Last 7 days
+      recentSubtopics = await getRecentGeneratedSubtopics();
       console.log(`🔍 Found ${recentSubtopics.length} recent subtopics to avoid`);
     }
 
-    // Step 3: Generate comprehensive topic context using AI
-    const topicContext = await generateTopicContextWithAI({
-      baseTopic: finalBaseTopic,
-      targetAudience,
-      contentType,
-      videoDuration,
-      videoStyle,
-      recentSubtopics,
-      sheetsTopics
-    });
+    // Step 3: Generate comprehensive topic context using AI with timeout
+    const topicContext = await withTimeout(
+      () => generateTopicContextWithAI({
+        baseTopic: finalBaseTopic,
+        targetAudience,
+        contentType,
+        videoDuration,
+        videoStyle,
+        recentSubtopics
+      }),
+      25000, // 25 second timeout
+      'AI topic context generation'
+    );
 
     // Step 4: Create project and store context for AI coordination
     let finalProjectId;
     
     if (projectId) {
-      // Use provided projectId
       finalProjectId = projectId;
       console.log(`📁 Using provided project: ${finalProjectId}`);
     } else {
-      // Create new project
-      const projectResult = await createProject(finalBaseTopic, {
-        targetAudience,
-        contentType,
-        videoDuration,
-        videoStyle
-      });
-      finalProjectId = projectResult.projectId;
+      finalProjectId = await createProject(finalBaseTopic);
       console.log(`📁 Created new project: ${finalProjectId}`);
     }
     
-    // Store topic context for Script Generator AI
-    await storeTopicContext(finalProjectId, topicContext);
+    // Store topic context using shared context manager
+    await storeContext(topicContext, 'topic');
     console.log(`💾 Stored topic context for AI coordination`);
 
     // Step 5: Store the generated topic to prevent future repetition
     await storeGeneratedTopic(finalBaseTopic, topicContext);
 
-    return createResponse(200, {
-      success: true,
-      projectId: finalProjectId,
-      baseTopic: finalBaseTopic,
-      topicContext,
-      sheetsTopicsCount: sheetsTopics.length,
-      recentSubtopicsAvoided: recentSubtopics.length,
-      generatedAt: new Date().toISOString(),
-      contextStored: true
-    });
-
-  } catch (error) {
-    console.error('Error generating enhanced topic context:', error);
-    return createErrorResponse(500, {
-      error: 'Failed to generate enhanced topic context',
-      message: error.message
-    });
-  }
+    return {
+      statusCode: 200,
+      headers: {
+        'Content-Type': 'application/json',
+        'Access-Control-Allow-Origin': '*'
+      },
+      body: JSON.stringify({
+        success: true,
+        projectId: finalProjectId,
+        baseTopic: finalBaseTopic,
+        topicContext,
+        sheetsTopicsCount: sheetsTopics.length,
+        recentSubtopicsAvoided: recentSubtopics.length,
+        generatedAt: new Date().toISOString(),
+        contextStored: true,
+        refactored: true
+      })
+    };
+  }, 'generateEnhancedTopicContext', { baseTopic, projectId });
 };
 
 /**
@@ -488,9 +487,9 @@ const readTopicsFromGoogleSheets = async () => {
 };
 
 /**
- * Get recent generated subtopics from the last N days to avoid repetition (OPTIMIZED)
+ * Get recent generated subtopics using shared utilities (OPTIMIZED)
  */
-const getRecentGeneratedSubtopics = async (days = 7) => {
+const getRecentGeneratedSubtopics = async () => {
   try {
     console.log(`🔍 Checking for recent subtopics (optimized - skipping for performance)`);
     
@@ -526,7 +525,7 @@ const selectUnusedTopic = async (sheetsTopics) => {
 };
 
 /**
- * Store generated topic to prevent future repetition
+ * Store generated topic using shared utilities
  */
 const storeGeneratedTopic = async (baseTopic, topicContext) => {
   try {
@@ -547,11 +546,7 @@ const storeGeneratedTopic = async (baseTopic, topicContext) => {
       }
     };
     
-    await docClient.send(new PutCommand({
-      TableName: TOPICS_TABLE,
-      Item: topicRecord
-    }));
-    
+    await putDynamoDBItem(TOPICS_TABLE, topicRecord);
     console.log(`💾 Stored generated topic: ${baseTopic} (ID: ${topicId})`);
     
   } catch (error) {
@@ -693,7 +688,6 @@ JSON format:
  * Generate fallback context when AI is unavailable
  */
 const generateFallbackContext = ({ baseTopic, targetAudience, videoDuration, videoStyle, recentSubtopics = [] }) => {
-  const keywords = extractKeywords(baseTopic);
   
   // Generate diverse subtopics that avoid recent ones
   const baseSubtopics = [
@@ -826,40 +820,6 @@ const extractKeywords = (topicText) => {
     .slice(0, 10);
 };
 
-/**
- * Create standardized HTTP response
- */
-function createResponse(statusCode, body) {
-  return {
-    statusCode,
-    headers: {
-      'Content-Type': 'application/json',
-      'Access-Control-Allow-Origin': '*',
-      'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-      'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Api-Key'
-    },
-    body: JSON.stringify(body)
-  };
-}
-
-/**
- * Create standardized error response
- */
-function createErrorResponse(statusCode, error) {
-  return {
-    statusCode,
-    headers: {
-      'Content-Type': 'application/json',
-      'Access-Control-Allow-Origin': '*',
-      'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-      'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Api-Key'
-    },
-    body: JSON.stringify({
-      error: typeof error === 'string' ? error : error.message || 'Unknown error',
-      timestamp: new Date().toISOString()
-    })
-  };
-}
-
-// Export handler
-export { handler };
+// Export handler with shared error handling wrapper
+export const lambdaHandler = wrapHandler(handler);
+export { lambdaHandler as handler };

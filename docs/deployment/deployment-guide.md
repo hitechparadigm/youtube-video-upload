@@ -1,52 +1,59 @@
-# Deployment Guide: Missing Lambda Functions
+# Deployment Guide
 
-This guide helps you deploy the missing Lambda functions for your automated video pipeline.
+This guide covers the complete deployment process for the Automated YouTube Video Pipeline.
 
 ## Overview
 
-You currently have these Lambda functions deployed:
-- ✅ script-generator
-- ✅ ai-topic-generator  
-- ✅ audio-generator
-- ✅ trend-data-collection
-- ✅ video-assembler
-
-**Missing functions to deploy:**
-- ❌ media-curator
-- ❌ topic-management
+The system includes all 7 Lambda functions with shared utilities:
+- ✅ topic-management (Enhanced context generation)
+- ✅ script-generator (Professional visual requirements + rate limiting)
+- ✅ media-curator (Scene-specific matching)
+- ✅ audio-generator (AWS Polly generative voices)
+- ✅ video-assembler (Lambda-based video processing)
+- ✅ youtube-publisher (SEO optimization + OAuth)
+- ✅ workflow-orchestrator (Pipeline coordination)
 
 ## Prerequisites
 
 1. **AWS CLI configured** with appropriate permissions
 2. **Node.js 20.x** installed locally
-3. **IAM Role** `automated-video-pipeline-lambda-role` exists
-4. **DynamoDB Tables** created:
-   - `automated-video-pipeline-topics`
-   - Other pipeline tables
-5. **S3 Bucket** `automated-video-pipeline-{account}-{region}` exists
-6. **Secrets Manager** secret `automated-video-pipeline/api-keys` configured
+3. **AWS CDK** installed globally: `npm install -g aws-cdk`
+4. **API credentials** configured in AWS Secrets Manager
 
-## Quick Deployment
+## Complete Infrastructure Deployment
 
-### Option 1: PowerShell (Windows)
-```powershell
-# Navigate to project root
-cd automated-video-pipeline
-
-# Run deployment script
-.\scripts\deploy-missing-lambdas.ps1 -Region us-east-1
-```
-
-### Option 2: Bash (Linux/Mac)
+### Step 1: Install Dependencies
 ```bash
 # Navigate to project root
 cd automated-video-pipeline
 
-# Make script executable
-chmod +x scripts/deploy-missing-lambdas.sh
+# Install root dependencies
+npm install
 
-# Run deployment script
-./scripts/deploy-missing-lambdas.sh
+# Install infrastructure dependencies
+cd infrastructure
+npm install
+```
+
+### Step 2: Deploy Infrastructure
+```bash
+# Deploy complete infrastructure stack
+npx cdk deploy --require-approval never
+
+# Or deploy with confirmation
+npx cdk deploy
+```
+
+### Step 3: Verify Deployment
+```bash
+# Return to project root
+cd ..
+
+# Run health check
+npm run test:health
+
+# Run complete test suite
+npm test
 ```
 
 ### Option 3: Manual Deployment

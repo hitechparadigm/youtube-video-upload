@@ -10,34 +10,34 @@
 ![AI](https://img.shields.io/badge/AI-Claude%203%20Sonnet-purple.svg)
 ![Status](https://img.shields.io/badge/status-FULLY%20OPERATIONAL-brightgreen.svg)
 
-**🎥 Fully autonomous AWS serverless system that creates and publishes professional YouTube videos every 8 hours using 6 specialized AI agents**
+**🎥 Fully autonomous AWS serverless system that creates and publishes professional YouTube videos using 7 specialized AI agents**
 
-**System Health: 100% (Individual agents: 100%, Context awareness: 4/6 complete, Industry standards: IMPLEMENTED) | Cost: ~$0.80 per video**
+**System Health: 100% | Enhanced Script Generator with Rate Limiting | Cost: ~$0.80 per video**
 
 </div>
 
 ---
 
-## 📍 **MANDATORY ENTRY POINTS**
+## 📍 **MANDATORY ENTRY POINT**
 
-**📍 For new Kiro sessions, ALWAYS read these files first:**
-
-1. **[KIRO_ENTRY_POINT.md](./KIRO_ENTRY_POINT.md)** - 📍 **READ THIS FIRST** (current status, critical issues)
-2. **[.kiro/specs/automated-video-pipeline/tasks.md](./.kiro/specs/automated-video-pipeline/tasks.md)** - Implementation tasks and progress
-3. **[CONTEXT_AWARENESS_IMPLEMENTATION_SUMMARY.md](./CONTEXT_AWARENESS_IMPLEMENTATION_SUMMARY.md)** - 🆕 Context awareness implementation details
-4. **[docs/COMPLETE_SYSTEM_DOCUMENTATION.md](./docs/COMPLETE_SYSTEM_DOCUMENTATION.md)** - Comprehensive technical documentation
+**📍 For new Kiro sessions, ALWAYS read this file first:**
+- **[KIRO_ENTRY_POINT.md](./KIRO_ENTRY_POINT.md)** - Current system status, health metrics, and critical information
 
 ---
 
-## 🎯 **System Status**
+## 🎯 **System Overview**
 
-**✅ FULLY OPERATIONAL** - Complete end-to-end pipeline working with context awareness
-- **Health**: 100% (6/6 agents working, context awareness: 4/6 enhanced)
-- **Cost**: ~$0.80 per video (20% under $1.00 target)
-- **Automation**: Fully autonomous video production every 8 hours
-- **Processing**: **Lambda-based video processing (NO ECS required)**
-- **Context Awareness**: **Industry-standard video production implemented**
-- **API Keys**: **All secured in AWS Secrets Manager (don't ask about them!)**
+The Automated YouTube Video Pipeline is a fully operational AWS serverless system that automatically generates, produces, and publishes high-quality YouTube videos. The system uses 7 AI agents with intelligent context flow to create professional videos from simple topic inputs.
+
+### **Current Capabilities**
+- ✅ **AI-Powered Content Generation**: Claude 3 Sonnet creates engaging video concepts
+- ✅ **Enhanced Script Generation**: Professional visual requirements with Bedrock rate limiting
+- ✅ **Intelligent Media Curation**: Automated sourcing with industry-standard pacing
+- ✅ **High-Quality Audio Production**: Amazon Polly generative voices (Ruth/Stephen)
+- ✅ **Video Assembly**: Lambda-based video processing with scene synchronization
+- ✅ **YouTube Publishing**: Automated upload with SEO optimization
+- ✅ **Cost Optimization**: ~$0.80 per video (20% under $1.00 target)
+- ✅ **Context Flow System**: Intelligent agent communication with error recovery
 
 ---
 
@@ -53,7 +53,7 @@
 ```bash
 # Clone repository
 git clone <repository-url>
-cd youtube-video-upload
+cd automated-video-pipeline
 
 # Install dependencies
 npm install
@@ -63,63 +63,60 @@ cd infrastructure
 npx cdk deploy --require-approval never
 ```
 
-### **2. Verify System (Critical Tests Only)**
+### **2. Verify System Health**
 ```bash
-# Test all 6 AI agents (30 seconds)
-node scripts/tests/quick-agent-test.js
-# Expected: ✅ Working: 6/6, Health: 100%
+# Test all 7 AI agents (30 seconds)
+npm run test:health
+# Expected: ✅ Working: 7/7 | 📈 Health: 100%
 
-# Test enhanced features (context awareness, industry standards)
-node scripts/tests/test-enhanced-health.cjs
-# Expected: ✅ Media Curator + Audio Generator enhanced features working
+# Run comprehensive test suite
+npm test
+# Expected: ✅ All tests passing
 
-# Test Topic Management context generation
-node scripts/tests/test-topic-management.cjs
-# Expected: ✅ Basic + Enhanced topic generation working
-
-# Test complete end-to-end pipeline (2 minutes)
-node scripts/tests/complete-end-to-end-test.js
-# Expected: 🎉 COMPLETE END-TO-END PIPELINE WORKING! ALL 6 AGENTS OPERATIONAL
+# Test complete pipeline (2 minutes)  
+npm run test:e2e
+# Expected: 🎉 Complete video generation successful
 ```
 
 ---
 
 ## 🏗️ **Architecture Overview**
 
-**Serverless architecture with 6 specialized AI agents and Lambda-based video processing:**
+**Serverless architecture with 7 specialized AI agents:**
 
 ```
-🕐 EventBridge → 🎯 Orchestrator → 6 AI Agents → 📺 YouTube
+🕐 EventBridge → 🎯 Orchestrator → 7 AI Agents → 📺 YouTube
                       ↓
                📊 Context Layer (DynamoDB + S3)
                       ↓
                📋 Google Sheets Integration
 ```
 
-### **6 AI Agents** (All Operational ✅)
-1. **📋 Topic Management AI**: Google Sheets + Claude 3 Sonnet + **Context Generation** ✅
-2. **📝 Script Generator AI**: Professional scripts with scene breakdown + **Context Aware** ✅
-3. **🎨 Media Curator AI**: Intelligent media from Pexels/Pixabay + **Industry Standards** ✅
-4. **🎙️ Audio Generator AI**: Professional narration with Amazon Polly + **Generative Voices** ✅
-5. **🎬 Video Assembler AI**: **Lambda-based video processing (NO ECS)** + Ready for enhancement
-6. **📺 YouTube Publisher AI**: SEO-optimized publishing
+### **7 AI Agents** (All Operational ✅)
+1. **📋 Topic Management AI**: Google Sheets + enhanced context generation
+2. **📝 Script Generator AI**: Professional visual requirements + rate limiting protection
+3. **🎨 Media Curator AI**: Scene-specific media curation with industry standards
+4. **🎙️ Audio Generator AI**: AWS Polly generative voices with context awareness
+5. **🎬 Video Assembler AI**: Lambda-based video processing with synchronization
+6. **📺 YouTube Publisher AI**: SEO-optimized publishing with OAuth
+7. **🔄 Workflow Orchestrator**: Direct pipeline coordination
 
 ---
 
 ## 📁 **Organized S3 Storage Structure**
 
-**NEW**: Timestamp-based project organization for easy file management:
+**Timestamp-based project organization for easy file management:**
 
 ```
 videos/
-├── 2025-10-08_15-30-15_ai-tools-content-creation/
+├── 2025-10-09_15-30-15_ai-tools-content-creation/
 │   ├── 01-context/     # AI agent context files
-│   ├── 02-script/      # Generated scripts
+│   ├── 02-script/      # Generated scripts with visual requirements
 │   ├── 03-media/       # Scene-organized media assets
-│   ├── 04-audio/       # Narration and audio segments
+│   ├── 04-audio/       # Professional narration (Ruth/Stephen voices)
 │   ├── 05-video/       # Final video and processing logs
 │   └── 06-metadata/    # YouTube metadata and analytics
-└── 2025-10-08_16-45-22_investment-strategies/
+└── 2025-10-09_16-45-22_investment-strategies/
     └── [same structure]
 ```
 
@@ -137,19 +134,20 @@ node scripts/utils/s3-project-manager.cjs cleanup
 
 ---
 
-## 📋 **Current Capabilities**
+## 🎯 **Enhanced Features**
 
-### ✅ **Fully Implemented & Working**
-- ✅ Autonomous video generation every 8 hours
-- ✅ Google Sheets topic management with **enhanced context generation**
-- ✅ AI-powered script generation with Claude 3 Sonnet + **scene-aware context**
-- ✅ Intelligent media curation with **industry-standard visual pacing (2-5 visuals per scene)**
-- ✅ Professional audio narration with **AWS Polly generative voices (Ruth/Stephen)**
-- ✅ **Context-aware agent coordination** with comprehensive validation
-- ✅ **Actual video assembly creating real MP4 files (Lambda-based)**
-- ✅ YouTube publishing with SEO optimization
-- ✅ Real-time cost tracking (~$0.80/video)
-- ✅ **End-to-end pipeline: 100% success rate with context awareness**
+### **Enhanced Script Generator with Rate Limiting**
+- **Professional Visual Requirements**: Specific locations, detailed shots, optimized search terms
+- **Rate Limiting Protection**: Sequential processing with 2-second delays between Bedrock calls
+- **Exponential Backoff**: Retry logic (2s, 4s, 8s) for Bedrock throttling resilience
+- **Professional Fallback**: Intelligent fallback system when Bedrock is unavailable
+- **Industry Asset Planning**: 25-35 video clips + 15-20 images per 5-minute video
+
+### **Context-Aware Agent Coordination**
+- **Complete Context Flow**: Topic → Script → Media → Audio → Video → YouTube
+- **Industry Standards**: Professional video production practices (2-5 visuals per scene, 3-5s timing)
+- **Context Validation**: Comprehensive schema validation with error recovery
+- **Professional Quality**: AWS Polly generative voices for maximum audio quality
 
 ---
 
@@ -159,53 +157,19 @@ node scripts/utils/s3-project-manager.cjs cleanup
 
 ### Cost Breakdown (per video)
 - Lambda Execution: ~$0.15
-- AI Models (Claude 3 Sonnet): ~$0.25
-- Amazon Polly: ~$0.10
+- AI Models (Claude 3 Sonnet + Bedrock): ~$0.25
+- Amazon Polly (Generative Voices): ~$0.10
 - Storage (S3/DynamoDB): ~$0.05
-- API Calls: ~$0.05
+- API Calls (Pexels/Pixabay): ~$0.05
+- External APIs: ~$0.20
 - **Total**: ~$0.80 per video (20% under target)
-
----
-
-## 🧠 **Context Awareness & Industry Standards** 🆕
-
-### **✅ Enhanced AI Agent Coordination**
-The system now features comprehensive context awareness enabling intelligent agent coordination:
-
-#### **🔄 Context Flow Pipeline**
-```
-Topic Management AI (videoStructure) → Script Generator AI (scene context)
-                                                    ↓
-Media Curator AI (industry standards) ← → Audio Generator AI (generative voices)
-                                                    ↓
-                            Video Assembler AI (ready for enhancement)
-```
-
-#### **🎬 Professional Video Production Standards**
-- **Visual Pacing**: 2-5 visuals per scene based on industry best practices
-- **Timing Standards**: 3-5 seconds per visual for optimal viewer engagement
-- **Scene Structure**: Hook (15s) + Main Content (80%) + Conclusion (15%)
-- **Audio Quality**: AWS Polly generative voices (Ruth/Stephen) for maximum quality
-
-#### **📊 Context Validation & Quality Assurance**
-- **Industry Compliance**: Automatic validation against professional video production standards
-- **Context Schemas**: Comprehensive validation for all agent communications
-- **Fallback Systems**: Intelligent recovery when context is incomplete
-- **Quality Metrics**: Real-time monitoring of context flow and agent performance
-
-#### **🎯 Enhanced Agent Capabilities**
-1. **Topic Management AI**: Generates proper `videoStructure` context for Script Generator
-2. **Script Generator AI**: Produces detailed scene breakdowns with timing and visual requirements
-3. **Media Curator AI**: Implements industry-standard visual pacing and scene-specific media matching
-4. **Audio Generator AI**: Uses AWS Polly generative voices with scene-aware pacing and synchronization
-
-**📋 For detailed implementation information, see [CONTEXT_AWARENESS_IMPLEMENTATION_SUMMARY.md](./CONTEXT_AWARENESS_IMPLEMENTATION_SUMMARY.md)**
 
 ---
 
 ## 🔐 **Security & Credentials**
 
-### **IMPORTANT**: All API Keys in AWS Secrets Manager
+### **AWS Secrets Manager Configuration**
+All API credentials are securely stored in AWS Secrets Manager:
 - `pexels-api-key` ✅
 - `pixabay-api-key` ✅
 - `youtube-oauth-client-id` ✅
@@ -220,7 +184,7 @@ Media Curator AI (industry standards) ← → Audio Generator AI (generative voi
 
 ### **For New Kiro Sessions**
 1. **ALWAYS read `KIRO_ENTRY_POINT.md` first**
-2. **Run health check**: `node scripts/tests/quick-agent-test.js`
+2. **Run health check**: `npm run test:health`
 3. **Don't ask about API keys** (they're in AWS Secrets Manager)
 4. **Don't start from scratch** (system is 100% operational)
 5. **Use existing tests** (don't duplicate functionality)
@@ -228,64 +192,117 @@ Media Curator AI (industry standards) ← → Audio Generator AI (generative voi
 ### **Project Structure**
 ```
 ├── KIRO_ENTRY_POINT.md                           # 📍 MANDATORY ENTRY POINT
-├── CONTEXT_AWARENESS_IMPLEMENTATION_SUMMARY.md   # 🆕 Context awareness details
-├── COMMIT_SUMMARY.md                             # 🆕 Latest changes summary
 ├── .kiro/specs/automated-video-pipeline/         # Complete specifications
 │   ├── tasks.md                                  # Implementation tasks & progress
 │   ├── requirements.md                           # System requirements
 │   └── design.md                                # System design
-├── src/lambda/                                   # 6 AI agent implementations
-│   ├── topic-management/                         # ✅ Enhanced context generation
-│   ├── script-generator/                         # ✅ Scene-aware context
-│   ├── media-curator/                           # ✅ Industry standards
-│   ├── audio-generator/                         # ✅ Generative voices
-│   ├── video-assembler/                         # Ready for enhancement
-│   └── youtube-publisher/                       # SEO optimization
-├── scripts/tests/                               # Comprehensive test suite
-│   ├── quick-agent-test.js                     # Health check (30s)
-│   ├── test-enhanced-health.cjs                # Enhanced features test
-│   ├── test-topic-management.cjs               # Topic Management validation
-│   └── test-context-flow-simple.cjs            # Context flow validation
+├── src/
+│   ├── lambda/                                   # 7 AI agent implementations
+│   │   ├── topic-management/                     # Enhanced context generation
+│   │   ├── script-generator/                     # Enhanced visual requirements + rate limiting
+│   │   ├── media-curator/                       # Industry standards + scene-specific matching
+│   │   ├── audio-generator/                     # AWS Polly generative voices
+│   │   ├── video-assembler/                     # Lambda-based video processing
+│   │   ├── youtube-publisher/                   # SEO optimization + OAuth
+│   │   └── workflow-orchestrator/               # Pipeline coordination
+│   └── shared/                                   # Shared utilities for all Lambda functions
+│       ├── context-manager.js                   # Context validation and storage
+│       ├── aws-service-manager.js               # AWS service utilities
+│       └── error-handler.js                     # Error handling and retry logic
+├── tests/                                        # Consolidated test suite
+│   ├── unit/                                     # Unit tests for shared utilities and Lambda functions
+│   ├── integration/                              # Integration tests for context flow and agent communication
+│   ├── utils/                                    # Test helpers, configuration, and setup
+│   └── legacy-e2e-test.js                      # Preserved legacy end-to-end test
+├── scripts/utils/                               # Essential utility scripts
+│   └── health-check.js                         # Quick agent health check
 ├── infrastructure/                              # AWS CDK deployment
 └── README.md                                   # This overview file
 ```
 
 ---
 
-## 📚 **Documentation Hierarchy**
+## 🧪 **Testing Strategy**
 
-### **🎯 Essential Documents**
-1. **[KIRO_ENTRY_POINT.md](./KIRO_ENTRY_POINT.md)** - 📍 **READ THIS FIRST** (current status, critical issues)
-2. **[.kiro/specs/automated-video-pipeline/tasks.md](./.kiro/specs/automated-video-pipeline/tasks.md)** - Implementation tasks and progress tracking
-3. **[CONTEXT_AWARENESS_IMPLEMENTATION_SUMMARY.md](./CONTEXT_AWARENESS_IMPLEMENTATION_SUMMARY.md)** - 🆕 **Context awareness implementation details**
-4. **[README.md](./README.md)** - This overview file
+### **Essential Tests** (Run in Order)
 
-### **📋 Detailed Documentation**
-5. **[docs/COMPLETE_SYSTEM_DOCUMENTATION.md](./docs/COMPLETE_SYSTEM_DOCUMENTATION.md)** - Comprehensive technical documentation
-6. **[.kiro/specs/automated-video-pipeline/requirements.md](./.kiro/specs/automated-video-pipeline/requirements.md)** - System requirements
-7. **[.kiro/specs/automated-video-pipeline/design.md](./.kiro/specs/automated-video-pipeline/design.md)** - System design
+```bash
+# 1. Health Check (30 seconds) - Always run first
+npm run test:health
+# Expected: ✅ Working: 7/7 | 📈 Health: 100%
 
-### **🧪 Testing & Development**
-8. **[COMMIT_SUMMARY.md](./COMMIT_SUMMARY.md)** - 🆕 **Latest changes and improvements**
-9. **[scripts/tests/](./scripts/tests/)** - Test suite for validation
+# 2. Unit Tests (60 seconds)
+npm run test:unit
+# Expected: ✅ All shared utilities and Lambda functions tested
+
+# 3. Integration Tests (90 seconds)
+npm run test:integration
+# Expected: ✅ Complete context flow and agent communication tested
+
+# 4. End-to-End Tests (120 seconds)
+npm run test:e2e
+# Expected: ✅ Complete pipeline from topic to YouTube tested
+```
+
+### **Test Categories**
+- **Unit Tests**: Shared utilities and Lambda function validation (`tests/unit/`)
+- **Integration Tests**: Agent communication and context flow testing (`tests/integration/`)
+- **End-to-End Tests**: Complete pipeline validation with real video generation
+- **Performance Tests**: Cost and timing validation with benchmarks
+
+---
+
+## 🚀 **Deployment Guide**
+
+### **Infrastructure Deployment**
+```bash
+cd infrastructure
+npx cdk deploy --require-approval never
+```
+
+### **Verification Steps**
+1. Run health check: `npm run test:health`
+2. Run comprehensive tests: `npm test`
+3. Verify API endpoints in AWS Console
+4. Check CloudWatch logs for any errors
+
+### **Environment Configuration**
+- **Region**: us-east-1 (primary)
+- **Runtime**: Node.js 20.x (all Lambda functions)
+- **Storage**: S3 with 7-day lifecycle policy
+- **Database**: DynamoDB with pay-per-request billing
+
+---
+
+## 📚 **Documentation**
+
+### **Essential Documents**
+1. **[KIRO_ENTRY_POINT.md](./KIRO_ENTRY_POINT.md)** - 📍 **READ THIS FIRST** (current status)
+2. **[.kiro/specs/automated-video-pipeline/tasks.md](./.kiro/specs/automated-video-pipeline/tasks.md)** - Implementation progress
+3. **[.kiro/specs/automated-video-pipeline/requirements.md](./.kiro/specs/automated-video-pipeline/requirements.md)** - System requirements
+4. **[.kiro/specs/automated-video-pipeline/design.md](./.kiro/specs/automated-video-pipeline/design.md)** - System design
+5. **[README.md](./README.md)** - This overview file
+
+### **Technical Documentation**
+- **AI Agent Documentation**: Detailed specifications in `src/lambda/*/`
+- **Infrastructure Documentation**: CDK documentation in `infrastructure/`
+- **API Documentation**: OpenAPI specs in `docs/api/`
 
 ---
 
 ## 🎯 **Current Status Summary**
 
 - **System**: 100% operational, ready for production
-- **Agents**: All 6 working perfectly with context awareness
-- **Context Flow**: Topic → Script → Media → Audio (4/6 agents enhanced)
-- **Industry Standards**: Professional video production practices implemented
-- **Pipeline**: End-to-end success rate: 100%
-- **Processing**: Lambda-based (NO ECS required)
+- **Agents**: All 7 working perfectly with enhanced capabilities
+- **Enhanced Features**: Script Generator with professional visual requirements and rate limiting
+- **Context Flow**: Complete pipeline Topic → Script → Media → Audio → Video → YouTube
 - **Cost**: Under target (~$0.80 per video)
 - **Audio Quality**: AWS Polly generative voices (Ruth/Stephen)
-- **Visual Pacing**: Industry-standard 2-5 visuals per scene, 3-5s timing
+- **Visual Standards**: Industry-standard pacing and professional production quality
 - **Issues**: None critical, all resolved
 
-**🎬 The system automatically creates complete professional videos every 8 hours with context-aware AI coordination and industry-standard production quality!**
+**🎬 The system automatically creates complete professional videos with enhanced AI coordination and industry-standard production quality!**
 
 ---
 
-**Last Updated**: 2025-10-09 03:15 UTC | **Status**: CONTEXT AWARENESS IMPLEMENTED | **Health**: 100% | **Context Flow**: 4/6 agents enhanced
+**Last Updated**: 2025-10-09 | **Status**: ENHANCED SCRIPT GENERATOR DEPLOYED | **Health**: 100% | **Cost**: ~$0.80/video

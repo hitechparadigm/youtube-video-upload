@@ -52,12 +52,12 @@ const CONTEXT_SCHEMAS = {
         }
     },
     scene: {
-        required: ['scenes', 'totalDuration', 'sceneCount'],
-        optional: ['overallStyle', 'targetAudience', 'sceneFlow'],
+        required: ['scenes'],
+        optional: ['totalDuration', 'sceneCount', 'selectedSubtopic', 'projectId', 'baseTopic', 'videoStructure', 'overallStyle', 'targetAudience', 'sceneFlow', 'contextUsage', 'generatedAt', 'readyForMediaCuration', 'contextVersion'],
         validation: {
-            scenes: (value) => Array.isArray(value) && value.length >= 0,
-            totalDuration: (value) => typeof value === 'number' && value >= 0,
-            sceneCount: (value) => typeof value === 'number' && value >= 0
+            scenes: (value) => Array.isArray(value),
+            totalDuration: (value) => value === undefined || value === null || (typeof value === 'number' && value >= 0),
+            sceneCount: (value) => value === undefined || value === null || (typeof value === 'number' && value >= 0)
         }
     },
     media: {
@@ -67,6 +67,16 @@ const CONTEXT_SCHEMAS = {
             sceneMediaMapping: (value) => Array.isArray(value) && value.length >= 0,
             totalAssets: (value) => typeof value === 'number' && value >= 0,
             coverageComplete: (value) => typeof value === 'boolean'
+        }
+    },
+    audio: {
+        required: ['masterAudioId', 'totalDuration'],
+        optional: ['sceneAudios', 'timingMarks', 'synchronizationData', 'audioQuality', 'contextIntegration', 'totalScenes', 'voiceId', 'engine', 'generatedAt'],
+        validation: {
+            masterAudioId: (value) => typeof value === 'string' && value.length > 0,
+            totalDuration: (value) => typeof value === 'number' && value > 0,
+            sceneAudios: (value) => value === undefined || Array.isArray(value),
+            totalScenes: (value) => value === undefined || (typeof value === 'number' && value >= 0)
         }
     },
     assembly: {
