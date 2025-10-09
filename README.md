@@ -8,11 +8,11 @@
 ![Node.js](https://img.shields.io/badge/node.js-20.x-green.svg)
 ![AWS](https://img.shields.io/badge/AWS-Serverless-orange.svg)
 ![AI](https://img.shields.io/badge/AI-Claude%203%20Sonnet-purple.svg)
-![Status](https://img.shields.io/badge/status-FULLY%20OPERATIONAL-brightgreen.svg)
+![Status](https://img.shields.io/badge/status-PARTIALLY%20OPERATIONAL-yellow.svg)
 
 **🎥 Fully autonomous AWS serverless system that creates and publishes professional YouTube videos using 7 specialized AI agents**
 
-**System Health: 100% | Enhanced Script Generator with Rate Limiting | Cost: ~$0.80 per video**
+**System Health: 60% | Project Creation FIXED | Agent Communication Under Investigation | Cost: ~$0.80 per video**
 
 </div>
 

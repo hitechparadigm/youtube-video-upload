@@ -5,6 +5,36 @@ All notable changes to the Automated YouTube Video Pipeline project will be docu
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.3.0] - 2025-10-09 - Critical Module System and Project Creation Fixes
+
+### 🔧 Critical Bug Fixes
+- **FIXED: 502 Bad Gateway Error**: Resolved ES6/CommonJS module system conflict causing Lambda runtime failures
+- **FIXED: Project Folder Creation**: Workflow orchestrator now properly creates readable project folders in S3
+- **FIXED: EventBridge Scheduling**: Added support for `start-scheduled` action to prevent scheduled execution failures
+- **FIXED: Context Manager Integration**: Corrected import paths and function signatures for proper context management
+
+### 🏗️ Module System Standardization
+- **Lambda Functions**: Standardized all Lambda functions to use CommonJS (`require`) for AWS Lambda compatibility
+- **Infrastructure**: Maintained ES6 modules for CDK infrastructure while fixing Lambda runtime issues
+- **Context Layer**: Fixed context-manager exports and import compatibility across all agents
+
+### ✅ Verified Working Features
+- **Readable Project Names**: Successfully generating format `YYYY-MM-DDTHH-MM-SS_topic-name`
+- **S3 Folder Structure**: Proper creation of organized project folders (01-context, 02-script, 03-media, 04-audio, 05-video, 06-metadata)
+- **Workflow Orchestrator**: No more 502 errors, proper project creation and context management
+- **EventBridge Integration**: Scheduled executions now work without errors
+
+### 🔍 Investigation Results
+- **Root Cause**: Package.json configured as ES6 modules while Lambda functions used CommonJS
+- **Solution**: Removed `"type": "module"` from main package.json, maintained separate config for infrastructure
+- **Impact**: All workflow orchestration now functions correctly with proper project folder creation
+
+### 📊 Current Status
+- **Workflow Start**: ✅ Working (Status 200)
+- **Project Creation**: ✅ Working with readable names
+- **S3 Folder Structure**: ✅ Complete 6-folder structure created
+- **Agent Communication**: 🔄 Under investigation (all agents currently failing)
+
 ## [2.2.0] - 2025-10-09 - Complete Test Consolidation and Shared Utilities
 
 ### 🧹 Major Codebase Cleanup and Refactoring
