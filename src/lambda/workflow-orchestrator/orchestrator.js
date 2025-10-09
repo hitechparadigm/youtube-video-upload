@@ -407,6 +407,129 @@ class WorkflowOrchestrator {
             return null;
         }
     }
+
+    /**
+     * List recent executions
+     */
+    async listRecentExecutions(limit = 20) {
+        try {
+            const { ScanCommand } = await import('@aws-sdk/lib-dynamodb');
+            
+            const command = new ScanCommand({
+                TableName: this.config.executionsTable,
+                Limit: Math.min(limit, 100), // Cap at 100 for performance
+                ProjectionExpression: 'executionId, projectId, startTime, endTime, #status, totalAgents, workingAgents',
+                ExpressionAttributeNames: {
+                    '#status': 'status'
+                }
+            });
+
+            const response = await this.docClient.send(command);
+            
+            // Sort by startTime descending (most recent first)
+            const executions = (response.Items || []).sort((a, b) => {
+                const timeA = new Date(a.startTime || 0).getTime();
+                const timeB = new Date(b.startTime || 0).getTime();
+                return timeB - timeA;
+            });
+
+            return {
+                executions: executions.slice(0, limit),
+                count: executions.length,
+                timestamp: new Date().toISOString()
+            };
+
+        } catch (error) {
+            console.error('❌ Failed to list recent executions:', error);
+            return {
+                executions: [],
+                count: 0,
+                error: error.message,
+                timestamp: new Date().toISOString()
+            };
+        }
+    }
+
+    /**
+     * Get pipeline statistics
+     */
+    async getPipelineStatistics(timeRange = '24h') {
+        try {
+            const { ScanCommand } = await import('@aws-sdk/lib-dynamodb');
+            
+            // Calculate time filter based on range
+            const now = new Date();
+            let startTime;
+            
+            switch (timeRange) {
+                case '1h':
+                    startTime = new Date(now.getTime() - 60 * 60 * 1000);
+                    break;
+                case '24h':
+                    startTime = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+                    break;
+                case '7d':
+                    startTime = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+                    break;
+                case '30d':
+                    startTime = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+                    break;
+                default:
+                    startTime = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+            }
+
+            const command = new ScanCommand({
+                TableName: this.config.executionsTable,
+                FilterExpression: 'startTime >= :startTime',
+                ExpressionAttributeValues: {
+                    ':startTime': startTime.toISOString()
+                }
+            });
+
+            const response = await this.docClient.send(command);
+            const executions = response.Items || [];
+
+            // Calculate statistics
+            const stats = {
+                timeRange,
+                totalExecutions: executions.length,
+                successfulExecutions: executions.filter(e => e.status === 'completed').length,
+                failedExecutions: executions.filter(e => e.status === 'failed').length,
+                runningExecutions: executions.filter(e => e.status === 'running').length,
+                averageAgentSuccessRate: 0,
+                totalAgentsInvoked: 0,
+                totalWorkingAgents: 0,
+                timestamp: new Date().toISOString()
+            };
+
+            // Calculate agent success rates
+            if (executions.length > 0) {
+                const totalAgents = executions.reduce((sum, e) => sum + (e.totalAgents || 0), 0);
+                const workingAgents = executions.reduce((sum, e) => sum + (e.workingAgents || 0), 0);
+                
+                stats.totalAgentsInvoked = totalAgents;
+                stats.totalWorkingAgents = workingAgents;
+                stats.averageAgentSuccessRate = totalAgents > 0 ? Math.round((workingAgents / totalAgents) * 100) : 0;
+            }
+
+            return stats;
+
+        } catch (error) {
+            console.error('❌ Failed to get pipeline statistics:', error);
+            return {
+                timeRange,
+                totalExecutions: 0,
+                successfulExecutions: 0,
+                failedExecutions: 0,
+                runningExecutions: 0,
+                averageAgentSuccessRate: 0,
+                totalAgentsInvoked: 0,
+                totalWorkingAgents: 0,
+                error: error.message,
+                timestamp: new Date().toISOString()
+            };
+        }
+    }
 }
 
 module.exports = { WorkflowOrchestrator };
