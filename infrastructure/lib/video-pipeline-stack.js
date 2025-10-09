@@ -186,7 +186,9 @@ export class VideoPipelineStack extends Stack {
       environment: {
         TOPICS_TABLE_NAME: topicsTable.tableName,
         S3_BUCKET_NAME: primaryBucket.bucketName,
+        S3_BUCKET: primaryBucket.bucketName,  // For context manager compatibility
         CONTEXT_TABLE_NAME: contextTable.tableName,
+        CONTEXT_TABLE: contextTable.tableName,  // For context manager compatibility
         NODE_ENV: environment
       }
     });
@@ -203,7 +205,9 @@ export class VideoPipelineStack extends Stack {
       layers: [configLayer, contextLayer],
       environment: {
         S3_BUCKET_NAME: primaryBucket.bucketName,
+        S3_BUCKET: primaryBucket.bucketName,  // For context manager compatibility
         CONTEXT_TABLE_NAME: contextTable.tableName,
+        CONTEXT_TABLE: contextTable.tableName,  // For context manager compatibility
         BEDROCK_MODEL_ID: 'anthropic.claude-3-sonnet-20240229-v1:0',
         BEDROCK_MODEL_REGION: this.region,
         NODE_ENV: environment
@@ -222,7 +226,9 @@ export class VideoPipelineStack extends Stack {
       layers: [contextLayer],
       environment: {
         S3_BUCKET_NAME: primaryBucket.bucketName,
+        S3_BUCKET: primaryBucket.bucketName,  // For context manager compatibility
         CONTEXT_TABLE_NAME: contextTable.tableName,
+        CONTEXT_TABLE: contextTable.tableName,  // For context manager compatibility
         API_KEYS_SECRET_NAME: `${projectName}/api-keys`,
         NODE_ENV: environment
       }
@@ -240,7 +246,9 @@ export class VideoPipelineStack extends Stack {
       layers: [configLayer, contextLayer],
       environment: {
         S3_BUCKET_NAME: primaryBucket.bucketName,
+        S3_BUCKET: primaryBucket.bucketName,  // For context manager compatibility
         CONTEXT_TABLE_NAME: contextTable.tableName,
+        CONTEXT_TABLE: contextTable.tableName,  // For context manager compatibility
         NODE_ENV: environment
       }
     });
@@ -257,7 +265,9 @@ export class VideoPipelineStack extends Stack {
       layers: [contextLayer],
       environment: {
         S3_BUCKET_NAME: primaryBucket.bucketName,
+        S3_BUCKET: primaryBucket.bucketName,  // For context manager compatibility
         CONTEXT_TABLE_NAME: contextTable.tableName,
+        CONTEXT_TABLE: contextTable.tableName,  // For context manager compatibility
         VIDEOS_TABLE_NAME: videosTable.tableName,
         ECS_CLUSTER_NAME: `${projectName}-cluster`,
         ECS_TASK_DEFINITION: 'video-processor-task',
@@ -277,7 +287,9 @@ export class VideoPipelineStack extends Stack {
       layers: [contextLayer],
       environment: {
         S3_BUCKET_NAME: primaryBucket.bucketName,
+        S3_BUCKET: primaryBucket.bucketName,  // For context manager compatibility
         CONTEXT_TABLE_NAME: contextTable.tableName,
+        CONTEXT_TABLE: contextTable.tableName,  // For context manager compatibility
         VIDEOS_TABLE_NAME: videosTable.tableName,
         YOUTUBE_SECRET_NAME: `${projectName}/youtube-credentials`,
         NODE_ENV: environment
