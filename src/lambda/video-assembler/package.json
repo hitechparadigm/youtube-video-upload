@@ -2,7 +2,7 @@
   "name": "video-assembler",
   "version": "1.0.0",
   "description": "Video assembly orchestrator",
-  "type": "commonjs",
+  "type": "module",
   "main": "handler.js",
   "scripts": {
     "test": "jest",

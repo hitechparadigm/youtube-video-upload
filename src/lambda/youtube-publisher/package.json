@@ -2,6 +2,7 @@
   "name": "youtube-publisher",
   "version": "1.0.0",
   "description": "YouTube video publishing service",
+  "type": "module",
   "main": "handler.js",
   "scripts": {
     "test": "jest",
