@@ -5,7 +5,7 @@
   "type": "module",
   "main": "index.js",
   "scripts": {
-    "test": "node scripts/test-functions.js",
+    "test": "node scripts/tests/quick-agent-test.js",
     "test:infrastructure": "node scripts/validate-infrastructure.js",
     "deploy": "cd infrastructure && npm run deploy",
     "destroy": "cd infrastructure && npm run destroy",

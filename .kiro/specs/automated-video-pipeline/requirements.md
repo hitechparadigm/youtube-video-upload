@@ -53,6 +53,9 @@ The Automated YouTube Video Pipeline is a comprehensive AWS-based solution that 
 7. WHEN optimizing for engagement THEN the script SHALL incorporate retention techniques like questions, surprises, and "wait for it" moments based on topic context
 8. WHEN generating titles THEN the system SHALL create click-worthy, curiosity-driven titles that encourage clicks without being clickbait
 9. WHEN content generation is complete THEN the system SHALL convert scripts to dynamic, engaging audio with varied pacing and emphasis
+10. **WHEN script generation fails to produce scenes THEN the system SHALL implement mandatory validation to ensure minimum scene count (3-8 scenes) and total duration (300-600 seconds)**
+11. **WHEN AI response parsing fails THEN the system SHALL use fallback scene generation with industry-standard structure and detailed error logging**
+12. **WHEN scene validation detects empty or invalid scenes THEN the system SHALL regenerate the script with enhanced prompts and stricter validation**
 
 ### Requirement 4: Scene-Specific Media Curation with Intelligent Matching
 
@@ -146,20 +149,24 @@ The Automated YouTube Video Pipeline is a comprehensive AWS-based solution that 
 8. WHEN pipeline starts THEN the Video Production Orchestrator agent SHALL coordinate all specialized agents
 9. IF any agent fails THEN the supervisor agent SHALL implement error recovery and workflow continuation
 
-### Requirement 9: Isolated Data Storage and Management
+### Requirement 9: Organized Data Storage with Timestamp-Based Project Structure
 
-**User Story:** As a system administrator, I want comprehensive data storage with complete project isolation so that all content, metadata, and analytics are preserved separately from other projects.
+**User Story:** As a system administrator, I want comprehensive data storage with organized folder structure and timestamps so that I can quickly locate files and understand project organization at a glance.
 
 #### Acceptance Criteria
 
 1. WHEN storing data THEN the system SHALL use dedicated S3 buckets with project-specific naming: `automated-video-pipeline-{account}-{region}`
-2. WHEN storing metadata THEN the system SHALL use DynamoDB tables with project-specific prefixes for complete isolation
-3. WHEN managing storage THEN the system SHALL implement lifecycle policies to archive old content to Glacier after 30 days
-4. WHEN accessing stored data THEN the system SHALL maintain versioning for all video assets with automatic cleanup
-5. WHEN storing sensitive data THEN the system SHALL use AWS Secrets Manager with configurable structure for multiple media sources
-6. WHEN creating AWS resources THEN the system SHALL tag all resources with comprehensive tagging strategy for project isolation and cost tracking
-7. WHEN deploying infrastructure THEN the system SHALL ensure no resource conflicts with existing YouTube automation projects
-8. WHEN managing credentials THEN the system SHALL support extensible configuration for adding new media sources via Secrets Manager
+2. WHEN creating video projects THEN the system SHALL organize each project in timestamp-based folders: `videos/2025-10-07_20-30-15_ai-tools-content-creation/`
+3. WHEN organizing project files THEN the system SHALL use structured subfolders: `01-context/`, `02-script/`, `03-media/`, `04-audio/`, `05-video/`, `06-metadata/`
+4. WHEN storing media assets THEN the system SHALL organize by scene: `03-media/scene-1/images/`, `03-media/scene-2/videos/`
+5. WHEN managing storage THEN the system SHALL implement lifecycle policies to archive old content to Glacier after 30 days
+6. WHEN accessing stored data THEN the system SHALL maintain versioning for all video assets with automatic cleanup
+7. WHEN storing sensitive data THEN the system SHALL use AWS Secrets Manager with configurable structure for multiple media sources
+8. WHEN creating AWS resources THEN the system SHALL tag all resources with comprehensive tagging strategy for project isolation and cost tracking
+9. WHEN deploying infrastructure THEN the system SHALL ensure no resource conflicts with existing YouTube automation projects
+10. WHEN managing credentials THEN the system SHALL support extensible configuration for adding new media sources via Secrets Manager
+11. WHEN listing projects THEN users SHALL be able to quickly identify videos by timestamp and descriptive title
+12. WHEN organizing files THEN each video folder SHALL contain all associated files in clearly structured subfolders
 
 ### Requirement 10: Monitoring and Error Handling
 
@@ -255,3 +262,90 @@ The Automated YouTube Video Pipeline is a comprehensive AWS-based solution that 
 5. WHEN cost tracking is complete THEN the system SHALL store detailed cost analysis in DynamoDB and generate cost reports
 6. WHEN cost thresholds are exceeded THEN the system SHALL send alerts and optionally pause video generation
 7. WHEN generating cost reports THEN the system SHALL provide cost per video, daily costs, and monthly projections
+
+### Requirement 17: Mandatory AI Agent Output Validation with Pipeline Circuit Breaker
+
+**User Story:** As a system administrator, I want ALL AI agents to produce valid, industry-standard outputs with comprehensive validation and immediate pipeline termination when any agent fails validation, so that the pipeline never continues with invalid data and wastes resources on downstream processing.
+
+### Requirement 18: Comprehensive Context Awareness for ALL Agents
+
+**User Story:** As a system administrator, I want ALL AI agents to be fully context-aware, consuming context from previous agents and producing rich context for downstream agents, so that the entire pipeline works as an intelligent, coordinated system rather than isolated components.
+
+#### Acceptance Criteria - Topic Management AI
+
+1. WHEN Topic Management AI generates context THEN it SHALL produce minimum 5 expanded topics with valid structure, priority, duration, and visual needs
+2. WHEN generating video structure THEN it SHALL specify recommended scenes (3-8), hook duration (10-20s), main content (70-80%), conclusion (30-60s)
+3. WHEN creating SEO context THEN it SHALL provide minimum 3 primary keywords, 5 long-tail keywords, and trending terms
+4. WHEN output validation fails THEN it SHALL retry with enhanced prompts ensuring comprehensive topic expansion
+5. WHEN generating fallback content THEN it SHALL use industry-standard topic templates with proper structure
+
+#### Acceptance Criteria - Script Generator AI
+
+6. WHEN Script Generator AI creates scripts THEN it SHALL produce minimum 3 scenes and maximum 8 scenes with valid timing, content, and visual requirements
+7. WHEN generating scene content THEN each scene SHALL include: sceneNumber, title, purpose, startTime, endTime, duration, script text, visualStyle, mediaNeeds, tone
+8. WHEN calculating timing THEN total duration SHALL match target length (±30 seconds) with proper scene distribution
+9. WHEN creating hooks THEN it SHALL generate attention-grabbing openers with curiosity gaps, questions, or bold statements
+10. WHEN output validation fails THEN it SHALL regenerate with stricter prompts ensuring proper scene structure and industry best practices
+
+#### Acceptance Criteria - Media Curator AI
+
+11. WHEN Media Curator AI processes scenes THEN it SHALL provide scene-media mapping with minimum 1 asset per scene and proper metadata
+12. WHEN searching for media THEN it SHALL find relevant assets with confidence scores above 70% and proper licensing
+13. WHEN no suitable media found THEN it SHALL use fallback search terms and alternative sources before failing
+14. WHEN generating media context THEN it SHALL include totalAssets, scenesCovered, coverageComplete, and quality metrics
+15. WHEN output validation fails THEN it SHALL retry with expanded search terms and relaxed criteria while maintaining quality
+
+#### Acceptance Criteria - Audio Generator AI
+
+16. WHEN Audio Generator AI processes scripts THEN it SHALL produce valid audio files with proper duration matching script timing
+17. WHEN generating speech THEN it SHALL use appropriate voice settings, SSML markup, and natural pacing
+18. WHEN processing long scripts THEN it SHALL split intelligently at sentence boundaries while maintaining narrative flow
+19. WHEN creating audio metadata THEN it SHALL include duration, file size, quality metrics, and speech marks
+20. WHEN output validation fails THEN it SHALL retry with alternative voice settings and enhanced SSML processing
+
+#### Acceptance Criteria - Video Assembler AI
+
+21. WHEN Video Assembler AI processes media THEN it SHALL create valid MP4 video files meeting technical specifications (1920x1080, 30fps, proper bitrate)
+22. WHEN synchronizing assets THEN it SHALL align media with exact scene timestamps and smooth transitions
+23. WHEN generating video THEN it SHALL include proper audio-visual sync, consistent quality, and professional transitions
+24. WHEN creating output metadata THEN it SHALL include duration, resolution, file size, and processing details
+25. WHEN output validation fails THEN it SHALL retry with alternative media combinations and fallback processing parameters
+
+#### Acceptance Criteria - YouTube Publisher AI
+
+26. WHEN YouTube Publisher AI processes videos THEN it SHALL generate valid metadata including SEO-optimized titles, descriptions, and tags
+27. WHEN creating titles THEN it SHALL balance engagement psychology with SEO requirements (50-60 characters optimal)
+28. WHEN generating descriptions THEN it SHALL include compelling hooks, value propositions, and strategic calls-to-action
+29. WHEN uploading videos THEN it SHALL provide successful upload confirmation with video URL and metadata
+30. WHEN output validation fails THEN it SHALL retry with alternative metadata and enhanced SEO optimization
+
+#### Universal Validation Requirements with Circuit Breaker
+
+31. WHEN any AI agent generates output THEN the system SHALL validate against predefined schemas with mandatory field checks
+32. WHEN validation detects empty outputs THEN the system SHALL immediately regenerate using enhanced prompts with stricter requirements
+33. WHEN multiple validation failures occur THEN the system SHALL escalate to emergency fallback templates with manual review flags
+34. WHEN any agent produces substandard outputs THEN the system SHALL log detailed diagnostics and implement progressive enhancement
+35. WHEN industry standards are not met THEN the system SHALL automatically adjust parameters and retry until standards are achieved
+36. **WHEN any agent fails validation after retry attempts THEN the system SHALL immediately terminate the entire pipeline to prevent resource waste**
+37. **WHEN pipeline termination occurs THEN the system SHALL log detailed failure diagnostics and notify administrators with specific agent and validation failure details**
+38. **WHEN validation failures are detected THEN the system SHALL NOT proceed to downstream agents and SHALL halt all further processing**
+39. **WHEN circuit breaker is triggered THEN the system SHALL provide clear error messages indicating which agent failed and what validation requirements were not met**
+40. **WHEN pipeline is terminated due to validation failure THEN the system SHALL clean up any partial resources and mark the project as failed with detailed error context**
+
+#### Context Awareness Requirements for ALL Agents
+
+41. **WHEN Topic Management AI generates context THEN it SHALL create comprehensive topic context including expandedTopics, videoStructure, contentGuidance, sceneContexts, and seoContext for downstream consumption**
+42. **WHEN Script Generator AI receives topic context THEN it SHALL consume ALL context elements to create scene-aware scripts with enhanced relevance and structure**
+43. **WHEN Script Generator AI produces output THEN it SHALL create detailed scene context including sceneNumber, purpose, duration, content, visualStyle, mediaNeeds, tone, and timing for Media Curator**
+44. **WHEN Media Curator AI receives scene context THEN it SHALL consume scene-specific requirements to find precisely matching media assets for each scene**
+45. **WHEN Media Curator AI produces output THEN it SHALL create scene-media mapping context with asset details, timing, transitions, and quality metrics for Video Assembler**
+46. **WHEN Audio Generator AI receives script context THEN it SHALL consume scene timing and content to create perfectly synchronized audio with scene-aware pacing**
+47. **WHEN Audio Generator AI produces output THEN it SHALL create audio context with timing marks, quality metrics, and synchronization data for Video Assembler**
+48. **WHEN Video Assembler AI receives media and audio context THEN it SHALL consume ALL context elements to create precisely synchronized videos with professional transitions**
+49. **WHEN Video Assembler AI produces output THEN it SHALL create video context with technical specifications, quality metrics, and metadata for YouTube Publisher**
+50. **WHEN YouTube Publisher AI receives video context THEN it SHALL consume ALL context elements to create SEO-optimized metadata that reflects the actual content and structure**
+51. **WHEN any agent fails to consume required context THEN the system SHALL immediately terminate the pipeline and provide detailed context requirement diagnostics**
+52. **WHEN context is missing or invalid THEN agents SHALL NOT proceed with processing and SHALL request context regeneration from upstream agents**
+53. **WHEN agents produce context THEN the output SHALL be validated for completeness and downstream agent compatibility before storage**
+54. **WHEN context validation fails THEN the system SHALL regenerate context with enhanced prompts ensuring all required elements are present**
+55. **WHEN context flow is interrupted THEN the system SHALL implement intelligent recovery by regenerating missing context elements from available data**

@@ -61,6 +61,7 @@
 
 // ECS imports removed - using Lambda-based processing
 const { S3Client, PutObjectCommand, GetObjectCommand, ListObjectsV2Command } = require('@aws-sdk/client-s3');
+const { generateS3Paths, parseProjectFolder } = require('/opt/nodejs/s3-folder-structure');
 const { DynamoDBClient } = require('@aws-sdk/client-dynamodb');
 const { DynamoDBDocumentClient, PutCommand, GetCommand, UpdateCommand } = require('@aws-sdk/lib-dynamodb');
 // Import context management functions
@@ -129,10 +130,21 @@ async function loadProjectComponents(projectId) {
         
         // Load project summary to get component references
         try {
-            const summaryResponse = await s3Client.send(new GetObjectCommand({
-                Bucket: S3_BUCKET,
-                Key: `videos/${projectId}/metadata/project.json`
-            }));
+            // Try to find project using new organized structure first
+            let summaryResponse;
+            try {
+                const s3Paths = generateS3Paths(projectId, 'Generated Video');
+                summaryResponse = await s3Client.send(new GetObjectCommand({
+                    Bucket: S3_BUCKET,
+                    Key: s3Paths.metadata.project
+                }));
+            } catch (error) {
+                // Fallback to legacy structure
+                summaryResponse = await s3Client.send(new GetObjectCommand({
+                    Bucket: S3_BUCKET,
+                    Key: `videos/${projectId}/metadata/project.json`
+                }));
+            }
             
             const summaryData = JSON.parse(await streamToString(summaryResponse.Body));
             console.log(`📋 Project summary loaded, status: ${summaryData.status}`);

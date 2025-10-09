@@ -42,6 +42,7 @@ const { BedrockRuntimeClient, InvokeModelCommand } = require('@aws-sdk/client-be
 const { DynamoDBClient } = require('@aws-sdk/client-dynamodb');
 const { DynamoDBDocumentClient, PutCommand, QueryCommand, GetCommand } = require('@aws-sdk/lib-dynamodb');
 const { S3Client, PutObjectCommand } = require('@aws-sdk/client-s3');
+const { generateS3Paths } = require('/opt/nodejs/s3-folder-structure');
 // Try to import optional dependencies
 let configManager = null;
 let contextIntegration = null;
@@ -541,7 +542,7 @@ async function generateScriptWithAI(params) {
 }
 
 /**
- * Create enhanced AI prompt for script generation with topic context
+ * Create enhanced AI prompt for script generation with industry best practices
  */
 function createEnhancedScriptGenerationPrompt(params) {
     const {
@@ -557,8 +558,8 @@ function createEnhancedScriptGenerationPrompt(params) {
     } = params;
     
     const targetMinutes = Math.round(targetLength / 60);
-    const wordsPerMinute = 150; // Average speaking pace
-    const targetWords = targetLength * (wordsPerMinute / 60);
+    const wordsPerMinute = 140; // Industry standard: 120-150 words per minute
+    const targetWords = Math.round(targetLength * (wordsPerMinute / 60));
     
     // Extract context information if available
     const contextInfo = topicContext ? {
@@ -571,7 +572,7 @@ function createEnhancedScriptGenerationPrompt(params) {
     
     // Determine optimal number of scenes based on duration and topic complexity
     const recommendedScenes = topicContext?.videoStructure?.recommendedScenes || 
-        Math.max(3, Math.min(8, Math.ceil(targetLength / 90))); // 90 seconds per scene average
+        Math.max(4, Math.min(7, Math.ceil(targetLength / 75))); // 75 seconds per scene average for better pacing
     
     // Build context-aware prompt sections
     const expandedTopicsText = (contextInfo.expandedTopics?.length > 0)
@@ -583,110 +584,129 @@ function createEnhancedScriptGenerationPrompt(params) {
         : '';
         
     const seoKeywordsText = (contextInfo.seoContext?.primaryKeywords?.length > 0)
-        ? `\n\n**SEO KEYWORDS TO INCLUDE:**\n- Primary: ${contextInfo.seoContext.primaryKeywords?.join(', ')}\n- Long-tail: ${contextInfo.seoContext.longTailKeywords?.join(', ')}`
+        ? `\n\n**SEO KEYWORDS TO NATURALLY INCORPORATE:**\n- Primary: ${contextInfo.seoContext.primaryKeywords?.join(', ')}\n- Long-tail: ${contextInfo.seoContext.longTailKeywords?.join(', ')}`
         : '';
     
-    return `You are an expert YouTube script writer specializing in ${style} content for ${targetAudience} audiences with professional video production experience.
+    return `**ROLE:** You are an expert video scriptwriter specializing in creating engaging, high-performing video content for YouTube with proven industry expertise in ${style} content for ${targetAudience} audiences.
 
-Create a compelling ${targetMinutes}-minute video script (approximately ${targetWords} words) for:
+**OBJECTIVE:** Generate a complete, production-ready video script for a ${targetMinutes}-minute video on the topic: ${topic}. The video's primary goal is to educate and engage ${targetAudience} viewers, achieving these specific outcomes:
+1. Clearly explain the concept to the target audience
+2. Drive viewers to watch until the end (high retention)
+3. Generate engagement (likes, comments, subscriptions)
+4. Provide actionable value that viewers can immediately use
 
-**Topic:** ${topic}
-**Title:** ${title}
-**Hook:** ${hook || 'Create an engaging opening hook'}${expandedTopicsText}${contentGuidanceText}${seoKeywordsText}
+**TARGET AUDIENCE:** ${targetAudience} who consume content on mobile and desktop devices, seek quick actionable insights, and have varying knowledge levels about ${topic}. They value authentic, conversational content that respects their time and intelligence.${expandedTopicsText}${contentGuidanceText}${seoKeywordsText}
 
-**INTELLIGENT SCENE STRUCTURE:**
-Based on the topic complexity and ${targetMinutes}-minute duration, create ${recommendedScenes} scenes that make logical sense for this specific topic. Each scene should serve a clear purpose in the narrative flow.
+**SCRIPT STRUCTURE REQUIREMENTS (Industry Best Practices):**
 
-**Requirements:**
-- Target length: ${targetMinutes} minutes (${targetWords} words)
-- Number of scenes: ${recommendedScenes} (adjust if topic requires different structure)
-- Style: ${style}
-- Audience: ${targetAudience}
-- Include visual cues: ${includeVisuals ? 'Yes' : 'No'}
-- Include timing: ${includeTiming ? 'Yes' : 'No'}
+**Opening Hook (5-10 seconds):** Start with a powerful question, surprising statistic, bold statement, or relatable problem that immediately grabs attention. Examples:
+- "What if I told you that [surprising fact about topic]?"
+- "Most people get [topic] completely wrong, and here's why..."
+- "In the next ${targetMinutes} minutes, you'll discover [specific benefit]..."
 
-**Professional Video Production Guidelines:**
-1. **Hook (0-15 seconds):** Immediate attention grab with curiosity gap or bold statement
-2. **Value Preview (15-45 seconds):** What viewers will learn and why they should stay
-3. **Main Content Scenes:** Break topic into logical, digestible segments based on complexity
-4. **Engagement Retention:** Include hooks every 30-45 seconds to maintain attention
-5. **Strong Conclusion:** Summarize value delivered and compelling call-to-action
+**Introduction (10-20 seconds):** Briefly introduce the topic, establish credibility, and clearly state what viewers will learn. Use "you" language and make a promise you'll deliver on.
 
-**Scene Duration Intelligence:**
-- Simple concepts: 60-90 seconds per scene
-- Complex concepts: 90-150 seconds per scene  
-- Hook and conclusion: 15-60 seconds each
-- Adjust scene count based on what makes sense for the topic, not arbitrary limits
+**Main Content (${recommendedScenes-2} Scenes):** Break the core content into ${recommendedScenes-2} distinct scenes, each focusing on one key point. Each scene should:
+- Have a clear mini-objective that builds toward the overall message
+- Flow logically from the previous scene
+- Include concrete examples, data, or stories to illustrate points
+- Maintain viewer engagement with variety in pacing and delivery
+- End with a transition that creates curiosity for the next scene
 
-**Enhanced Format Requirements:**
-Return the script as a JSON object with this exact structure:
+**Conclusion (10-15 seconds):** Summarize the key takeaways in 2-3 concise, memorable points.
+
+**Call to Action (5-10 seconds):** End with a specific, actionable CTA that aligns with the video's objective.
+
+**TONE AND STYLE REQUIREMENTS:**
+- Use a conversational tone that sounds natural and authentic
+- Write as if speaking directly to one person, not a crowd
+- Keep sentences short and punchy (under 12 words when possible) for easy comprehension
+- Use active voice and present tense for immediacy and engagement
+- Incorporate emotional and sensory words that spark feelings (e.g., "imagine freeing up 3 hours daily" instead of "saves time")
+- Avoid jargon, acronyms, or complex terminology—when used, immediately explain them
+- Include rhetorical questions and direct audience engagement prompts
+- Aim for approximately ${targetWords} words (${wordsPerMinute} words/minute speaking pace)
+
+**SCENE BREAKDOWN REQUIREMENTS:**
+For each scene, provide:
+- **Scene Number and Title:** Clear identifier for production reference
+- **Duration:** Estimated time for this segment (must add up to ${targetLength} seconds total)
+- **Purpose:** What this scene accomplishes in the overall narrative
+- **Narration/Dialogue:** Exact words to be spoken, written conversationally
+- **Visual Cues:** Detailed description of what should appear on screen
+- **Engagement Elements:** Hooks, questions, or surprises to maintain attention
+- **Transition:** How this scene connects to the next
+
+**MANDATORY QUALITY REQUIREMENTS:**
+1. **Accessibility:** Script must be fully comprehensible through audio alone
+2. **Pacing:** Include natural pauses for emphasis and breathing
+3. **Engagement:** Include at least one quotable line or unique insight per scene
+4. **Focus:** Stay on one core message with 3-5 supporting points maximum
+5. **Retention:** Hook viewers every 30-45 seconds with questions, surprises, or value
+6. **Conversational Flow:** Must sound natural when read aloud
+7. **Specific Value:** Provide concrete, actionable takeaways, not vague advice
+
+**CRITICAL OUTPUT FORMAT:**
+Return the script as a JSON object with this EXACT structure:
 
 \`\`\`json
 {
   "title": "${title}",
   "topic": "${topic}",
-  "hook": "The opening hook text",
+  "hook": "The opening hook text that grabs attention in first 5 seconds",
   "estimatedDuration": ${targetLength},
-  "wordCount": 0,
+  "totalDuration": ${targetLength},
+  "wordCount": ${targetWords},
   "style": "${style}",
   "targetAudience": "${targetAudience}",
   "sceneStructure": {
     "totalScenes": ${recommendedScenes},
-    "averageSceneLength": "90 seconds",
-    "structureRationale": "Why this number of scenes makes sense for this topic"
+    "averageSceneLength": "${Math.round(targetLength/recommendedScenes)} seconds",
+    "structureRationale": "Explain why this scene structure serves the topic and audience"
   },
   "scenes": [
     {
       "sceneNumber": 1,
-      "title": "Hook",
-      "purpose": "grab_attention",
+      "title": "Hook - [Descriptive Title]",
+      "purpose": "grab_attention_immediately",
       "startTime": 0,
-      "endTime": 15,
-      "duration": 15,
-      "script": "The actual script text for this scene...",
+      "endTime": 10,
+      "duration": 10,
+      "script": "Conversational script text that hooks viewers in first 5 seconds...",
       "visualStyle": "dynamic_engaging",
-      "mediaNeeds": ["specific media type needed", "visual style required"],
+      "mediaNeeds": ["specific visual type", "mood/style"],
       "tone": "exciting_curious",
-      "visualCues": ["Visual description 1", "Visual description 2"],
-      "notes": "Direction notes for this scene",
-      "keyPoints": ["Key point 1", "Key point 2"],
-      "engagementHooks": ["Pattern interrupt", "Question", "Surprise element"],
-      "transitionToNext": "How this scene connects to the next"
+      "visualCues": ["Specific visual description", "Text overlay suggestion"],
+      "keyPoints": ["Main point of this scene"],
+      "engagementHooks": ["Question", "Surprise", "Pattern interrupt"],
+      "transitionToNext": "Natural bridge to next scene that creates curiosity"
     }
   ],
   "sceneFlow": {
-    "narrativeArc": "How scenes build upon each other",
-    "engagementStrategy": "Retention techniques used throughout",
-    "visualProgression": "How visuals evolve through scenes"
+    "narrativeArc": "How scenes build logically toward the conclusion",
+    "engagementStrategy": "Specific retention techniques used throughout",
+    "visualProgression": "How visuals support and enhance the narrative"
   },
-  "callToAction": "Subscribe for more content like this!",
-  "keywords": ["keyword1", "keyword2", "keyword3"],
-  "description": "YouTube description text",
-  "tags": ["tag1", "tag2", "tag3"]
+  "callToAction": "Specific, actionable CTA that drives engagement",
+  "keywords": ["naturally incorporated SEO keywords"],
+  "description": "Compelling YouTube description with value proposition",
+  "tags": ["relevant", "searchable", "tags"]
 }
 \`\`\`
 
-**Enhanced Content Guidelines:**
-- **Scene Intelligence:** Create scenes that logically support the topic, not arbitrary divisions
-- **Duration Flexibility:** Adjust scene length based on concept complexity (simple=60-90s, complex=90-150s)
-- **Narrative Flow:** Each scene should build upon the previous and lead naturally to the next
-- **Engagement Optimization:** Include pattern interrupts every 30-45 seconds within scenes
-- **Visual Storytelling:** Specify exact visual needs for each scene to enable precise media curation
-- **Professional Pacing:** Vary scene lengths to maintain viewer attention and energy
-- **Context Integration:** Use expanded topics and content guidance to create rich, valuable scenes
-- **Retention Focus:** End each scene with curiosity hooks that pull viewers to the next section
+**FINAL QUALITY CHECKS - ENSURE THE SCRIPT:**
+✓ Opens with attention-grabbing hook within 5 seconds
+✓ Maintains conversational flow when read aloud
+✓ Delivers on the promise made in the opening
+✓ Includes specific, actionable takeaways in each scene
+✓ Ends with clear, compelling call to action
+✓ Stays focused without tangents or unnecessary details
+✓ Uses short sentences (under 12 words) for mobile viewing
+✓ Incorporates emotional language that connects with viewers
+✓ Provides concrete examples and specific details, not vague concepts
+✓ Creates curiosity gaps that pull viewers through each scene
 
-**Visual Cues (if includeVisuals=true):**
-- Describe what should be shown on screen
-- Include text overlays, graphics, or B-roll suggestions
-- Specify when to show the presenter vs. other visuals
-
-**Timing (if includeTiming=true):**
-- Provide precise start/end times for each scene
-- Ensure total duration matches target length
-- Account for natural speaking pace and pauses
-
-Generate an engaging, high-retention script that will perform well on YouTube!`;
+Generate a professional, engaging script that follows these industry best practices and will achieve high retention and engagement on YouTube!`;
 }
 
 /**
@@ -726,20 +746,43 @@ function parseAIScriptResponse(aiResponse, originalParams) {
         const fullScript = scriptData.scenes?.map(scene => scene.script).join(' ') || '';
         scriptData.wordCount = fullScript.split(/\s+/).length;
         
-        // Validate scenes structure
+        // Validate scenes structure and calculate total duration
         if (scriptData.scenes && Array.isArray(scriptData.scenes)) {
-            scriptData.scenes = scriptData.scenes.map((scene, index) => ({
-                sceneNumber: scene.sceneNumber || index + 1,
-                title: scene.title || `Scene ${index + 1}`,
-                startTime: scene.startTime || 0,
-                endTime: scene.endTime || 0,
-                duration: scene.duration || (scene.endTime - scene.startTime),
-                script: scene.script || '',
-                visualCues: scene.visualCues || [],
-                notes: scene.notes || '',
-                keyPoints: scene.keyPoints || [],
-                ...scene
-            }));
+            let calculatedTotalDuration = 0;
+            
+            scriptData.scenes = scriptData.scenes.map((scene, index) => {
+                const enhancedScene = {
+                    sceneNumber: scene.sceneNumber || index + 1,
+                    title: scene.title || `Scene ${index + 1}`,
+                    startTime: scene.startTime || 0,
+                    endTime: scene.endTime || 0,
+                    duration: scene.duration || (scene.endTime - scene.startTime) || 0,
+                    script: scene.script || '',
+                    visualCues: scene.visualCues || [],
+                    notes: scene.notes || '',
+                    keyPoints: scene.keyPoints || [],
+                    ...scene
+                };
+                
+                // Add to total duration calculation
+                calculatedTotalDuration += enhancedScene.duration;
+                
+                return enhancedScene;
+            });
+            
+            // Set totalDuration based on calculated value or use estimatedDuration as fallback
+            scriptData.totalDuration = calculatedTotalDuration > 0 ? calculatedTotalDuration : scriptData.estimatedDuration;
+            
+            // INDUSTRY STANDARDS VALIDATION
+            const validationResult = validateScriptAgainstIndustryStandards(scriptData, originalParams);
+            if (!validationResult.isValid) {
+                console.warn('Script validation failed:', validationResult.errors);
+                // Add validation warnings to metadata
+                scriptData.validationWarnings = validationResult.errors;
+            }
+        } else {
+            // If no scenes, use estimatedDuration
+            scriptData.totalDuration = scriptData.estimatedDuration || originalParams.targetLength || 0;
         }
         
         // Add metadata
@@ -837,11 +880,12 @@ async function storeScript(scriptData, projectId = null) {
                 }
             };
             
-            const s3Key = `videos/${projectId}/script/${scriptData.scriptId}.json`;
+            // Generate organized S3 paths
+            const s3Paths = generateS3Paths(projectId, scriptData.title || 'Generated Video');
             
             await s3Client.send(new PutObjectCommand({
                 Bucket: process.env.S3_BUCKET_NAME,
-                Key: s3Key,
+                Key: s3Paths.script.json,
                 Body: JSON.stringify(scriptContent, null, 2),
                 ContentType: 'application/json',
                 Metadata: {
@@ -879,12 +923,12 @@ async function generateAndSaveMetadata(scriptData, projectId) {
         // Generate YouTube-optimized metadata using AI
         const metadata = await generateYouTubeMetadata(scriptData);
         
-        // Save metadata to S3
-        const metadataKey = `videos/${projectId}/metadata/youtube.json`;
+        // Save metadata to S3 using organized structure
+        const s3Paths = generateS3Paths(projectId, scriptData.title || 'Generated Video');
         
         await s3Client.send(new PutObjectCommand({
             Bucket: process.env.S3_BUCKET_NAME,
-            Key: metadataKey,
+            Key: s3Paths.metadata.youtube,
             Body: JSON.stringify(metadata, null, 2),
             ContentType: 'application/json',
             Metadata: {
@@ -917,11 +961,9 @@ async function generateAndSaveMetadata(scriptData, projectId) {
             status: 'script_generated'
         };
         
-        const summaryKey = `videos/${projectId}/metadata/project.json`;
-        
         await s3Client.send(new PutObjectCommand({
             Bucket: process.env.S3_BUCKET_NAME,
-            Key: summaryKey,
+            Key: s3Paths.metadata.project,
             Body: JSON.stringify(projectSummary, null, 2),
             ContentType: 'application/json',
             Metadata: {

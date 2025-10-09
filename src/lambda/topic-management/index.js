@@ -565,34 +565,66 @@ const storeGeneratedTopic = async (baseTopic, topicContext) => {
  */
 const generateTopicContextWithAI = async ({ baseTopic, targetAudience, contentType, videoDuration, videoStyle, recentSubtopics = [], sheetsTopics = [] }) => {
   
-  // PERFORMANCE OPTIMIZATION: Use simplified prompt for faster processing
-  const prompt = `Generate video production context for: ${baseTopic}
+  // ENHANCED PROMPT: Focus on topic analysis and comprehensive SEO, NOT video structure decisions
+  const prompt = `You are an expert content strategist and SEO specialist. Analyze the topic "${baseTopic}" for ${targetAudience} audience.
 
-Target: ${targetAudience}, Duration: ${Math.floor(videoDuration/60)} minutes, Style: ${videoStyle}
+CRITICAL: Do NOT decide video structure or scene count - that's the Script Generator's job. Focus on content analysis and comprehensive SEO.
 
-Create JSON with:
-- 3-5 related subtopics
-- Video structure (scenes, timing)
-- SEO keywords
-- Scene contexts
+Generate comprehensive topic analysis with:
 
-Keep response under 2000 tokens for speed.
+1. EXPANDED TOPIC ANALYSIS (8-12 related subtopics):
+   - Core concepts and fundamentals
+   - Trending variations and current angles
+   - Beginner to advanced progression
+   - Common problems and solutions
+   - Tools, techniques, and best practices
+   - Future trends and predictions
+
+2. COMPREHENSIVE SEO ANALYSIS:
+   - Primary Keywords (8-12): High-volume, relevant terms
+   - Long-tail Keywords (15-20): Specific, targeted phrases
+   - Trending Terms (10-15): Current popular searches
+   - Semantic Keywords (10-12): Related concepts and synonyms
+   - Question-based Keywords (8-10): What people actually search
+
+3. CONTENT GUIDANCE (for Script Generator):
+   - Complex concepts needing detailed explanation
+   - Quick wins for immediate engagement
+   - Visual storytelling opportunities
+   - Emotional connection points
+   - Call-to-action suggestions
+
+4. TARGET DURATION GUIDANCE:
+   - Recommended total duration: ${Math.floor(videoDuration/60)} minutes
+   - Content complexity assessment (simple/moderate/complex)
+   - Audience attention span considerations
 
 JSON format:
 {
   "mainTopic": "${baseTopic}",
   "expandedTopics": [
-    {"subtopic": "What is ${baseTopic}", "priority": "high", "estimatedDuration": 60, "visualNeeds": "graphics", "trendScore": 85}
+    {"subtopic": "What is ${baseTopic}", "priority": "high", "contentComplexity": "simple", "visualNeeds": "graphics", "trendScore": 85, "estimatedCoverage": "60-90 seconds"},
+    {"subtopic": "Best ${baseTopic} tools in 2025", "priority": "high", "contentComplexity": "moderate", "visualNeeds": "tool demos", "trendScore": 92, "estimatedCoverage": "90-120 seconds"}
   ],
-  "videoStructure": {
-    "recommendedScenes": 4,
-    "hookDuration": 15,
-    "mainContentDuration": ${videoDuration - 60},
-    "conclusionDuration": 45
+  "contentGuidance": {
+    "complexConcepts": ["concept requiring detailed explanation"],
+    "quickWins": ["easy wins for engagement"],
+    "visualOpportunities": ["strong visual storytelling moments"],
+    "emotionalBeats": ["connection points with audience"],
+    "callToActionSuggestions": ["subscribe for more", "try these tools"]
   },
   "seoContext": {
-    "primaryKeywords": ["${baseTopic}"],
-    "longTailKeywords": ["${baseTopic} guide"]
+    "primaryKeywords": ["${baseTopic}", "content creation tools", "AI automation", "digital marketing", "productivity tools", "content strategy", "creative workflow", "marketing automation"],
+    "longTailKeywords": ["best ${baseTopic} for beginners 2025", "how to use ${baseTopic} effectively", "${baseTopic} vs traditional methods", "free ${baseTopic} alternatives", "${baseTopic} for small business", "advanced ${baseTopic} techniques"],
+    "trendingTerms": ["AI-powered content", "automation tools 2025", "creator economy", "digital transformation", "workflow optimization"],
+    "semanticKeywords": ["content automation", "creative tools", "digital workflow", "marketing technology", "productivity software"],
+    "questionKeywords": ["what are the best ${baseTopic}", "how to choose ${baseTopic}", "why use ${baseTopic}", "when to use ${baseTopic}"]
+  },
+  "durationGuidance": {
+    "recommendedDuration": ${Math.floor(videoDuration/60)},
+    "contentComplexity": "moderate",
+    "attentionSpanConsiderations": "Use engagement hooks every 45-60 seconds",
+    "pacingRecommendations": "Mix quick tips with detailed explanations"
   }
 }`;
 
@@ -694,45 +726,78 @@ const generateFallbackContext = ({ baseTopic, targetAudience, videoDuration, vid
     expandedTopics: finalSubtopics.map((subtopic, index) => ({
       subtopic: subtopic,
       priority: index === 0 ? "high" : "medium",
-      estimatedDuration: 60 + (index * 30),
+      contentComplexity: index < 2 ? "simple" : "moderate",
       visualNeeds: index === 0 ? "explanatory graphics" : "step-by-step visuals",
-      trendScore: 80 - (index * 5)
+      trendScore: 80 - (index * 5),
+      estimatedCoverage: index < 2 ? "60-90 seconds" : "90-120 seconds"
     })),
-    videoStructure: {
-      recommendedScenes: Math.ceil(videoDuration / 80),
-      hookDuration: 15,
-      mainContentDuration: videoDuration - 60,
-      conclusionDuration: 45,
-      optimalSceneLengths: [15, 60, 90, 120, 90, 45].slice(0, Math.ceil(videoDuration / 80))
-    },
     contentGuidance: {
-      complexConcepts: [baseTopic + " fundamentals"],
-      quickWins: ["basic tips", "quick start guide"],
-      visualOpportunities: ["charts", "diagrams", "examples"],
-      emotionalBeats: ["success stories", "common mistakes"]
+      complexConcepts: [baseTopic + " fundamentals", "advanced techniques", "best practices"],
+      quickWins: ["basic tips", "quick start guide", "immediate benefits"],
+      visualOpportunities: ["charts", "diagrams", "examples", "tool demonstrations"],
+      emotionalBeats: ["success stories", "common mistakes", "transformation moments"],
+      callToActionSuggestions: ["subscribe for more tips", "try these tools", "share your results"]
     },
-    sceneContexts: [
-      {
-        sceneNumber: 1,
-        purpose: "hook",
-        duration: 15,
-        content: `attention-grabbing opener about ${baseTopic}`,
-        visualStyle: "dynamic, eye-catching",
-        mediaNeeds: ["engaging opener image/video"],
-        tone: "exciting, curious"
-      }
-    ],
     seoContext: {
-      primaryKeywords: keywords.slice(0, 3),
-      longTailKeywords: [`${baseTopic} guide`, `how to ${baseTopic}`, `${baseTopic} tips`],
-      trendingTerms: keywords,
-      competitorTopics: [`${baseTopic} tutorial`, `${baseTopic} explained`]
+      primaryKeywords: [
+        baseTopic,
+        `${baseTopic} tools`,
+        `${baseTopic} guide`,
+        `${baseTopic} tips`,
+        `${baseTopic} 2025`,
+        `best ${baseTopic}`,
+        `${baseTopic} tutorial`,
+        `${baseTopic} strategy`
+      ],
+      longTailKeywords: [
+        `best ${baseTopic} for beginners`,
+        `how to use ${baseTopic} effectively`,
+        `${baseTopic} vs traditional methods`,
+        `free ${baseTopic} tools`,
+        `${baseTopic} for small business`,
+        `advanced ${baseTopic} techniques`,
+        `${baseTopic} step by step guide`,
+        `${baseTopic} mistakes to avoid`,
+        `${baseTopic} success stories`,
+        `${baseTopic} in 2025`
+      ],
+      trendingTerms: [
+        "AI-powered tools",
+        "automation 2025",
+        "digital transformation",
+        "productivity hacks",
+        "workflow optimization",
+        "creator economy",
+        "tech trends 2025"
+      ],
+      semanticKeywords: [
+        "automation tools",
+        "digital workflow",
+        "productivity software",
+        "creative solutions",
+        "efficiency tools",
+        "modern techniques"
+      ],
+      questionKeywords: [
+        `what is ${baseTopic}`,
+        `how to choose ${baseTopic}`,
+        `why use ${baseTopic}`,
+        `when to use ${baseTopic}`,
+        `which ${baseTopic} is best`
+      ]
+    },
+    durationGuidance: {
+      recommendedDuration: Math.floor(videoDuration/60),
+      contentComplexity: "moderate",
+      attentionSpanConsiderations: "Use engagement hooks every 45-60 seconds",
+      pacingRecommendations: "Mix quick tips with detailed explanations"
     },
     metadata: {
       generatedAt: new Date().toISOString(),
-      model: 'fallback',
+      model: 'fallback-enhanced',
       inputParameters: { baseTopic, targetAudience, videoDuration, videoStyle },
-      confidence: 0.7
+      confidence: 0.7,
+      note: "Enhanced fallback with comprehensive SEO and no scene decisions"
     }
   };
 };

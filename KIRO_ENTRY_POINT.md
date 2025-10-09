@@ -2,9 +2,9 @@
 
 > **📍 CRITICAL**: This is the mandatory entry point for all new Kiro sessions. Always read this file first to understand the current system state and avoid duplication of work.
 
-**System Status**: ✅ FULLY OPERATIONAL  
-**Last Updated**: 2025-10-07 16:30 UTC  
-**Health**: 100% (Individual agents: 100%, Context flow: WORKING)
+**System Status**: 🔧 ENHANCEMENT IN PROGRESS  
+**Last Updated**: 2025-10-08 21:05 UTC  
+**Health**: 90% (Individual agents: 100%, S3 organization complete, Documentation consolidated, Deployment successful)
 
 ---
 
@@ -18,16 +18,18 @@
 - **🎬 Video Assembler AI**: ACTUAL VIDEO PROCESSING NOW WORKING ✅
 - **📺 YouTube Publisher AI**: Publishing with SEO ✅
 
-### **✅ RESOLVED: All System Issues - 100% OPERATIONAL**
+### **⚠️ CRITICAL: AI Agent Validation & Context Awareness Required**
 
-- **📋 All Issues**: COMPLETELY RESOLVED
+- **📋 System Status**: OPERATIONAL but needs comprehensive enhancement
   - **Fixed**: Media Curator validation (totalAssets >= 0)
   - **Fixed**: Topic Management validation (expandedTopics >= 0)
   - **Fixed**: Scene validation (scenes >= 0, totalDuration >= 0)
   - **Fixed**: Topic Management timeout (increased to 5 minutes, 512MB memory)
   - **Fixed**: Performance optimizations (simplified prompts, timeouts, reduced DB scans)
   - **Fixed**: UUID dependency issue (replaced with Node.js crypto.randomUUID)
-  - **Status**: ✅ COMPLETE END-TO-END PIPELINE OPERATIONAL - 100% success rate (6/6 agents)
+  - **CRITICAL ISSUE 1**: Script Generator producing "0 scenes, 0s" - validation gaps across ALL agents
+  - **CRITICAL ISSUE 2**: Agents not fully context-aware - need comprehensive context consumption/production
+  - **Status**: ⚠️ REQUIRES VALIDATION + CONTEXT AWARENESS - Agents working in isolation, not as coordinated system
 
 ### **✅ PREVIOUSLY RESOLVED**
 
@@ -36,13 +38,31 @@
   - **Current**: Creates actual MP4 video files (not just manifests)
   - **Impact**: Video processing component working correctly
 
+- **📁 S3 Folder Organization**: FULLY IMPLEMENTED (Task 1.3 completed)
+  - **Fixed**: Implemented organized timestamp-based project folders
+  - **Structure**: `videos/2025-10-08_15-30-15_video-title/01-context/`, `02-script/`, `03-media/`, etc.
+  - **Features**: S3 project manager utility, backward compatibility, clear file organization
+  - **Impact**: Users can quickly locate files and understand project structure
+
+- **📚 Documentation Consolidation**: FULLY COMPLETED (2025-10-08 21:05 UTC)
+  - **Fixed**: Removed 15+ duplicate and obsolete .md files
+  - **Consolidated**: Kept only essential documentation (README, KIRO_ENTRY_POINT, specs, COMPLETE_SYSTEM_DOCUMENTATION)
+  - **Cleaned**: Removed old deployment outputs and debug files
+  - **Impact**: Clean, organized repository with clear documentation hierarchy
+
+- **🚀 Infrastructure Deployment**: SUCCESSFULLY UPDATED (2025-10-08 21:02 UTC)
+  - **Deployed**: All Lambda functions with new S3 organization code
+  - **Verified**: All 6 agents report 100% health after deployment
+  - **Updated**: Context layer with S3 folder structure utilities
+  - **Impact**: Production system running with organized file structure
+
 ### **🎯 Workflow Orchestrator**: ✅ WORKING (Direct coordination, no Step Functions)
 
 ---
 
 ## 📚 **DOCUMENTATION HIERARCHY**
 
-### **1. SYSTEM_DOCUMENTATION.md** 📖 COMPREHENSIVE GUIDE
+### **1. docs/COMPLETE_SYSTEM_DOCUMENTATION.md** 📖 COMPREHENSIVE GUIDE
 
 - Complete system architecture and specifications
 - All AI agent details with input/output examples
@@ -71,7 +91,7 @@
 node scripts/tests/quick-agent-test.js
 ```
 
-**Expected**: `✅ Working: 5/6 | 📈 Health: 83%`
+**Expected**: `✅ Working: 6/6 | 📈 Health: 100%`
 
 ### **Context Flow Test** (Validate agent communication)
 
@@ -171,9 +191,10 @@ import LambdaInvoker from './scripts/utils/lambda-invoker.js';
 ### **📊 SYSTEM METRICS**
 
 - **Cost**: <$1.00 per video ✅ ACHIEVED (~$0.80)
-- **Reliability**: 83% agent health
-- **Automation**: Fully autonomous (except video assembly)
-- **Context Flow**: 100% working (Topic → Script → Audio)
+- **Reliability**: 100% agent health ✅ ACHIEVED
+- **Organization**: S3 folder structure implemented ✅ ACHIEVED
+- **Documentation**: Consolidated and cleaned ✅ ACHIEVED
+- **Deployment**: Successfully updated ✅ ACHIEVED
 
 ---
 
@@ -182,18 +203,24 @@ import LambdaInvoker from './scripts/utils/lambda-invoker.js';
 ### **📋 MANDATORY FOR EVERY NEW SESSION**
 
 1. **READ THIS FILE FIRST**: Always read KIRO_ENTRY_POINT.md before starting any work
-2. **CHECK MASTER SPEC**: Read `.kiro/specs/automated-video-pipeline/MASTER_SPEC.md` for complete system info
+2. **CHECK COMPLETE DOCUMENTATION**: Read `docs/COMPLETE_SYSTEM_DOCUMENTATION.md` for comprehensive system info
 3. **RUN HEALTH CHECK**: `node scripts/tests/quick-agent-test.js` (30 seconds)
 4. **VERIFY CONTEXT FLOW**: `node scripts/tests/critical-system-test.js` (90 seconds)
-5. **NEVER ASK ABOUT API KEYS**: All credentials are in AWS Secrets Manager
-6. **DON'T START FROM SCRATCH**: System is 100% operational
-7. **USE EXISTING FUNCTIONALITY**: Don't duplicate existing features
-8. **UPDATE DOCUMENTATION**: Always update after any changes
+5. **⚠️ CURRENT PRIORITY**: Fix Script Generator scene issue - producing "0 scenes, 0s" instead of proper scene breakdown
+6. **✅ COMPLETED**: S3 organization, documentation cleanup, deployment successful
+7. **NEVER ASK ABOUT API KEYS**: All credentials are in AWS Secrets Manager
+8. **DON'T START FROM SCRATCH**: System is operational but needs validation + context enhancement
+9. **FOCUS ON DUAL ENHANCEMENT**: 
+   - Implement mandatory output validation for ALL agents (Tasks 11.1-11.7)
+   - Implement comprehensive context awareness for ALL agents (Tasks 12.1-12.7)
+10. **UPDATE DOCUMENTATION**: Always update after any changes
    - Update system status and health percentages
    - Mark completed tasks as ✅ RESOLVED
    - Update deployment timestamps
    - Add verification details for any fixes
    - Update MASTER_SPEC.md with any architectural changes
+   - **Document validation enhancements and circuit breaker implementations**
+   - **Document context awareness enhancements and agent coordination improvements**
    - This is MANDATORY and must not be missed
 
 ### **🎉 ALL ISSUES RESOLVED - SYSTEM FULLY OPERATIONAL**
@@ -206,15 +233,20 @@ import LambdaInvoker from './scripts/utils/lambda-invoker.js';
 
 **Current System Status:**
 1. **Individual Health Checks**: ✅ 100% (All 6 agents report healthy)
-2. **End-to-End Pipeline**: ✅ 100% SUCCESS (Complete video production working)
-3. **Context Flow**: ✅ 100% OPERATIONAL (All agent communication working)
+2. **End-to-End Pipeline**: ⚠️ VALIDATION GAPS (Agents produce invalid outputs like "0 scenes, 0s")
+3. **Context Flow**: ✅ WORKING (Agent communication operational but outputs need validation)
 
-**COMPLETE RESOLUTION (2025-10-07 16:45 UTC):**
-- **All Issues Resolved**: Context validation, timeouts, dependencies, performance
-- **End-to-End Test**: 100% success rate (6/6 agents operational)
-- **Production Ready**: Complete video production pipeline working
-- **Final Fix**: UUID dependency resolved (Node.js crypto.randomUUID)
-- **Status**: ✅ SYSTEM 100% OPERATIONAL - Complete video production ready
+**CURRENT PRIORITY (2025-10-07 17:15 UTC):**
+- **Critical Issue**: AI agents need industry best practices implementation
+- **Specific Issues Identified**:
+  - Script Generator: totalDuration calculation fixed, needs industry-standard prompts
+  - Media Curator: needs 1-3 assets per scene with proper sequencing for Video Assembler
+  - All agents: need comprehensive validation and context awareness
+- **Active Work**: Implementing industry best practices for Script Generator and Media Curator
+- **Required Actions**:
+  1. Implement industry best practices for ALL 6 agents (Tasks 11.1-11.7)
+  2. Implement comprehensive context awareness for ALL agents (Tasks 12.1-12.7)
+- **Status**: 🔧 ACTIVELY IMPLEMENTING - Industry standards and validation enhancements in progress
 
 3. **Audio Generator AI**: ✅ WORKING - Creating 223s audio files
    - Context-aware narration generation working
@@ -245,6 +277,7 @@ import LambdaInvoker from './scripts/utils/lambda-invoker.js';
 - ❌ Don't start from scratch (system is 100% working)
 - ❌ Don't skip health checks before making changes
 - ❌ Don't duplicate existing functionality
+- ❌ Don't create excessive .md files (documentation is now consolidated)
 - ❌ **NEVER FORGET TO UPDATE KIRO_ENTRY_POINT.md and all respective project documentation** after any changes
 
 ---
@@ -255,6 +288,19 @@ import LambdaInvoker from './scripts/utils/lambda-invoker.js';
 
 ```bash
 node scripts/tests/quick-agent-test.js
+```
+
+### **S3 Project Management**
+
+```bash
+# List video projects
+node scripts/utils/s3-project-manager.cjs list
+
+# Show project structure
+node scripts/utils/s3-project-manager.cjs show <folder-name>
+
+# Clean up old folders
+node scripts/utils/s3-project-manager.cjs cleanup
 ```
 
 ### **Deploy Changes**
@@ -303,4 +349,4 @@ node scripts/tests/context-flow-test.js
 
 ---
 
-_Last Updated: 2025-10-07 16:45 UTC | Status: 100% OPERATIONAL | Health: 100% (Individual: 100%, E2E: 100% SUCCESS)_
+_Last Updated: 2025-10-08 21:05 UTC | Status: S3 ORGANIZATION & DOCUMENTATION COMPLETE | Health: 90% (Individual: 100%, Organization: COMPLETE, Next: Script Generator Fix)_

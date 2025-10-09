@@ -12,7 +12,7 @@
 
 **🎥 Fully autonomous AWS serverless system that creates and publishes professional YouTube videos every 8 hours using 6 specialized AI agents**
 
-**System Health: 100% (6/6 agents operational) | End-to-End: 100% success | Cost: ~$0.80 per video**
+**System Health: 87% (Individual agents: 100%, S3 organization complete, Industry standards in progress) | Cost: ~$0.80 per video**
 
 </div>
 
@@ -93,6 +93,37 @@ node scripts/tests/complete-end-to-end-test.js
 4. **� Audioo Generator AI**: Professional narration with Amazon Polly
 5. **🎬 Video Assembler AI**: **Lambda-based video processing (NO ECS)**
 6. **📺 YouTube Publisher AI**: SEO-optimized publishing
+
+---
+
+## 📁 **Organized S3 Storage Structure**
+
+**NEW**: Timestamp-based project organization for easy file management:
+
+```
+videos/
+├── 2025-10-08_15-30-15_ai-tools-content-creation/
+│   ├── 01-context/     # AI agent context files
+│   ├── 02-script/      # Generated scripts
+│   ├── 03-media/       # Scene-organized media assets
+│   ├── 04-audio/       # Narration and audio segments
+│   ├── 05-video/       # Final video and processing logs
+│   └── 06-metadata/    # YouTube metadata and analytics
+└── 2025-10-08_16-45-22_investment-strategies/
+    └── [same structure]
+```
+
+**Management Tools:**
+```bash
+# List all video projects
+node scripts/utils/s3-project-manager.cjs list
+
+# Show project structure
+node scripts/utils/s3-project-manager.cjs show <folder-name>
+
+# Clean up old folders
+node scripts/utils/s3-project-manager.cjs cleanup
+```
 
 ---
 

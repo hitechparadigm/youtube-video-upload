@@ -48,8 +48,11 @@ const { SecretsManagerClient, GetSecretValueCommand } = require('@aws-sdk/client
 const { BedrockRuntimeClient, InvokeModelCommand } = require('@aws-sdk/client-bedrock-runtime');
 const { RekognitionClient, DetectLabelsCommand, DetectTextCommand } = require('@aws-sdk/client-rekognition');
 const { S3Client, PutObjectCommand, GetObjectCommand } = require('@aws-sdk/client-s3');
+const { generateS3Paths } = require('/opt/nodejs/s3-folder-structure');
 const https = require('https');
-const { v4: uuidv4 } = require('uuid');
+const { randomUUID } = require('crypto');
+// Use Node.js built-in crypto.randomUUID instead of uuid package
+const uuidv4 = randomUUID;
 // Import context management functions
 const { getSceneContext, storeMediaContext, updateProjectSummary } = require('/opt/nodejs/context-integration');
 
@@ -79,29 +82,29 @@ async function initializeService() {
 async function getApiKeys() {
     // Force refresh secrets (clear cache)
     cachedSecrets = null;
-    
+
     if (cachedSecrets) {
         return cachedSecrets;
     }
-    
+
     try {
         const secretName = process.env.API_KEYS_SECRET_NAME || process.env.MEDIA_SECRET_NAME || 'automated-video-pipeline/api-keys';
-        
+
         const command = new GetSecretValueCommand({
             SecretId: secretName
         });
-        
+
         const response = await secretsClient.send(command);
-        
+
         if (response.SecretString) {
             cachedSecrets = JSON.parse(response.SecretString);
             console.log('API keys retrieved from Secrets Manager');
             console.log('Available keys:', Object.keys(cachedSecrets));
             return cachedSecrets;
         }
-        
+
         throw new Error('No secret string found');
-        
+
     } catch (error) {
         console.error('Error retrieving API keys:', error.message);
         // Return empty object so we can still test without keys
@@ -112,18 +115,18 @@ async function getApiKeys() {
 
 exports.handler = async (event) => {
     console.log('Media Curator invoked:', JSON.stringify(event, null, 2));
-    
+
     try {
         await initializeService();
-        
+
         const { httpMethod, path, body } = event;
-        
+
         // Parse request body if present
         let requestBody = {};
         if (body) {
             requestBody = typeof body === 'string' ? JSON.parse(body) : body;
         }
-        
+
         if (httpMethod === 'GET' && path === '/health') {
             return createResponse(200, {
                 service: 'media-curator',
@@ -140,12 +143,12 @@ exports.handler = async (event) => {
         } else {
             return createResponse(404, { error: 'Endpoint not found' });
         }
-        
+
     } catch (error) {
         console.error('Error in Media Curator:', error);
-        return createResponse(500, { 
+        return createResponse(500, {
             error: 'Internal server error',
-            message: error.message 
+            message: error.message
         });
     }
 };
@@ -154,8 +157,8 @@ exports.handler = async (event) => {
  * Search for media from multiple sources
  */
 async function searchMedia(requestBody) {
-    const { 
-        query, 
+    const {
+        query,
         mediaType = 'both',
         sources = ['pexels', 'pixabay'],
         limit = 10,
@@ -163,24 +166,24 @@ async function searchMedia(requestBody) {
         minWidth = 1920,
         minHeight = 1080
     } = requestBody;
-    
+
     try {
         console.log(`Searching for media: ${query}`);
-        
+
         if (!query) {
             return createResponse(400, { error: 'Search query is required' });
         }
-        
+
         // Get API keys
         const apiKeys = await getApiKeys();
-        
+
         const results = [];
-        
+
         // Search each enabled source
         for (const source of sources) {
             try {
                 let sourceResults = [];
-                
+
                 switch (source.toLowerCase()) {
                     case 'pexels':
                         if (apiKeys.PEXELS_API_KEY) {
@@ -200,28 +203,28 @@ async function searchMedia(requestBody) {
                         console.warn(`Unknown media source: ${source}`);
                         continue;
                 }
-                
+
                 // Add source information and score
                 sourceResults.forEach(item => {
                     item.source = source;
                     item.searchQuery = query;
                     item.relevanceScore = calculateRelevanceScore(item, query);
                 });
-                
+
                 results.push(...sourceResults);
-                
+
             } catch (error) {
                 console.error(`Error searching ${source}:`, error.message);
                 // Continue with other sources
             }
         }
-        
+
         // Sort by relevance score
         results.sort((a, b) => (b.relevanceScore || 0) - (a.relevanceScore || 0));
-        
+
         // Limit total results
         const limitedResults = results.slice(0, limit);
-        
+
         return createResponse(200, {
             media: limitedResults,
             totalFound: results.length,
@@ -229,12 +232,12 @@ async function searchMedia(requestBody) {
             sources: sources,
             filters: { mediaType, orientation, minWidth, minHeight }
         });
-        
+
     } catch (error) {
         console.error('Error searching media:', error);
-        return createResponse(500, { 
+        return createResponse(500, {
             error: 'Failed to search media',
-            message: error.message 
+            message: error.message
         });
     }
 }
@@ -243,81 +246,118 @@ async function searchMedia(requestBody) {
  * Enhanced scene-aware media curation using stored scene context
  */
 async function curateMediaFromProject(requestBody) {
-    const { 
+    const {
         projectId,
         mediaRequirements = {},
         qualityThreshold = 80,
         diversityFactor = 0.7
     } = requestBody;
-    
+
     try {
         if (!projectId) {
             return createResponse(400, { error: 'projectId is required' });
         }
-        
+
         console.log(`🎨 Starting scene-aware media curation for project: ${projectId}`);
-        
+
         // Retrieve scene context from Context Manager
         console.log('🔍 Retrieving scene context from Context Manager...');
         const sceneContext = await getSceneContext(projectId);
-        
+
         console.log('✅ Retrieved scene context:');
         console.log(`   - Available scenes: ${sceneContext.scenes?.length || 0}`);
         console.log(`   - Total duration: ${sceneContext.totalDuration || 0}s`);
         console.log(`   - Selected subtopic: ${sceneContext.selectedSubtopic || 'N/A'}`);
         console.log(`   - Overall style: ${sceneContext.overallStyle || 'N/A'}`);
-        
+
         if (!sceneContext.scenes || sceneContext.scenes.length === 0) {
             return createResponse(400, { error: 'No scenes found in scene context' });
         }
-        
-        // Enhanced media requirements with scene-specific defaults
+
+        // INDUSTRY BEST PRACTICES: Professional video production media requirements
         const requirements = {
-            imagesPerScene: 2,
-            videosPerScene: 1,
+            // PRIMARY VISUALS: 4-6 main visuals per scene (60-80s scenes)
+            primaryVisualsPerScene: 5, // Main visuals supporting key narrative points
+            minPrimaryVisuals: 4, // Minimum for proper coverage
+            maxPrimaryVisuals: 6, // Maximum to avoid overwhelming
+
+            // CUTAWAY SHOTS: 2-3 quick detail shots between primary visuals
+            cutawayVisualsPerScene: 3, // Quick 1-2 second shots for rhythm
+            minCutawayVisuals: 2, // Minimum for visual variety
+            maxCutawayVisuals: 4, // Maximum to maintain focus
+
+            // TOTAL VISUAL CHANGES: 4-8 per scene (industry standard)
+            totalVisualsPerScene: 6, // Balanced approach for 60-80s scenes
+            minTotalVisuals: 4, // Minimum for engagement
+            maxTotalVisuals: 8, // Maximum before becoming chaotic
+
+            // VISUAL TIMING: Based on content type and scene purpose
+            primaryVisualDuration: 5, // 4-6 seconds per primary visual (educational content)
+            cutawayVisualDuration: 2, // 1-2 seconds per cutaway shot
+            hookSceneVisualDuration: 3, // 2-3 seconds for opening hook (faster pacing)
+
+            // CONTENT TYPE OPTIMIZATION
+            educationalPacing: 5, // 4-6 seconds per visual for comprehension
+            promotionalPacing: 3, // 2-4 seconds per visual for excitement
+
+            // LEGACY COMPATIBILITY (for existing code)
+            assetsPerScene: 6, // Updated to match totalVisualsPerScene
+            minImagesPerScene: 4, // Updated to match industry standards
+            maxImagesPerScene: 6, // Updated to match industry standards
+            videosPerScene: 2, // Increased for better visual variety
+
+            // QUALITY AND RELEVANCE
             minRelevanceScore: qualityThreshold,
             maxProcessingTime: 600, // 10 minutes
             requireVisualAnalysis: true,
             sceneSpecificMatching: true,
+
+            // ADVANCED FEATURES
+            speechPatternMatching: true, // Match cuts to natural speech breaks
+            narrativePointAlignment: true, // Align visuals with key narrative points
+            visualRhythmOptimization: true, // Optimize pacing for engagement
+            sequenceOptimization: true, // Enable sequence optimization for Video Assembler
+            transitionPlanning: true, // Plan smooth transitions between assets
+
             ...mediaRequirements
         };
-        
+
         console.log(`📋 Enhanced requirements:`, requirements);
-        
+
         // Get API keys for media sources
         const apiKeys = await getApiKeys();
         console.log(`🔑 API Keys available:`, {
             pexels: !!(apiKeys.pexels || apiKeys.PEXELS_API_KEY),
             pixabay: !!(apiKeys.pixabay || apiKeys.PIXABAY_API_KEY)
         });
-        
+
         // Process each scene with context-aware media matching
         const sceneMediaMapping = [];
         let totalAssets = 0;
         let totalRelevanceScore = 0;
-        
+
         console.log(`🎬 Processing ${sceneContext.scenes.length} scenes with context-aware matching...`);
-        
+
         for (const scene of sceneContext.scenes) {
             console.log(`\n📋 Processing Scene ${scene.sceneNumber}: ${scene.title || 'Untitled'}`);
             console.log(`   Duration: ${scene.duration}s`);
             console.log(`   Purpose: ${scene.purpose || 'N/A'}`);
             console.log(`   Visual style: ${scene.visualRequirements?.style || 'N/A'}`);
-            
+
             // Generate scene-specific search terms using AI
             const sceneSearchTerms = await generateSceneSpecificSearchTerms(scene, sceneContext);
             console.log(`   🔍 Generated search terms: ${sceneSearchTerms.join(', ')}`);
-            
+
             // Search for media with scene-specific context
             const sceneMedia = await searchMediaForScene(scene, sceneSearchTerms, apiKeys, requirements);
             console.log(`   📸 Found ${sceneMedia.length} potential assets`);
-            
+
             // AI-powered relevance analysis for this specific scene
             const analyzedMedia = [];
             for (const media of sceneMedia) {
                 try {
                     const analysis = await analyzeMediaForScene(media, scene, sceneContext);
-                    
+
                     if (analysis.score >= requirements.minRelevanceScore && analysis.recommended) {
                         analyzedMedia.push({
                             ...media,
@@ -329,18 +369,17 @@ async function curateMediaFromProject(requestBody) {
                     console.error(`   ⚠️ Error analyzing media ${media.id}:`, error.message);
                 }
             }
-            
+
             console.log(`   🤖 AI analysis: ${analyzedMedia.length} assets passed relevance threshold`);
-            
-            // Select diverse, high-quality media for this scene
+
+            // Select optimal media assets for this scene (1-3 assets with proper sequencing)
             const selectedMedia = selectOptimalMediaForScene(
-                analyzedMedia, 
-                scene, 
-                requirements.imagesPerScene, 
-                requirements.videosPerScene,
+                analyzedMedia,
+                scene,
+                requirements,
                 diversityFactor
             );
-            
+
             // Download and organize media assets
             const processedAssets = [];
             for (const media of selectedMedia) {
@@ -354,8 +393,8 @@ async function curateMediaFromProject(requestBody) {
                     console.error(`   ❌ Failed to process asset ${media.id}:`, error.message);
                 }
             }
-            
-            // Create scene-media mapping with precise timing
+
+            // Create detailed scene-media mapping with precise sequencing for Video Assembler
             const sceneMapping = {
                 sceneNumber: scene.sceneNumber,
                 sceneTitle: scene.title || `Scene ${scene.sceneNumber}`,
@@ -363,43 +402,113 @@ async function curateMediaFromProject(requestBody) {
                 duration: scene.duration,
                 startTime: scene.startTime || 0,
                 endTime: scene.endTime || scene.duration,
-                mediaAssets: processedAssets.map((asset, index) => ({
-                    ...asset,
-                    sceneStartTime: (scene.duration / processedAssets.length) * index,
-                    sceneDuration: scene.duration / processedAssets.length,
-                    transitionType: index === 0 ? 'fade-in' : 'crossfade'
-                })),
-                visualStyle: scene.visualRequirements?.style || 'standard',
-                mood: scene.visualRequirements?.mood || 'neutral',
+
+                // ENHANCED: Detailed media sequence with precise timing for Video Assembler
+                mediaSequence: processedAssets.map((asset, index) => {
+                    const assetDuration = scene.duration / processedAssets.length;
+                    const assetStartTime = assetDuration * index;
+                    const assetEndTime = assetStartTime + assetDuration;
+
+                    return {
+                        sequenceOrder: index + 1,
+                        assetId: asset.id,
+                        assetType: asset.type, // 'image' or 'video'
+                        s3Location: asset.s3Location,
+                        localPath: asset.localPath,
+
+                        // Precise timing for Video Assembler
+                        sceneStartTime: assetStartTime,
+                        sceneEndTime: assetEndTime,
+                        sceneDuration: assetDuration,
+
+                        // Transition specifications
+                        entryTransition: {
+                            type: index === 0 ? 'fade-in' : 'crossfade',
+                            duration: 0.5, // 0.5 second transition
+                            easing: 'ease-in-out'
+                        },
+                        exitTransition: {
+                            type: index === processedAssets.length - 1 ? 'fade-out' : 'crossfade',
+                            duration: 0.5,
+                            easing: 'ease-in-out'
+                        },
+
+                        // Visual specifications for Video Assembler
+                        visualProperties: {
+                            scale: asset.visualProperties?.scale || 'fit',
+                            position: asset.visualProperties?.position || 'center',
+                            opacity: 1.0,
+                            filters: asset.visualProperties?.filters || []
+                        },
+
+                        // Metadata for Video Assembler
+                        metadata: {
+                            originalUrl: asset.originalUrl,
+                            source: asset.source,
+                            relevanceScore: asset.aiAnalysis?.score || 0,
+                            description: asset.description || '',
+                            tags: asset.tags || [],
+                            resolution: asset.resolution || { width: 1920, height: 1080 },
+                            fileSize: asset.fileSize || 0
+                        }
+                    };
+                }),
+
+                // Legacy format for backward compatibility
+                mediaAssets: processedAssets,
+
+                // Scene visual specifications
+                visualStyle: scene.visualRequirements?.style || scene.visualStyle || 'standard',
+                mood: scene.visualRequirements?.mood || scene.tone || 'neutral',
                 transitionStyle: scene.mediaNeeds?.transitions || 'smooth',
+
+                // Enhanced context usage tracking
                 contextUsage: {
                     usedSceneContext: true,
                     sceneSpecificSearch: true,
                     aiRelevanceScoring: true,
-                    visualStyleMatching: true
+                    visualStyleMatching: true,
+                    sequenceOptimized: true,
+                    transitionPlanned: true
+                },
+
+                // Video Assembler instructions
+                assemblyInstructions: {
+                    totalAssets: processedAssets.length,
+                    recommendedSequence: processedAssets.map((asset, index) => ({
+                        order: index + 1,
+                        assetId: asset.id,
+                        timing: `${(scene.duration / processedAssets.length * index).toFixed(1)}s - ${(scene.duration / processedAssets.length * (index + 1)).toFixed(1)}s`
+                    })),
+                    transitionNotes: `Use ${processedAssets.length > 1 ? 'crossfade' : 'fade-in/out'} transitions between assets`,
+                    qualityRequirements: {
+                        minResolution: '1920x1080',
+                        aspectRatio: '16:9',
+                        frameRate: '30fps'
+                    }
                 }
             };
-            
+
             sceneMediaMapping.push(sceneMapping);
             totalAssets += processedAssets.length;
-            
+
             console.log(`   ✅ Scene ${scene.sceneNumber}: ${processedAssets.length} assets selected`);
             console.log(`   📊 Avg relevance: ${Math.round(processedAssets.reduce((sum, a) => sum + (a.aiAnalysis?.score || 0), 0) / processedAssets.length)}%`);
         }
-        
+
         // Calculate overall quality metrics
         const averageRelevanceScore = totalAssets > 0 ? Math.round(totalRelevanceScore / totalAssets) : 0;
         const coverageComplete = sceneMediaMapping.every(mapping => mapping.mediaAssets.length > 0);
-        
+
         // Analyze scene transitions and visual flow
         console.log('🎬 Analyzing scene transitions and visual flow...');
         const transitionAnalysis = await analyzeSceneTransitionsAndFlow(sceneContext, sceneMediaMapping);
-        
+
         console.log(`✅ Transition analysis completed:`);
         console.log(`   - Overall flow score: ${transitionAnalysis.visualFlowAnalysis.overallFlowScore}`);
         console.log(`   - Transition quality: ${transitionAnalysis.visualFlowAnalysis.transitionQuality}`);
         console.log(`   - Continuity maintained: ${transitionAnalysis.visualFlowAnalysis.continuityMaintained}`);
-        
+
         // Create comprehensive media context for Video Assembler AI
         const mediaContext = {
             projectId: projectId,
@@ -437,11 +546,11 @@ async function curateMediaFromProject(requestBody) {
                 intelligentMatching: true
             }
         };
-        
+
         // Store media context for Video Assembler AI
         await storeMediaContext(projectId, mediaContext);
         console.log(`💾 Stored media context for Video Assembler AI`);
-        
+
         // Update project summary
         await updateProjectSummary(projectId, 'media', {
             totalAssets: totalAssets,
@@ -451,9 +560,9 @@ async function curateMediaFromProject(requestBody) {
             contextAware: true,
             processingMethod: 'scene_specific_ai_matching'
         });
-        
+
         console.log(`✅ Scene-aware media curation completed for project: ${projectId}`);
-        
+
         return createResponse(200, {
             message: 'Scene-aware media curation completed successfully',
             projectId: projectId,
@@ -473,7 +582,7 @@ async function curateMediaFromProject(requestBody) {
             contextUsage: mediaContext.contextUsage,
             readyForVideoAssembly: coverageComplete
         });
-        
+
     } catch (error) {
         console.error('Error in scene-aware media curation:', error);
         return createResponse(500, {
@@ -487,22 +596,22 @@ async function curateMediaFromProject(requestBody) {
  * AI-powered media curation with relevance analysis
  */
 async function curateMediaWithAI(requestBody) {
-    const { 
-        topic, 
-        script, 
+    const {
+        topic,
+        script,
         mediaRequirements = {},
         sceneContext = null,
         videoId = null,
         projectId = null
     } = requestBody;
-    
+
     if (!topic || !script) {
         return createResponse(400, {
             error: 'Missing required parameters',
             required: ['topic', 'script']
         });
     }
-    
+
     // Generate readable project ID with date stamp if not provided
     let finalProjectId;
     if (projectId || videoId) {
@@ -518,7 +627,7 @@ async function curateMediaWithAI(requestBody) {
         finalProjectId = `${dateStr}_${timeStr}_${topicSlug}`;
     }
     console.log(`📁 Using project ID: ${finalProjectId}`);
-    
+
     // Enhanced media requirements with stricter defaults
     const requirements = {
         images: 6,
@@ -528,29 +637,29 @@ async function curateMediaWithAI(requestBody) {
         requireVisualAnalysis: true,
         ...mediaRequirements
     };
-    
+
     console.log(`🎬 AI Curating media for topic: "${topic}"`);
     console.log(`📋 Requirements:`, requirements);
-    
+
     try {
         // Generate enhanced search terms using AI
         const searchTerms = await generateSearchTerms(topic, script);
         console.log(`🔍 Generated search terms:`, searchTerms);
-        
+
         // Get API keys
         const apiKeys = await getApiKeys();
         console.log(`🔑 API Keys available:`, {
             pexels: !!(apiKeys.pexels || apiKeys.PEXELS_API_KEY),
             pixabay: !!(apiKeys.pixabay || apiKeys.PIXABAY_API_KEY)
         });
-        
+
         // Search for media from multiple sources with enhanced terms
         const allMedia = [];
-        
+
         for (const term of searchTerms.slice(0, 3)) {
             try {
                 console.log(`🔍 Searching for: "${term}"`);
-                
+
                 // Search images
                 if (apiKeys.pexels || apiKeys.PEXELS_API_KEY) {
                     const pexelsKey = apiKeys.pexels || apiKeys.PEXELS_API_KEY;
@@ -558,14 +667,14 @@ async function curateMediaWithAI(requestBody) {
                     console.log(`📸 Pexels images found for "${term}": ${pexelsImages.length}`);
                     allMedia.push(...pexelsImages);
                 }
-                
+
                 if (apiKeys.pixabay || apiKeys.PIXABAY_API_KEY) {
                     const pixabayKey = apiKeys.pixabay || apiKeys.PIXABAY_API_KEY;
                     const pixabayImages = await searchPixabay(term, 'images', Math.ceil(requirements.images / 2), 'horizontal', 1920, 1080, pixabayKey);
                     console.log(`📸 Pixabay images found for "${term}": ${pixabayImages.length}`);
                     allMedia.push(...pixabayImages);
                 }
-                
+
                 // Search videos
                 if (apiKeys.pexels || apiKeys.PEXELS_API_KEY) {
                     const pexelsKey = apiKeys.pexels || apiKeys.PEXELS_API_KEY;
@@ -573,28 +682,28 @@ async function curateMediaWithAI(requestBody) {
                     console.log(`🎥 Pexels videos found for "${term}": ${pexelsVideos.length}`);
                     allMedia.push(...pexelsVideos);
                 }
-                
+
             } catch (error) {
                 console.error(`Error searching with term "${term}":`, error.message);
             }
         }
-        
+
         console.log(`📊 Found ${allMedia.length} potential media items`);
-        
+
         // Remove duplicates based on URL
-        const uniqueMedia = allMedia.filter((media, index, self) => 
+        const uniqueMedia = allMedia.filter((media, index, self) =>
             index === self.findIndex(m => m.url === media.url)
         );
-        
+
         console.log(`🔄 After deduplication: ${uniqueMedia.length} unique items`);
-        
+
         // Analyze each media item with AI for relevance
         const analyzedMedia = [];
-        
+
         for (const media of uniqueMedia) {
             try {
                 const analysis = await analyzeMediaRelevanceWithAI(media, topic, script, sceneContext);
-                
+
                 if (analysis.score >= requirements.minRelevanceScore && analysis.recommended) {
                     analyzedMedia.push({
                         ...media,
@@ -605,31 +714,31 @@ async function curateMediaWithAI(requestBody) {
                 console.error('Error analyzing media:', error.message);
             }
         }
-        
+
         console.log(`🤖 AI analysis completed: ${analyzedMedia.length} items passed relevance threshold`);
-        
+
         // Sort by AI relevance score
         analyzedMedia.sort((a, b) => b.aiAnalysis.score - a.aiAnalysis.score);
-        
+
         // Select diverse media to avoid repetitive content
         const selectedImages = selectDiverseMedia(
             analyzedMedia.filter(m => m.type === 'image'),
             requirements.images
         );
-        
+
         const selectedVideos = selectDiverseMedia(
             analyzedMedia.filter(m => m.type === 'video'),
             requirements.videos
         );
-        
+
         console.log(`📸 Selected ${selectedImages.length} images and ${selectedVideos.length} videos`);
-        
+
         // Download and save selected media to S3
         const processedMedia = [];
         const allSelectedMedia = [...selectedImages, ...selectedVideos];
-        
+
         console.log(`💾 Downloading and saving ${allSelectedMedia.length} media items to S3...`);
-        
+
         for (const media of allSelectedMedia) {
             try {
                 const processedItem = await downloadAndSaveMedia(media, finalProjectId);
@@ -640,9 +749,9 @@ async function curateMediaWithAI(requestBody) {
                 console.error(`❌ Failed to process media ${media.id}:`, error.message);
             }
         }
-        
+
         console.log(`✅ Successfully saved ${processedMedia.length} media items to S3`);
-        
+
         // Update project summary with media information
         await updateProjectSummary(finalProjectId, 'media', {
             mediaCount: processedMedia.length,
@@ -651,14 +760,14 @@ async function curateMediaWithAI(requestBody) {
             averageRelevanceScore: processedMedia.reduce((sum, m) => sum + (m.aiAnalysis?.score || 0), 0) / processedMedia.length,
             completedAt: new Date().toISOString()
         });
-        
+
         // Generate usage recommendations
         const usageRecommendations = await generateUsageRecommendations(
             processedMedia,
             script,
             topic
         );
-        
+
         return createResponse(200, {
             success: true,
             media: processedMedia,
@@ -675,7 +784,7 @@ async function curateMediaWithAI(requestBody) {
                 averageRelevanceScore: analyzedMedia.reduce((sum, m) => sum + m.aiAnalysis.score, 0) / analyzedMedia.length
             }
         });
-        
+
     } catch (error) {
         console.error('Error in AI media curation:', error);
         return createResponse(500, {
@@ -690,7 +799,7 @@ async function curateMediaWithAI(requestBody) {
  */
 async function searchPexels(query, mediaType, limit, orientation, minWidth, minHeight, apiKey) {
     const results = [];
-    
+
     // Search images if requested
     if (mediaType === 'images' || mediaType === 'both') {
         try {
@@ -700,10 +809,10 @@ async function searchPexels(query, mediaType, limit, orientation, minWidth, minH
                 'Authorization': apiKey
             });
             console.log(`📊 Pexels response: ${imageData.photos?.length || 0} photos found`);
-            
+
             if (imageData.photos) {
                 imageData.photos.forEach(photo => {
-                    if (photo.src && photo.src.large2x && 
+                    if (photo.src && photo.src.large2x &&
                         photo.width >= minWidth && photo.height >= minHeight) {
                         results.push({
                             id: `pexels-img-${photo.id}`,
@@ -728,7 +837,7 @@ async function searchPexels(query, mediaType, limit, orientation, minWidth, minH
             console.error('Error searching Pexels images:', error.message);
         }
     }
-    
+
     // Search videos if requested
     if (mediaType === 'videos' || mediaType === 'both') {
         try {
@@ -736,7 +845,7 @@ async function searchPexels(query, mediaType, limit, orientation, minWidth, minH
             const videoData = await makeHttpRequest(videoUrl, {
                 'Authorization': apiKey
             });
-            
+
             if (videoData.videos) {
                 videoData.videos.forEach(video => {
                     if (video.video_files && video.video_files.length > 0) {
@@ -744,7 +853,7 @@ async function searchPexels(query, mediaType, limit, orientation, minWidth, minH
                         const bestVideo = video.video_files
                             .filter(file => file.width >= minWidth && file.height >= minHeight)
                             .sort((a, b) => (b.width * b.height) - (a.width * a.height))[0];
-                        
+
                         if (bestVideo) {
                             results.push({
                                 id: `pexels-vid-${video.id}`,
@@ -772,7 +881,7 @@ async function searchPexels(query, mediaType, limit, orientation, minWidth, minH
             console.error('Error searching Pexels videos:', error.message);
         }
     }
-    
+
     return results;
 }/**
  * S
@@ -780,7 +889,7 @@ earch Pixabay for images and videos
  */
 async function searchPixabay(query, mediaType, limit, orientation, minWidth, minHeight, apiKey) {
     const results = [];
-    
+
     // Search images if requested
     if (mediaType === 'images' || mediaType === 'both') {
         try {
@@ -788,7 +897,7 @@ async function searchPixabay(query, mediaType, limit, orientation, minWidth, min
             console.log(`🔍 Pixabay API call: ${imageUrl.replace(apiKey, 'HIDDEN')}`);
             const imageData = await makeHttpRequest(imageUrl);
             console.log(`📊 Pixabay response: ${imageData.hits?.length || 0} images found`);
-            
+
             if (imageData.hits) {
                 imageData.hits.forEach(hit => {
                     results.push({
@@ -815,19 +924,19 @@ async function searchPixabay(query, mediaType, limit, orientation, minWidth, min
             console.error('Error searching Pixabay images:', error.message);
         }
     }
-    
+
     // Search videos if requested
     if (mediaType === 'videos' || mediaType === 'both') {
         try {
             const videoUrl = `https://pixabay.com/api/videos/?key=${apiKey}&q=${encodeURIComponent(query)}&min_width=${minWidth}&min_height=${minHeight}&per_page=${Math.min(limit, 200)}&safesearch=true`;
             const videoData = await makeHttpRequest(videoUrl);
-            
+
             if (videoData.hits) {
                 videoData.hits.forEach(hit => {
                     // Find the best quality video
                     const videos = hit.videos;
                     const bestVideo = videos.large || videos.medium || videos.small;
-                    
+
                     if (bestVideo) {
                         results.push({
                             id: `pixabay-vid-${hit.id}`,
@@ -856,7 +965,7 @@ async function searchPixabay(query, mediaType, limit, orientation, minWidth, min
             console.error('Error searching Pixabay videos:', error.message);
         }
     }
-    
+
     return results;
 }
 
@@ -865,51 +974,51 @@ async function searchPixabay(query, mediaType, limit, orientation, minWidth, min
  */
 function calculateRelevanceScore(mediaItem, query) {
     let score = 0;
-    
+
     const queryWords = query.toLowerCase().split(/\s+/);
     const title = (mediaItem.title || '').toLowerCase();
     const description = (mediaItem.description || '').toLowerCase();
-    
+
     // Title relevance (40 points)
     queryWords.forEach(word => {
         if (title.includes(word)) score += 10;
     });
-    
+
     // Description relevance (30 points)
     queryWords.forEach(word => {
         if (description.includes(word)) score += 7.5;
     });
-    
+
     // Quality factors (30 points)
     // Resolution bonus
     const pixels = (mediaItem.width || 0) * (mediaItem.height || 0);
     if (pixels >= 1920 * 1080) score += 10; // Full HD+
     else if (pixels >= 1280 * 720) score += 7; // HD
     else if (pixels >= 854 * 480) score += 4; // SD
-    
+
     // Engagement metrics (likes, views, downloads)
     const likes = mediaItem.likes || 0;
     const views = mediaItem.views || 0;
     const downloads = mediaItem.downloads || 0;
-    
+
     if (likes > 100) score += 5;
     else if (likes > 50) score += 3;
     else if (likes > 10) score += 1;
-    
+
     if (views > 10000) score += 5;
     else if (views > 1000) score += 3;
     else if (views > 100) score += 1;
-    
+
     if (downloads > 1000) score += 5;
     else if (downloads > 100) score += 3;
     else if (downloads > 10) score += 1;
-    
+
     // Video duration bonus (for videos)
     if (mediaItem.type === 'video' && mediaItem.duration) {
         if (mediaItem.duration >= 10 && mediaItem.duration <= 60) score += 5; // Good length
         else if (mediaItem.duration >= 5 && mediaItem.duration <= 120) score += 3;
     }
-    
+
     return Math.min(score, 100); // Cap at 100
 }
 
@@ -924,14 +1033,14 @@ function makeHttpRequest(url, headers = {}) {
                 ...headers
             }
         };
-        
+
         const req = https.get(url, options, (res) => {
             let data = '';
-            
+
             res.on('data', (chunk) => {
                 data += chunk;
             });
-            
+
             res.on('end', () => {
                 try {
                     if (res.statusCode >= 200 && res.statusCode < 300) {
@@ -945,11 +1054,11 @@ function makeHttpRequest(url, headers = {}) {
                 }
             });
         });
-        
+
         req.on('error', (error) => {
             reject(error);
         });
-        
+
         req.setTimeout(10000, () => {
             req.destroy();
             reject(new Error('Request timeout'));
@@ -982,7 +1091,7 @@ Examples for "investing for beginners":
 - "financial planning documents"
 
 Respond with a JSON array of search terms: ["term1", "term2", ...]`;
-        
+
         const command = new InvokeModelCommand({
             modelId: 'anthropic.claude-3-sonnet-20240229-v1:0',
             body: JSON.stringify({
@@ -995,14 +1104,14 @@ Respond with a JSON array of search terms: ["term1", "term2", ...]`;
                 }]
             })
         });
-        
+
         const response = await bedrockClient.send(command);
         const result = JSON.parse(new TextDecoder().decode(response.body));
         const searchTerms = JSON.parse(result.content[0].text);
-        
+
         // Add the original topic as a fallback
         return [...searchTerms, topic];
-        
+
     } catch (error) {
         console.error('Error generating search terms:', error);
         // Fallback to basic terms
@@ -1060,7 +1169,7 @@ Respond in JSON format:
     },
     "usage_suggestion": "how to use this media in the video"
 }`;
-        
+
         const command = new InvokeModelCommand({
             modelId: 'anthropic.claude-3-sonnet-20240229-v1:0',
             body: JSON.stringify({
@@ -1073,11 +1182,11 @@ Respond in JSON format:
                 }]
             })
         });
-        
+
         const response = await bedrockClient.send(command);
         const result = JSON.parse(new TextDecoder().decode(response.body));
         const analysis = JSON.parse(result.content[0].text);
-        
+
         return {
             score: analysis.score,
             reasoning: analysis.reasoning,
@@ -1085,7 +1194,7 @@ Respond in JSON format:
             criteriaScores: analysis.criteria_scores,
             usageSuggestion: analysis.usage_suggestion
         };
-        
+
     } catch (error) {
         console.error('Error analyzing media relevance:', error);
         return {
@@ -1111,33 +1220,33 @@ function selectDiverseMedia(mediaArray, count) {
     if (mediaArray.length <= count) {
         return mediaArray;
     }
-    
+
     const selected = [];
     const sortedMedia = [...mediaArray].sort((a, b) => b.aiAnalysis.score - a.aiAnalysis.score);
-    
+
     for (const media of sortedMedia) {
         if (selected.length >= count) break;
-        
+
         // Check for diversity (avoid similar titles/descriptions)
         const isDiverse = !selected.some(selectedMedia => {
             const titleSimilarity = calculateStringSimilarity(
                 media.title || '',
                 selectedMedia.title || ''
             );
-            
+
             const descSimilarity = calculateStringSimilarity(
                 media.description || '',
                 selectedMedia.description || ''
             );
-            
+
             return titleSimilarity > 0.7 || descSimilarity > 0.8;
         });
-        
+
         if (isDiverse) {
             selected.push(media);
         }
     }
-    
+
     // If we don't have enough diverse items, fill with remaining high-scoring items
     if (selected.length < count) {
         for (const media of sortedMedia) {
@@ -1147,7 +1256,7 @@ function selectDiverseMedia(mediaArray, count) {
             }
         }
     }
-    
+
     return selected.slice(0, count);
 }
 
@@ -1156,13 +1265,13 @@ function selectDiverseMedia(mediaArray, count) {
  */
 function calculateStringSimilarity(str1, str2) {
     if (!str1 || !str2) return 0;
-    
+
     const words1 = str1.toLowerCase().split(/\s+/);
     const words2 = str2.toLowerCase().split(/\s+/);
-    
+
     const commonWords = words1.filter(word => words2.includes(word));
     const totalWords = new Set([...words1, ...words2]).size;
-    
+
     return commonWords.length / totalWords;
 }
 
@@ -1171,10 +1280,10 @@ function calculateStringSimilarity(str1, str2) {
  */
 async function generateUsageRecommendations(processedMedia, script, topic) {
     try {
-        const mediaDescriptions = processedMedia.map(media => 
+        const mediaDescriptions = processedMedia.map(media =>
             `${media.type}: "${media.title}" (AI Score: ${media.aiAnalysis.score}) - ${media.aiAnalysis.usageSuggestion}`
         ).join('\n');
-        
+
         const prompt = `Create specific usage recommendations for how to use these curated media items in a video about "${topic}".
 
 SCRIPT EXCERPT: ${script.substring(0, 800)}...
@@ -1201,7 +1310,7 @@ Respond in JSON format:
         "style": "smooth"
     }
 }`;
-        
+
         const command = new InvokeModelCommand({
             modelId: 'anthropic.claude-3-sonnet-20240229-v1:0',
             body: JSON.stringify({
@@ -1214,11 +1323,11 @@ Respond in JSON format:
                 }]
             })
         });
-        
+
         const response = await bedrockClient.send(command);
         const result = JSON.parse(new TextDecoder().decode(response.body));
         return JSON.parse(result.content[0].text);
-        
+
     } catch (error) {
         console.error('Error generating usage recommendations:', error);
         return {
@@ -1243,19 +1352,20 @@ Respond in JSON format:
 async function downloadAndSaveMedia(media, projectId) {
     try {
         console.log(`📥 Downloading ${media.type}: ${media.title}`);
-        
+
         // Download the media file
         const mediaBuffer = await downloadMediaFile(media.downloadUrl || media.url);
-        
+
         // Determine file extension
         const fileExtension = getFileExtension(media.url, media.type);
-        
-        // Create organized S3 key structure matching the required format:
-        // videos/{projectId}/media/images/ or videos/{projectId}/media/videos/
-        const mediaFolder = media.type === 'image' ? 'images' : 'videos';
+
+        // Generate organized S3 paths with scene-specific structure
+        const s3Paths = generateS3Paths(projectId, 'Generated Video');
         const fileName = `${media.id}-${Date.now()}${fileExtension}`;
-        const s3Key = `videos/${projectId}/media/${mediaFolder}/${fileName}`;
-        
+        const s3Key = media.type === 'image' 
+            ? s3Paths.media.getImagePath(1, media.id).replace('/images/', `/images/${fileName}`)
+            : s3Paths.media.getVideoPath(1, media.id).replace('/videos/', `/videos/${fileName}`);
+
         // Upload to S3
         const bucketName = process.env.S3_BUCKET_NAME;
         await s3Client.send(new PutObjectCommand({
@@ -1271,9 +1381,9 @@ async function downloadAndSaveMedia(media, projectId) {
                 aiRelevanceScore: media.aiAnalysis?.score?.toString() || '0'
             }
         }));
-        
+
         console.log(`✅ Saved ${media.type} to S3: ${s3Key}`);
-        
+
         // Return processed media item with S3 information
         return {
             mediaId: uuidv4(),
@@ -1298,7 +1408,7 @@ async function downloadAndSaveMedia(media, projectId) {
             },
             createdAt: new Date().toISOString()
         };
-        
+
     } catch (error) {
         console.error(`❌ Error downloading/saving media ${media.id}:`, error.message);
         throw error;
@@ -1319,30 +1429,30 @@ async function downloadMediaFile(url) {
                 reject(new Error(`HTTP ${response.statusCode}: ${response.statusMessage}`));
                 return;
             }
-            
+
             const chunks = [];
-            
+
             response.on('data', (chunk) => {
                 chunks.push(chunk);
             });
-            
+
             response.on('end', () => {
                 const buffer = Buffer.concat(chunks);
-                
+
                 // Validate file size (max 100MB)
                 if (buffer.length > 100 * 1024 * 1024) {
                     reject(new Error('File too large (max 100MB)'));
                     return;
                 }
-                
+
                 resolve(buffer);
             });
         });
-        
+
         request.on('error', (error) => {
             reject(error);
         });
-        
+
         request.setTimeout(30000, () => {
             request.destroy();
             reject(new Error('Download timeout'));
@@ -1359,14 +1469,14 @@ function getFileExtension(url, mediaType) {
     if (urlMatch) {
         return `.${urlMatch[1].toLowerCase()}`;
     }
-    
+
     // Fallback based on media type
     if (mediaType === 'image') {
         return '.jpg';
     } else if (mediaType === 'video') {
         return '.mp4';
     }
-    
+
     return '.bin';
 }
 
@@ -1398,7 +1508,7 @@ function getContentType(mediaType, fileExtension) {
                 return 'video/mp4';
         }
     }
-    
+
     return 'application/octet-stream';
 }
 
@@ -1521,12 +1631,12 @@ async function searchMediaForScene(scene, searchTerms, apiKeys, requirements) {
             if (apiKeys.pexels || apiKeys.PEXELS_API_KEY) {
                 const pexelsKey = apiKeys.pexels || apiKeys.PEXELS_API_KEY;
                 const pexelsImages = await searchPexels(
-                    term, 
-                    'images', 
-                    requirements.imagesPerScene, 
-                    'landscape', 
-                    1920, 
-                    1080, 
+                    term,
+                    'images',
+                    requirements.imagesPerScene,
+                    'landscape',
+                    1920,
+                    1080,
                     pexelsKey
                 );
                 allMedia.push(...pexelsImages);
@@ -1535,12 +1645,12 @@ async function searchMediaForScene(scene, searchTerms, apiKeys, requirements) {
             if (apiKeys.pixabay || apiKeys.PIXABAY_API_KEY) {
                 const pixabayKey = apiKeys.pixabay || apiKeys.PIXABAY_API_KEY;
                 const pixabayImages = await searchPixabay(
-                    term, 
-                    'images', 
-                    requirements.imagesPerScene, 
-                    'horizontal', 
-                    1920, 
-                    1080, 
+                    term,
+                    'images',
+                    requirements.imagesPerScene,
+                    'horizontal',
+                    1920,
+                    1080,
                     pixabayKey
                 );
                 allMedia.push(...pixabayImages);
@@ -1551,12 +1661,12 @@ async function searchMediaForScene(scene, searchTerms, apiKeys, requirements) {
                 if (apiKeys.pexels || apiKeys.PEXELS_API_KEY) {
                     const pexelsKey = apiKeys.pexels || apiKeys.PEXELS_API_KEY;
                     const pexelsVideos = await searchPexels(
-                        term, 
-                        'videos', 
-                        requirements.videosPerScene, 
-                        'landscape', 
-                        1280, 
-                        720, 
+                        term,
+                        'videos',
+                        requirements.videosPerScene,
+                        'landscape',
+                        1280,
+                        720,
                         pexelsKey
                     );
                     allMedia.push(...pexelsVideos);
@@ -1569,7 +1679,7 @@ async function searchMediaForScene(scene, searchTerms, apiKeys, requirements) {
     }
 
     // Remove duplicates and add scene context
-    const uniqueMedia = allMedia.filter((media, index, self) => 
+    const uniqueMedia = allMedia.filter((media, index, self) =>
         index === self.findIndex(m => m.url === media.url)
     ).map(media => ({
         ...media,
@@ -1692,38 +1802,150 @@ Respond in JSON format:
 }
 
 /**
- * Select optimal media for a scene considering diversity and quality
+ * Select optimal media for a scene with INDUSTRY BEST PRACTICES (4-8 visual changes per scene)
+ * Based on professional video production standards for optimal engagement and pacing
  */
-function selectOptimalMediaForScene(analyzedMedia, scene, imageCount, videoCount, diversityFactor) {
+function selectOptimalMediaForScene(analyzedMedia, scene, requirements, diversityFactor) {
+    console.log(`   🎯 Selecting optimal media for scene ${scene.sceneNumber} (duration: ${scene.duration}s, purpose: ${scene.purpose})`);
+
     // Sort by AI relevance score
     const sortedMedia = analyzedMedia.sort((a, b) => b.aiAnalysis.score - a.aiAnalysis.score);
-    
-    // Separate images and videos
+
+    // Separate images and videos for strategic selection
     const images = sortedMedia.filter(m => m.type === 'image');
     const videos = sortedMedia.filter(m => m.type === 'video');
-    
-    // Select diverse, high-quality images
+
+    console.log(`   📊 Available: ${images.length} images, ${videos.length} videos`);
+
+    // INDUSTRY STANDARD: Calculate optimal visual changes based on scene duration and purpose
+    let primaryVisuals, cutawayVisuals, totalVisuals;
+    let visualDuration, isHookScene;
+
+    // Determine if this is a hook scene (first 30 seconds) for faster pacing
+    isHookScene = scene.purpose === 'hook' || scene.sceneNumber === 1 || scene.duration <= 30;
+
+    if (scene.duration <= 30) {
+        // SHORT SCENES (≤30s): Hook scenes with fast pacing (2-3 second cuts)
+        primaryVisuals = 3; // 3 main visuals
+        cutawayVisuals = 2; // 2 quick cutaways
+        totalVisuals = 5; // Total 5 visual changes
+        visualDuration = isHookScene ? 3 : 4; // 3s for hooks, 4s for others
+    } else if (scene.duration <= 60) {
+        // MEDIUM SCENES (30-60s): Balanced pacing (4-5 second cuts)
+        primaryVisuals = 4; // 4 main visuals supporting key points
+        cutawayVisuals = 2; // 2 cutaway shots for rhythm
+        totalVisuals = 6; // Total 6 visual changes
+        visualDuration = isHookScene ? 3 : 5; // 3s for hooks, 5s for educational
+    } else if (scene.duration <= 90) {
+        // LONG SCENES (60-90s): Educational pacing (5-6 second cuts)
+        primaryVisuals = 5; // 5 main visuals for comprehensive coverage
+        cutawayVisuals = 3; // 3 cutaway shots for variety
+        totalVisuals = 8; // Total 8 visual changes (maximum recommended)
+        visualDuration = isHookScene ? 3 : 6; // 3s for hooks, 6s for deep content
+    } else {
+        // EXTRA LONG SCENES (>90s): Slower pacing to avoid chaos
+        primaryVisuals = 6; // 6 main visuals maximum
+        cutawayVisuals = 2; // Fewer cutaways to maintain focus
+        totalVisuals = 8; // Cap at 8 to prevent visual fatigue
+        visualDuration = 6; // Longer duration for comprehension
+    }
+
+    // Apply requirements constraints and ensure minimum standards
+    totalVisuals = Math.min(totalVisuals, requirements.maxTotalVisuals || 8);
+    totalVisuals = Math.max(totalVisuals, requirements.minTotalVisuals || 4);
+
+    // Calculate optimal image/video split (favor images for educational, videos for hooks)
+    let imageCount, videoCount;
+
+    if (isHookScene && videos.length > 0) {
+        // Hook scenes: More videos for dynamic engagement
+        videoCount = Math.min(Math.ceil(totalVisuals * 0.4), videos.length, 3); // 40% videos, max 3
+        imageCount = totalVisuals - videoCount;
+    } else {
+        // Educational scenes: More images for comprehension
+        videoCount = Math.min(Math.ceil(totalVisuals * 0.25), videos.length, 2); // 25% videos, max 2
+        imageCount = totalVisuals - videoCount;
+    }
+
+    // Ensure we have enough assets available
+    imageCount = Math.min(imageCount, images.length);
+    videoCount = Math.min(videoCount, videos.length);
+
+    // If we don't have enough videos, compensate with images
+    if (videoCount < Math.ceil(totalVisuals * 0.25) && images.length > imageCount) {
+        const deficit = Math.ceil(totalVisuals * 0.25) - videoCount;
+        imageCount = Math.min(imageCount + deficit, images.length);
+    }
+
+    console.log(`   🎬 PROFESSIONAL PACING: ${totalVisuals} total visuals (${primaryVisuals} primary + ${cutawayVisuals} cutaway)`);
+    console.log(`   ⏱️  TIMING: ${visualDuration}s per visual (${isHookScene ? 'HOOK' : 'EDUCATIONAL'} pacing)`);
+    console.log(`   🎯 TARGET: ${imageCount} images, ${videoCount} videos`);
+
+    // Select diverse, high-quality media with strategic variety
     const selectedImages = selectDiverseMedia(images, imageCount);
-    
-    // Select diverse, high-quality videos
     const selectedVideos = selectDiverseMedia(videos, videoCount);
-    
-    return [...selectedImages, ...selectedVideos];
+
+    // Create media sequence with professional timing and transitions
+    const mediaSequence = [];
+    const allSelectedMedia = [...selectedVideos, ...selectedImages];
+
+    // Distribute media across scene duration with optimal timing
+    const sceneDuration = scene.duration;
+    const timePerVisual = sceneDuration / totalVisuals;
+
+    for (let i = 0; i < Math.min(totalVisuals, allSelectedMedia.length); i++) {
+        const media = allSelectedMedia[i];
+        const startTime = i * timePerVisual;
+        const duration = Math.min(visualDuration, timePerVisual);
+
+        // Determine visual type (primary or cutaway) and transition
+        const isPrimary = i < primaryVisuals;
+        const transitionType = i === 0 ? 'fade-in' :
+            i === totalVisuals - 1 ? 'fade-out' :
+                isPrimary ? 'crossfade' : 'quick-cut';
+
+        mediaSequence.push({
+            ...media,
+            sequenceOrder: i + 1,
+            sceneStartTime: startTime,
+            sceneDuration: duration,
+            visualType: isPrimary ? 'primary' : 'cutaway',
+            transitionType: transitionType,
+            pacingStrategy: isHookScene ? 'fast-engagement' : 'educational-comprehension',
+            narrativeAlignment: isPrimary ? 'key-point' : 'supporting-detail'
+        });
+    }
+
+    console.log(`   ✅ PROFESSIONAL SEQUENCE: ${mediaSequence.length} assets with ${visualDuration}s timing`);
+    console.log(`   📊 BREAKDOWN: ${mediaSequence.filter(m => m.visualType === 'primary').length} primary + ${mediaSequence.filter(m => m.visualType === 'cutaway').length} cutaway`);
+
+    return mediaSequence;
 }
 
 /**
- * Download and save media with scene-specific organization
+ * Download and save media with enhanced metadata for Video Assembler
  */
 async function downloadAndSaveMediaForScene(media, projectId, sceneNumber) {
     try {
-        // Create scene-specific S3 key
+        console.log(`   💾 Downloading ${media.type} asset: ${media.id} for scene ${sceneNumber}`);
+
+        // Create scene-specific S3 key using organized structure
+        const s3Paths = generateS3Paths(projectId, 'Generated Video');
         const fileExtension = media.type === 'video' ? 'mp4' : 'jpg';
-        const s3Key = `videos/${projectId}/media/scene-${sceneNumber}/${media.id}.${fileExtension}`;
-        
+        const timestamp = Date.now();
+        const fileName = `${media.id}-${timestamp}.${fileExtension}`;
+        const s3Key = media.type === 'image' 
+            ? `${s3Paths.media.getScenePath(sceneNumber)}/images/${fileName}`
+            : `${s3Paths.media.getScenePath(sceneNumber)}/videos/${fileName}`;
+
         // Download media
         const mediaBuffer = await downloadMediaBuffer(media.downloadUrl || media.url);
-        
-        // Save to S3 with scene metadata
+
+        // Get media dimensions and file info
+        const fileSize = mediaBuffer.length;
+        const resolution = media.resolution || { width: 1920, height: 1080 };
+
+        // Save to S3 with comprehensive metadata for Video Assembler
         await s3Client.send(new PutObjectCommand({
             Bucket: process.env.S3_BUCKET_NAME || 'automated-video-pipeline-786673323159-us-east-1',
             Key: s3Key,
@@ -1736,21 +1958,55 @@ async function downloadAndSaveMediaForScene(media, projectId, sceneNumber) {
                 mediaType: media.type,
                 source: media.source || 'unknown',
                 relevanceScore: (media.aiAnalysis?.score || 0).toString(),
-                sceneSpecific: 'true'
+                sceneSpecific: 'true',
+                fileSize: fileSize.toString(),
+                width: resolution.width.toString(),
+                height: resolution.height.toString(),
+                downloadedAt: new Date().toISOString(),
+                originalUrl: media.originalUrl || media.url || '',
+                description: media.description || '',
+                tags: JSON.stringify(media.tags || [])
             }
         }));
-        
+
+        console.log(`   ✅ Saved to S3: ${s3Key} (${Math.round(fileSize / 1024)}KB)`);
+
+        // Return enhanced asset information for Video Assembler
         return {
             ...media,
+            id: media.id,
+            type: media.type,
             s3Key: s3Key,
-            s3Url: `s3://${process.env.S3_BUCKET_NAME || 'automated-video-pipeline-786673323159-us-east-1'}/${s3Key}`,
+            s3Location: `s3://${process.env.S3_BUCKET_NAME || 'automated-video-pipeline-786673323159-us-east-1'}/${s3Key}`,
+            localPath: s3Key, // For Video Assembler reference
             sceneNumber: sceneNumber,
+
+            // Enhanced metadata for Video Assembler
+            fileSize: fileSize,
+            resolution: resolution,
+            aspectRatio: resolution.width / resolution.height,
             downloadedAt: new Date().toISOString(),
-            sceneSpecific: true
+            sceneSpecific: true,
+
+            // Visual properties for Video Assembler
+            visualProperties: {
+                scale: 'fit', // fit, fill, stretch
+                position: 'center', // center, top, bottom, left, right
+                opacity: 1.0,
+                filters: [] // brightness, contrast, saturation adjustments
+            },
+
+            // Processing metadata
+            processingReady: true,
+            qualityScore: media.aiAnalysis?.score || 0,
+            originalUrl: media.originalUrl || media.url || '',
+            source: media.source || 'unknown',
+            description: media.description || '',
+            tags: media.tags || []
         };
-        
+
     } catch (error) {
-        console.error(`Error downloading media for scene ${sceneNumber}:`, error);
+        console.error(`   ❌ Error downloading media for scene ${sceneNumber}:`, error);
         throw error;
     }
 }
@@ -1765,7 +2021,7 @@ function downloadMediaBuffer(url) {
                 reject(new Error(`HTTP ${response.statusCode}: ${response.statusMessage}`));
                 return;
             }
-            
+
             const chunks = [];
             response.on('data', (chunk) => chunks.push(chunk));
             response.on('end', () => resolve(Buffer.concat(chunks)));
@@ -1780,42 +2036,42 @@ function downloadMediaBuffer(url) {
 async function analyzeSceneTransitionsAndFlow(sceneContext, curatedMedia) {
     try {
         console.log('🎬 Analyzing scene transitions and visual flow...');
-        
+
         const scenes = sceneContext.scenes || [];
         const enhancedSceneMapping = [];
-        
+
         for (let i = 0; i < scenes.length; i++) {
             const currentScene = scenes[i];
             const previousScene = i > 0 ? scenes[i - 1] : null;
             const nextScene = i < scenes.length - 1 ? scenes[i + 1] : null;
-            
+
             console.log(`   📋 Analyzing Scene ${currentScene.sceneNumber}: ${currentScene.title}`);
-            
+
             // Find media for current scene
-            const sceneMedia = curatedMedia.find(mapping => 
+            const sceneMedia = curatedMedia.find(mapping =>
                 mapping.sceneNumber === currentScene.sceneNumber
             );
-            
+
             if (!sceneMedia) {
                 console.warn(`   ⚠️ No media found for scene ${currentScene.sceneNumber}`);
                 continue;
             }
-            
+
             // Analyze visual flow and transitions
             const transitionAnalysis = await analyzeSceneTransition(
-                currentScene, 
-                previousScene, 
-                nextScene, 
+                currentScene,
+                previousScene,
+                nextScene,
                 sceneMedia
             );
-            
+
             // Enhance media selection based on transition analysis
             const enhancedMedia = await enhanceMediaForTransitions(
                 sceneMedia.mediaAssets,
                 transitionAnalysis,
                 currentScene
             );
-            
+
             // Create detailed scene-media mapping
             const enhancedMapping = {
                 sceneNumber: currentScene.sceneNumber,
@@ -1845,26 +2101,26 @@ async function analyzeSceneTransitionsAndFlow(sceneContext, curatedMedia) {
                     transitionDuration: transitionAnalysis.recommendedTransitionDuration
                 }
             };
-            
+
             enhancedSceneMapping.push(enhancedMapping);
-            
+
             console.log(`   ✅ Scene ${currentScene.sceneNumber}: ${enhancedMedia.length} assets, continuity score: ${transitionAnalysis.continuityScore}`);
         }
-        
+
         // Calculate overall visual flow score
         const overallFlowScore = calculateOverallVisualFlow(enhancedSceneMapping);
-        
+
         console.log(`🎬 Scene transition analysis completed:`);
         console.log(`   - Scenes analyzed: ${enhancedSceneMapping.length}`);
         console.log(`   - Overall visual flow score: ${overallFlowScore}`);
-        
+
         return {
             sceneMediaMapping: enhancedSceneMapping,
             visualFlowAnalysis: {
                 overallFlowScore: overallFlowScore,
                 transitionQuality: 'professional',
                 continuityMaintained: overallFlowScore > 0.8,
-                recommendedAdjustments: overallFlowScore < 0.7 ? 
+                recommendedAdjustments: overallFlowScore < 0.7 ?
                     ['Consider smoother transitions', 'Review media variety'] : []
             },
             enhancedMetadata: {
@@ -1874,7 +2130,7 @@ async function analyzeSceneTransitionsAndFlow(sceneContext, curatedMedia) {
                 visualContinuity: 'optimized'
             }
         };
-        
+
     } catch (error) {
         console.error('Error analyzing scene transitions:', error);
         throw error;
@@ -1895,15 +2151,15 @@ async function analyzeSceneTransition(currentScene, previousScene, nextScene, sc
             previousConnection: null,
             nextConnection: null
         };
-        
+
         // Analyze connection to previous scene
         if (previousScene) {
             analysis.previousConnection = await analyzeSceneConnection(
-                previousScene, 
-                currentScene, 
+                previousScene,
+                currentScene,
                 'previous'
             );
-            
+
             // Determine entry transition based on scene relationship
             if (previousScene.mood === currentScene.mood) {
                 analysis.entryTransition = 'crossfade';
@@ -1915,15 +2171,15 @@ async function analyzeSceneTransition(currentScene, previousScene, nextScene, sc
                 analysis.entryTransition = 'dissolve';
             }
         }
-        
+
         // Analyze connection to next scene
         if (nextScene) {
             analysis.nextConnection = await analyzeSceneConnection(
-                currentScene, 
-                nextScene, 
+                currentScene,
+                nextScene,
                 'next'
             );
-            
+
             // Determine exit transition based on next scene relationship
             if (currentScene.mood === nextScene.mood) {
                 analysis.exitTransition = 'crossfade';
@@ -1933,20 +2189,20 @@ async function analyzeSceneTransition(currentScene, previousScene, nextScene, sc
                 analysis.exitTransition = 'dissolve';
             }
         }
-        
+
         // Analyze internal flow within scene
         analysis.internalFlow = analyzeInternalSceneFlow(currentScene, sceneMedia);
-        
+
         // Calculate overall continuity score
         analysis.continuityScore = calculateContinuityScore(
-            currentScene, 
-            previousScene, 
-            nextScene, 
+            currentScene,
+            previousScene,
+            nextScene,
             sceneMedia
         );
-        
+
         return analysis;
-        
+
     } catch (error) {
         console.error('Error analyzing scene transition:', error);
         return {
@@ -1967,7 +2223,7 @@ async function analyzeSceneTransition(currentScene, previousScene, nextScene, sc
 async function enhanceMediaForTransitions(mediaAssets, transitionAnalysis, scene) {
     try {
         const enhancedAssets = [];
-        
+
         for (let i = 0; i < mediaAssets.length; i++) {
             const asset = mediaAssets[i];
             const enhancedAsset = {
@@ -1997,15 +2253,15 @@ async function enhanceMediaForTransitions(mediaAssets, transitionAnalysis, scene
                     compositionStyle: analyzeComposition(asset)
                 }
             };
-            
+
             enhancedAssets.push(enhancedAsset);
         }
-        
+
         // Optimize asset order for better visual flow
         const optimizedAssets = optimizeAssetSequence(enhancedAssets, transitionAnalysis);
-        
+
         return optimizedAssets;
-        
+
     } catch (error) {
         console.error('Error enhancing media for transitions:', error);
         return mediaAssets; // Return original assets if enhancement fails
@@ -2024,26 +2280,26 @@ async function analyzeSceneConnection(scene1, scene2, direction) {
             paceTransition: analyzePaceTransition(scene1, scene2),
             connectionStrength: 0.8
         };
-        
+
         // Calculate connection strength
         let strengthScore = 0;
-        
+
         if (connection.moodTransition === 'smooth') strengthScore += 0.3;
         else if (connection.moodTransition === 'complementary') strengthScore += 0.2;
-        
+
         if (connection.purposeAlignment === 'sequential') strengthScore += 0.3;
         else if (connection.purposeAlignment === 'related') strengthScore += 0.2;
-        
+
         if (connection.visualContinuity === 'high') strengthScore += 0.2;
         else if (connection.visualContinuity === 'medium') strengthScore += 0.1;
-        
+
         if (connection.paceTransition === 'natural') strengthScore += 0.2;
         else if (connection.paceTransition === 'acceptable') strengthScore += 0.1;
-        
+
         connection.connectionStrength = Math.min(1.0, strengthScore);
-        
+
         return connection;
-        
+
     } catch (error) {
         console.error('Error analyzing scene connection:', error);
         return {
@@ -2067,8 +2323,8 @@ function isContrastingMood(mood1, mood2) {
         ['dramatic', 'subtle'],
         ['intense', 'relaxed']
     ];
-    
-    return contrastPairs.some(pair => 
+
+    return contrastPairs.some(pair =>
         (pair[0] === mood1 && pair[1] === mood2) ||
         (pair[1] === mood1 && pair[0] === mood2)
     );
@@ -2077,7 +2333,7 @@ function isContrastingMood(mood1, mood2) {
 function analyzeInternalSceneFlow(scene, sceneMedia) {
     // Analyze how media flows within the scene
     const mediaCount = sceneMedia?.mediaAssets?.length || 0;
-    
+
     if (mediaCount <= 1) return 'static';
     if (mediaCount <= 3) return 'smooth';
     if (mediaCount <= 5) return 'dynamic';
@@ -2086,21 +2342,21 @@ function analyzeInternalSceneFlow(scene, sceneMedia) {
 
 function calculateContinuityScore(currentScene, previousScene, nextScene, sceneMedia) {
     let score = 0.7; // Base score
-    
+
     // Scene purpose continuity
     if (previousScene && isRelatedPurpose(previousScene.purpose, currentScene.purpose)) {
         score += 0.1;
     }
-    
+
     if (nextScene && isRelatedPurpose(currentScene.purpose, nextScene.purpose)) {
         score += 0.1;
     }
-    
+
     // Media quality and variety
     const mediaCount = sceneMedia?.mediaAssets?.length || 0;
     if (mediaCount >= 2) score += 0.05;
     if (mediaCount >= 3) score += 0.05;
-    
+
     return Math.min(1.0, score);
 }
 
@@ -2113,7 +2369,7 @@ function isRelatedPurpose(purpose1, purpose2) {
         'provide_action': ['encourage_action'],
         'encourage_action': []
     };
-    
+
     return relatedPurposes[purpose1]?.includes(purpose2) || false;
 }
 
@@ -2139,7 +2395,7 @@ function analyzePaceTransition(scene1, scene2) {
     const duration1 = scene1.duration || 60;
     const duration2 = scene2.duration || 60;
     const ratio = Math.max(duration1, duration2) / Math.min(duration1, duration2);
-    
+
     if (ratio <= 1.5) return 'natural';
     if (ratio <= 2.5) return 'acceptable';
     return 'abrupt';
@@ -2147,11 +2403,11 @@ function analyzePaceTransition(scene1, scene2) {
 
 function calculateOverallVisualFlow(sceneMapping) {
     if (sceneMapping.length === 0) return 0;
-    
-    const totalScore = sceneMapping.reduce((sum, mapping) => 
+
+    const totalScore = sceneMapping.reduce((sum, mapping) =>
         sum + (mapping.transitionAnalysis?.continuityScore || 0.7), 0
     );
-    
+
     return totalScore / sceneMapping.length;
 }
 
@@ -2172,7 +2428,7 @@ function calculateOptimalBrightness(asset, scene) {
         'dramatic': 85,
         'mysterious': 80
     };
-    
+
     return moodBrightness[scene.mood] || 100;
 }
 
@@ -2186,7 +2442,7 @@ function calculateOptimalContrast(asset, scene) {
         'provide_action': 105,
         'encourage_action': 115
     };
-    
+
     return purposeContrast[scene.purpose] || 100;
 }
 
@@ -2200,7 +2456,7 @@ function calculateOptimalSaturation(asset, scene) {
         'professional': 100,
         'informative': 100
     };
-    
+
     return moodSaturation[scene.mood] || 100;
 }
 
@@ -2238,10 +2494,10 @@ function calculateEnergyLevel(asset, scene) {
         'provide_action': 0.8,
         'encourage_action': 0.9
     };
-    
+
     const baseEnergy = purposeEnergy[scene.purpose] || 0.7;
     const typeMultiplier = asset.type === 'video' ? 1.2 : 1.0;
-    
+
     return Math.min(1.0, baseEnergy * typeMultiplier);
 }
 

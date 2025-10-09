@@ -53,6 +53,7 @@
 
 const { PollyClient, SynthesizeSpeechCommand, DescribeVoicesCommand } = require('@aws-sdk/client-polly');
 const { S3Client, PutObjectCommand, GetObjectCommand } = require('@aws-sdk/client-s3');
+const { generateS3Paths } = require('/opt/nodejs/s3-folder-structure');
 const { DynamoDBClient } = require('@aws-sdk/client-dynamodb');
 const { DynamoDBDocumentClient, PutCommand, GetCommand, UpdateCommand, ScanCommand } = require('@aws-sdk/lib-dynamodb');
 const { initializeConfig, getConfigManager } = require('/opt/nodejs/config-manager');
@@ -1130,9 +1131,12 @@ async function storeAudioData(audioData, projectId = null) {
     try {
         // Store audio file in S3 if audioBuffer exists
         if (audioData.audioBuffer) {
-            // Use project-based structure if projectId is provided
+            // Use organized project structure
             const s3Key = projectId 
-                ? `videos/${projectId}/audio/${audioData.audioId}.${audioData.outputFormat || 'mp3'}`
+                ? (() => {
+                    const s3Paths = generateS3Paths(projectId, 'Generated Video');
+                    return s3Paths.audio.narration;
+                })()
                 : `audio/${audioData.audioId}.${audioData.outputFormat || 'mp3'}`;
             
             await s3Client.send(new PutObjectCommand({
