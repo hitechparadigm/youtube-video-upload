@@ -72,6 +72,28 @@ async function storeMediaContext(projectId, mediaContext) {
 }
 
 /**
+ * Store audio context from Audio Generator AI
+ */
+async function storeAudioContext(projectId, audioContext) {
+    try {
+        const contextId = `${projectId}-audio`;
+        
+        const result = await storeContext(contextId, 'audio', audioContext, {
+            ttlHours: 12, // Audio context valid for 12 hours
+            compress: true, // Audio context can be large with timing data
+            useS3ForLarge: true
+        });
+        
+        console.log(`Audio context stored for project: ${projectId}`);
+        return result;
+        
+    } catch (error) {
+        console.error('Error storing audio context:', error);
+        throw error;
+    }
+}
+
+/**
  * Store assembly context from Video Assembler AI
  */
 async function storeAssemblyContext(projectId, assemblyContext) {
@@ -140,6 +162,23 @@ async function getMediaContext(projectId) {
         
     } catch (error) {
         console.error('Error retrieving media context:', error);
+        throw error;
+    }
+}
+
+/**
+ * Retrieve audio context for Video Assembler AI
+ */
+async function getAudioContext(projectId) {
+    try {
+        const contextId = `${projectId}-audio`;
+        const context = await getContext(contextId);
+        
+        console.log(`Audio context retrieved for project: ${projectId}`);
+        return context.contextData;
+        
+    } catch (error) {
+        console.error('Error retrieving audio context:', error);
         throw error;
     }
 }
@@ -270,7 +309,7 @@ async function validateContextFlow(projectId) {
         };
         
         // Check each stage context
-        const stages = ['topic', 'scene', 'media', 'assembly'];
+        const stages = ['topic', 'scene', 'media', 'audio', 'assembly'];
         
         for (const stage of stages) {
             try {
@@ -327,10 +366,12 @@ module.exports = {
     storeTopicContext,
     storeSceneContext,
     storeMediaContext,
+    storeAudioContext,
     storeAssemblyContext,
     getTopicContext,
     getSceneContext,
     getMediaContext,
+    getAudioContext,
     getAssemblyContext,
     updateProjectSummary,
     getProjectSummary,

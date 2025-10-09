@@ -78,7 +78,7 @@ let TOPICS_TABLE = null;
  */
 async function initializeService() {
     if (config) return; // Already initialized
-    
+
     try {
         // Load configuration (with fallback)
         if (configManager) {
@@ -97,7 +97,7 @@ async function initializeService() {
                 }
             };
         }
-        
+
         // Initialize AWS clients
         const region = config.ai?.models?.primary?.region || process.env.AWS_REGION || 'us-east-1';
         bedrockClient = new BedrockRuntimeClient({ region });
@@ -108,13 +108,13 @@ async function initializeService() {
             }
         });
         s3Client = new S3Client({ region });
-        
+
         // Set table names
         SCRIPTS_TABLE = process.env.SCRIPTS_TABLE_NAME || 'automated-video-pipeline-scripts';
         TOPICS_TABLE = process.env.TOPICS_TABLE_NAME || 'automated-video-pipeline-topics';
-        
+
         console.log('Script Generator service initialized');
-        
+
     } catch (error) {
         console.error('Failed to initialize service:', error);
         throw error;
@@ -126,19 +126,19 @@ async function initializeService() {
  */
 exports.handler = async (event) => {
     console.log('Script Generator invoked:', JSON.stringify(event, null, 2));
-    
+
     try {
         // Initialize service on first invocation
         await initializeService();
-        
+
         const { httpMethod, path, pathParameters, body, queryStringParameters } = event;
-        
+
         // Parse request body if present
         let requestBody = {};
         if (body) {
             requestBody = typeof body === 'string' ? JSON.parse(body) : body;
         }
-        
+
         // Route requests
         if (httpMethod === 'GET' && path === '/health') {
             return createResponse(200, {
@@ -167,12 +167,12 @@ exports.handler = async (event) => {
         } else {
             return createResponse(404, { error: 'Endpoint not found' });
         }
-        
+
     } catch (error) {
         console.error('Error in Script Generator:', error);
-        return createResponse(500, { 
+        return createResponse(500, {
             error: 'Internal server error',
-            message: error.message 
+            message: error.message
         });
     }
 };
@@ -181,10 +181,10 @@ exports.handler = async (event) => {
  * Generate script from topic data with enhanced context processing
  */
 async function generateScript(requestBody) {
-    const { 
-        topic, 
-        title, 
-        hook, 
+    const {
+        topic,
+        title,
+        hook,
         targetLength = 600, // seconds (10 minutes)
         style = 'engaging_educational',
         targetAudience = 'general',
@@ -193,17 +193,17 @@ async function generateScript(requestBody) {
         projectId = null, // Project ID for organized storage
         topicContext = null // Enhanced context from Topic Management AI
     } = requestBody;
-    
+
     try {
         console.log(`Generating script for topic: ${topic}`);
-        
+
         // Validate required fields
         if (!topic || !title) {
-            return createResponse(400, { 
-                error: 'Missing required fields: topic and title are required' 
+            return createResponse(400, {
+                error: 'Missing required fields: topic and title are required'
             });
         }
-        
+
         // Generate the script using AI with enhanced context
         const scriptData = await generateScriptWithAI({
             topic,
@@ -216,10 +216,10 @@ async function generateScript(requestBody) {
             includeTiming,
             topicContext
         });
-        
+
         // Store the generated script
         const storedScript = await storeScript(scriptData, projectId);
-        
+
         return createResponse(200, {
             message: 'Script generated successfully',
             script: storedScript,
@@ -227,12 +227,12 @@ async function generateScript(requestBody) {
             estimatedDuration: scriptData.estimatedDuration,
             sceneCount: scriptData.scenes?.length || 0
         });
-        
+
     } catch (error) {
         console.error('Error generating script:', error);
-        return createResponse(500, { 
+        return createResponse(500, {
             error: 'Failed to generate script',
-            message: error.message 
+            message: error.message
         });
     }
 }
@@ -241,7 +241,7 @@ async function generateScript(requestBody) {
  * Generate enhanced script with topic context from Topic Management AI
  */
 async function generateEnhancedScript(requestBody) {
-    const { 
+    const {
         topicContext,
         baseTopic,
         targetLength,
@@ -249,24 +249,24 @@ async function generateEnhancedScript(requestBody) {
         targetAudience = 'general',
         projectId = null
     } = requestBody;
-    
+
     try {
         console.log(`Generating enhanced script with topic context for: ${baseTopic}`);
-        
+
         // Validate required fields
         if (!topicContext || !baseTopic) {
-            return createResponse(400, { 
-                error: 'Missing required fields: topicContext and baseTopic are required' 
+            return createResponse(400, {
+                error: 'Missing required fields: topicContext and baseTopic are required'
             });
         }
-        
+
         // Extract information from topic context
-        const optimalDuration = topicContext.videoStructure?.mainContentDuration + 
-                               topicContext.videoStructure?.hookDuration + 
-                               topicContext.videoStructure?.conclusionDuration || targetLength;
-        
+        const optimalDuration = topicContext.videoStructure?.mainContentDuration +
+            topicContext.videoStructure?.hookDuration +
+            topicContext.videoStructure?.conclusionDuration || targetLength;
+
         const title = topicContext.expandedTopics?.[0]?.subtopic || baseTopic;
-        
+
         // Generate the enhanced script using AI with full context
         const scriptData = await generateScriptWithAI({
             topic: baseTopic,
@@ -279,7 +279,7 @@ async function generateEnhancedScript(requestBody) {
             includeTiming: true,
             topicContext
         });
-        
+
         // Add context metadata to script
         scriptData.enhancedFeatures = {
             usedTopicContext: true,
@@ -289,10 +289,10 @@ async function generateEnhancedScript(requestBody) {
             expandedTopicsUsed: topicContext.expandedTopics?.length || 0,
             seoOptimized: !!topicContext.seoContext?.primaryKeywords?.length
         };
-        
+
         // Store the generated script
         const storedScript = await storeScript(scriptData, projectId);
-        
+
         return createResponse(200, {
             message: 'Enhanced script generated successfully',
             script: storedScript,
@@ -306,12 +306,12 @@ async function generateEnhancedScript(requestBody) {
                 seoKeywords: topicContext.seoContext?.primaryKeywords?.length || 0
             }
         });
-        
+
     } catch (error) {
         console.error('Error generating enhanced script:', error);
-        return createResponse(500, { 
+        return createResponse(500, {
             error: 'Failed to generate enhanced script',
-            message: error.message 
+            message: error.message
         });
     }
 }
@@ -320,34 +320,34 @@ async function generateEnhancedScript(requestBody) {
  * Generate script from project using stored topic context
  */
 async function generateScriptFromProject(requestBody) {
-    const { 
+    const {
         projectId,
         scriptOptions = {}
     } = requestBody;
-    
+
     try {
         if (!projectId) {
             return createResponse(400, { error: 'projectId is required' });
         }
-        
+
         console.log(`📝 Generating script for project: ${projectId}`);
-        
+
         // Retrieve topic context from Context Manager
         console.log('🔍 Retrieving topic context from Context Manager...');
         const topicContext = await contextIntegration.getTopicContext(projectId);
-        
+
         console.log('✅ Retrieved topic context:');
         console.log(`   - Expanded topics: ${topicContext.expandedTopics?.length || 0}`);
         console.log(`   - Video structure: ${topicContext.videoStructure?.recommendedScenes || 0} scenes`);
         console.log(`   - SEO keywords: ${topicContext.seoContext?.primaryKeywords?.length || 0}`);
-        
+
         // Extract optimal parameters from topic context
-        const optimalDuration = topicContext.videoStructure?.mainContentDuration + 
-                               topicContext.videoStructure?.hookDuration + 
-                               topicContext.videoStructure?.conclusionDuration || 480;
-        
+        const optimalDuration = topicContext.videoStructure?.mainContentDuration +
+            topicContext.videoStructure?.hookDuration +
+            topicContext.videoStructure?.conclusionDuration || 480;
+
         const selectedSubtopic = topicContext.expandedTopics?.[0]?.subtopic || topicContext.mainTopic;
-        
+
         // Generate enhanced script using topic context
         const scriptData = await generateScriptWithAI({
             topic: topicContext.mainTopic,
@@ -360,7 +360,7 @@ async function generateScriptFromProject(requestBody) {
             includeTiming: true,
             topicContext
         });
-        
+
         // Add context metadata to script
         scriptData.enhancedFeatures = {
             usedTopicContext: true,
@@ -371,33 +371,78 @@ async function generateScriptFromProject(requestBody) {
             seoOptimized: !!topicContext.seoContext?.primaryKeywords?.length,
             projectId: projectId
         };
-        
+
         // Store the generated script
         const storedScript = await storeScript(scriptData, projectId);
-        
-        // Create scene context for Media Curator AI
+
+        // Create enhanced scene context for Media Curator AI
         const sceneContext = {
             projectId: projectId,
             baseTopic: topicContext.mainTopic,
             selectedSubtopic: selectedSubtopic,
-            scenes: scriptData.scenes || [],
-            totalDuration: scriptData.estimatedDuration || optimalDuration,
-            sceneCount: scriptData.scenes?.length || 0,
+            
+            // Video Structure Information (for Media Curator planning)
+            videoStructure: {
+                totalScenes: scriptData.scenes?.length || 0,
+                totalDuration: scriptData.totalDuration || scriptData.estimatedDuration || optimalDuration,
+                averageSceneLength: scriptData.sceneStructure?.averageSceneLength || `${Math.round((scriptData.totalDuration || optimalDuration) / (scriptData.scenes?.length || 1))} seconds`,
+                structureRationale: scriptData.sceneStructure?.structureRationale || "Professional video structure with hook, content, and CTA",
+                narrativeArc: scriptData.sceneFlow?.narrativeArc || "Logical progression from introduction to conclusion",
+                engagementStrategy: scriptData.sceneFlow?.engagementStrategy || "Retention hooks and visual variety"
+            },
+            
+            // Enhanced Scene Details (for precise media matching)
+            scenes: (scriptData.scenes || []).map(scene => ({
+                sceneNumber: scene.sceneNumber,
+                title: scene.title,
+                purpose: scene.purpose || 'content_delivery',
+                startTime: scene.startTime,
+                endTime: scene.endTime,
+                duration: scene.duration,
+                content: {
+                    script: scene.script,
+                    keyPoints: scene.keyPoints || [],
+                    emotionalTone: scene.tone || 'informative'
+                },
+                visualStyle: scene.visualStyle || 'professional',
+                mediaNeeds: scene.mediaNeeds || ['presenter', 'graphics'],
+                visualCues: scene.visualCues || [],
+                engagementHooks: scene.engagementHooks || [],
+                transitionToNext: scene.transitionToNext || '',
+                // Additional context for Media Curator
+                mediaRequirements: {
+                    primaryVisualType: scene.mediaNeeds?.[0] || 'presenter',
+                    supportingVisuals: scene.mediaNeeds?.slice(1) || [],
+                    visualComplexity: scene.visualStyle === 'dynamic_engaging' ? 'high' : 'medium',
+                    emotionalContext: scene.tone || 'informative',
+                    searchKeywords: extractSceneKeywords(scene.script, scene.keyPoints)
+                }
+            })),
+            
+            // Overall Context
             overallStyle: scriptOptions.style || 'engaging_educational',
             targetAudience: scriptOptions.targetAudience || 'general',
             sceneFlow: scriptData.sceneFlow || {},
+            
+            // Context Usage Tracking
             contextUsage: {
                 usedTopicContext: true,
                 usedVideoStructure: true,
                 usedContentGuidance: true,
-                usedSeoKeywords: true
-            }
+                usedSeoKeywords: true,
+                enhancedSceneContext: true
+            },
+            
+            // Metadata for Media Curator
+            generatedAt: new Date().toISOString(),
+            readyForMediaCuration: true,
+            contextVersion: '2.0'
         };
-        
+
         // Store scene context for Media Curator AI
         await contextIntegration.storeSceneContext(projectId, sceneContext);
         console.log(`💾 Stored scene context for Media Curator AI`);
-        
+
         // Update project summary
         await contextIntegration.updateProjectSummary(projectId, 'script', {
             scriptId: storedScript.scriptId,
@@ -406,7 +451,7 @@ async function generateScriptFromProject(requestBody) {
             totalDuration: sceneContext.totalDuration,
             enhancedFeatures: scriptData.enhancedFeatures
         });
-        
+
         return createResponse(200, {
             message: 'Context-aware script generated successfully',
             projectId: projectId,
@@ -423,12 +468,12 @@ async function generateScriptFromProject(requestBody) {
                 readyForMediaCuration: true
             }
         });
-        
+
     } catch (error) {
         console.error('Error generating script from project:', error);
-        return createResponse(500, { 
+        return createResponse(500, {
             error: 'Failed to generate script from project',
-            message: error.message 
+            message: error.message
         });
     }
 }
@@ -438,18 +483,18 @@ async function generateScriptFromProject(requestBody) {
  */
 async function generateScriptFromTopic(requestBody) {
     const { topicId, scriptOptions = {} } = requestBody;
-    
+
     try {
         if (!topicId) {
             return createResponse(400, { error: 'topicId is required' });
         }
-        
+
         // Get topic data from database
         const topicData = await getTopicData(topicId);
         if (!topicData) {
             return createResponse(404, { error: 'Topic not found' });
         }
-        
+
         // Generate script using topic data
         const scriptRequest = {
             topic: topicData.topic,
@@ -459,14 +504,14 @@ async function generateScriptFromTopic(requestBody) {
             style: topicData.contentStyle || 'engaging_educational',
             ...scriptOptions
         };
-        
+
         return await generateScript(scriptRequest);
-        
+
     } catch (error) {
         console.error('Error generating script from topic:', error);
-        return createResponse(500, { 
+        return createResponse(500, {
             error: 'Failed to generate script from topic',
-            message: error.message 
+            message: error.message
         });
     }
 }
@@ -486,7 +531,7 @@ async function generateScriptWithAI(params) {
         includeTiming,
         topicContext
     } = params;
-    
+
     // Create the enhanced AI prompt for script generation
     const prompt = createEnhancedScriptGenerationPrompt({
         topic,
@@ -499,12 +544,12 @@ async function generateScriptWithAI(params) {
         includeTiming,
         topicContext
     });
-    
+
     // Get AI model configuration with defaults
     const modelId = config?.ai?.models?.primary?.id || process.env.BEDROCK_MODEL_ID || 'anthropic.claude-3-sonnet-20240229-v1:0';
     const temperature = config?.ai?.models?.primary?.temperature || 0.7;
     const maxTokens = config?.ai?.models?.primary?.maxTokens || 4000;
-    
+
     const requestBody = {
         anthropic_version: "bedrock-2023-05-31",
         max_tokens: maxTokens,
@@ -516,28 +561,28 @@ async function generateScriptWithAI(params) {
             }
         ]
     };
-    
+
     console.log('Sending request to Bedrock for script generation');
-    
+
     const command = new InvokeModelCommand({
         modelId: modelId,
         contentType: 'application/json',
         accept: 'application/json',
         body: JSON.stringify(requestBody)
     });
-    
+
     const response = await bedrockClient.send(command);
     const responseBody = JSON.parse(new TextDecoder().decode(response.body));
-    
+
     if (!responseBody.content || !responseBody.content[0] || !responseBody.content[0].text) {
         throw new Error('Invalid response from AI model');
     }
-    
+
     const aiResponse = responseBody.content[0].text;
-    
+
     // Parse the AI response into structured script data
     const scriptData = parseAIScriptResponse(aiResponse, params);
-    
+
     return scriptData;
 }
 
@@ -556,37 +601,60 @@ function createEnhancedScriptGenerationPrompt(params) {
         includeTiming,
         topicContext
     } = params;
-    
+
     const targetMinutes = Math.round(targetLength / 60);
     const wordsPerMinute = 140; // Industry standard: 120-150 words per minute
     const targetWords = Math.round(targetLength * (wordsPerMinute / 60));
-    
-    // Extract context information if available
+
+    // Enhanced context consumption with validation
     const contextInfo = topicContext ? {
         expandedTopics: topicContext.expandedTopics || [],
         videoStructure: topicContext.videoStructure || {},
         contentGuidance: topicContext.contentGuidance || {},
         sceneContexts: topicContext.sceneContexts || [],
-        seoContext: topicContext.seoContext || {}
+        seoContext: topicContext.seoContext || {},
+        durationGuidance: topicContext.durationGuidance || {}
     } : {};
     
-    // Determine optimal number of scenes based on duration and topic complexity
-    const recommendedScenes = topicContext?.videoStructure?.recommendedScenes || 
-        Math.max(4, Math.min(7, Math.ceil(targetLength / 75))); // 75 seconds per scene average for better pacing
+    // Validate context completeness and log warnings
+    const contextValidation = {
+        hasExpandedTopics: contextInfo.expandedTopics?.length > 0,
+        hasContentGuidance: contextInfo.contentGuidance && Object.keys(contextInfo.contentGuidance).length > 0,
+        hasSeoContext: contextInfo.seoContext?.primaryKeywords?.length > 0,
+        hasDurationGuidance: contextInfo.durationGuidance && Object.keys(contextInfo.durationGuidance).length > 0
+    };
     
+    if (!contextValidation.hasExpandedTopics) {
+        console.warn('⚠️ Missing expanded topics in context - using fallback topic analysis');
+    }
+    if (!contextValidation.hasContentGuidance) {
+        console.warn('⚠️ Missing content guidance in context - using generic guidance');
+    }
+    if (!contextValidation.hasSeoContext) {
+        console.warn('⚠️ Missing SEO context in context - using basic keywords');
+    }
+
+    // Determine optimal number of scenes based on duration and topic complexity
+    const recommendedScenes = topicContext?.videoStructure?.recommendedScenes ||
+        Math.max(4, Math.min(7, Math.ceil(targetLength / 75))); // 75 seconds per scene average for better pacing
+
     // Build context-aware prompt sections
     const expandedTopicsText = (contextInfo.expandedTopics?.length > 0)
         ? `\n\n**EXPANDED TOPIC IDEAS (use these for scene content):**\n${contextInfo.expandedTopics.map(t => `- ${t.subtopic} (${t.priority} priority, ${t.estimatedDuration}s, needs: ${t.visualNeeds})`).join('\n')}`
         : '';
-        
+
     const contentGuidanceText = (contextInfo.contentGuidance?.complexConcepts?.length > 0) || (contextInfo.contentGuidance?.quickWins?.length > 0) || (contextInfo.contentGuidance?.visualOpportunities?.length > 0)
-        ? `\n\n**CONTENT GUIDANCE:**\n- Complex concepts needing explanation: ${contextInfo.contentGuidance?.complexConcepts?.join(', ') || 'None'}\n- Quick wins for engagement: ${contextInfo.contentGuidance?.quickWins?.join(', ') || 'None'}\n- Visual opportunities: ${contextInfo.contentGuidance?.visualOpportunities?.join(', ') || 'None'}`
+        ? `\n\n**CONTENT GUIDANCE:**\n- Complex concepts needing explanation: ${contextInfo.contentGuidance?.complexConcepts?.join(', ') || 'None'}\n- Quick wins for engagement: ${contextInfo.contentGuidance?.quickWins?.join(', ') || 'None'}\n- Visual opportunities: ${contextInfo.contentGuidance?.visualOpportunities?.join(', ') || 'None'}\n- Emotional beats: ${contextInfo.contentGuidance?.emotionalBeats?.join(', ') || 'None'}\n- Call-to-action suggestions: ${contextInfo.contentGuidance?.callToActionSuggestions?.join(', ') || 'Subscribe for more'}`
         : '';
-        
+
     const seoKeywordsText = (contextInfo.seoContext?.primaryKeywords?.length > 0)
-        ? `\n\n**SEO KEYWORDS TO NATURALLY INCORPORATE:**\n- Primary: ${contextInfo.seoContext.primaryKeywords?.join(', ')}\n- Long-tail: ${contextInfo.seoContext.longTailKeywords?.join(', ')}`
+        ? `\n\n**SEO KEYWORDS TO NATURALLY INCORPORATE:**\n- Primary: ${contextInfo.seoContext.primaryKeywords?.join(', ')}\n- Long-tail: ${contextInfo.seoContext.longTailKeywords?.join(', ') || 'None'}\n- Trending: ${contextInfo.seoContext.trendingTerms?.join(', ') || 'None'}\n- Question-based: ${contextInfo.seoContext.questionKeywords?.join(', ') || 'None'}`
         : '';
-    
+
+    const durationGuidanceText = (contextInfo.durationGuidance?.recommendedDuration)
+        ? `\n\n**DURATION GUIDANCE:**\n- Target duration: ${contextInfo.durationGuidance.recommendedDuration} minutes\n- Content complexity: ${contextInfo.durationGuidance.contentComplexity || 'moderate'}\n- Pacing: ${contextInfo.durationGuidance.pacingRecommendations || 'Balanced mix of quick tips and detailed explanations'}`
+        : '';
+
     return `**ROLE:** You are an expert video scriptwriter specializing in creating engaging, high-performing video content for YouTube with proven industry expertise in ${style} content for ${targetAudience} audiences.
 
 **OBJECTIVE:** Generate a complete, production-ready video script for a ${targetMinutes}-minute video on the topic: ${topic}. The video's primary goal is to educate and engage ${targetAudience} viewers, achieving these specific outcomes:
@@ -595,7 +663,7 @@ function createEnhancedScriptGenerationPrompt(params) {
 3. Generate engagement (likes, comments, subscriptions)
 4. Provide actionable value that viewers can immediately use
 
-**TARGET AUDIENCE:** ${targetAudience} who consume content on mobile and desktop devices, seek quick actionable insights, and have varying knowledge levels about ${topic}. They value authentic, conversational content that respects their time and intelligence.${expandedTopicsText}${contentGuidanceText}${seoKeywordsText}
+**TARGET AUDIENCE:** ${targetAudience} who consume content on mobile and desktop devices, seek quick actionable insights, and have varying knowledge levels about ${topic}. They value authentic, conversational content that respects their time and intelligence.${expandedTopicsText}${contentGuidanceText}${seoKeywordsText}${durationGuidanceText}
 
 **SCRIPT STRUCTURE REQUIREMENTS (Industry Best Practices):**
 
@@ -606,7 +674,7 @@ function createEnhancedScriptGenerationPrompt(params) {
 
 **Introduction (10-20 seconds):** Briefly introduce the topic, establish credibility, and clearly state what viewers will learn. Use "you" language and make a promise you'll deliver on.
 
-**Main Content (${recommendedScenes-2} Scenes):** Break the core content into ${recommendedScenes-2} distinct scenes, each focusing on one key point. Each scene should:
+**Main Content (${recommendedScenes - 2} Scenes):** Break the core content into ${recommendedScenes - 2} distinct scenes, each focusing on one key point. Each scene should:
 - Have a clear mini-objective that builds toward the overall message
 - Flow logically from the previous scene
 - Include concrete examples, data, or stories to illustrate points
@@ -661,7 +729,7 @@ Return the script as a JSON object with this EXACT structure:
   "targetAudience": "${targetAudience}",
   "sceneStructure": {
     "totalScenes": ${recommendedScenes},
-    "averageSceneLength": "${Math.round(targetLength/recommendedScenes)} seconds",
+    "averageSceneLength": "${Math.round(targetLength / recommendedScenes)} seconds",
     "structureRationale": "Explain why this scene structure serves the topic and audience"
   },
   "scenes": [
@@ -721,6 +789,31 @@ function createScriptGenerationPrompt(params) {
 }
 
 /**
+ * Extract keywords from scene content for media search
+ */
+function extractSceneKeywords(script, keyPoints = []) {
+    const text = `${script} ${keyPoints.join(' ')}`.toLowerCase();
+    
+    // Common words to exclude
+    const stopWords = new Set(['the', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for', 'of', 'with', 'by', 'is', 'are', 'was', 'were', 'be', 'been', 'have', 'has', 'had', 'do', 'does', 'did', 'will', 'would', 'could', 'should', 'may', 'might', 'can', 'this', 'that', 'these', 'those', 'a', 'an']);
+    
+    // Extract meaningful words (3+ characters, not stop words)
+    const words = text.match(/\b[a-z]{3,}\b/g) || [];
+    const keywords = words
+        .filter(word => !stopWords.has(word))
+        .reduce((acc, word) => {
+            acc[word] = (acc[word] || 0) + 1;
+            return acc;
+        }, {});
+    
+    // Return top 5 most frequent keywords
+    return Object.entries(keywords)
+        .sort(([,a], [,b]) => b - a)
+        .slice(0, 5)
+        .map(([word]) => word);
+}
+
+/**
  * Parse AI response into structured script data
  */
 function parseAIScriptResponse(aiResponse, originalParams) {
@@ -728,36 +821,36 @@ function parseAIScriptResponse(aiResponse, originalParams) {
         // Try to extract JSON from the AI response
         const jsonMatch = aiResponse.match(/```json\s*([\s\S]*?)\s*```/);
         let scriptData;
-        
+
         if (jsonMatch) {
             scriptData = JSON.parse(jsonMatch[1]);
         } else {
             // If no JSON block found, try to parse the entire response
             scriptData = JSON.parse(aiResponse);
         }
-        
+
         // Validate and enhance the script data
         scriptData.scriptId = `script-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
         scriptData.createdAt = new Date().toISOString();
         scriptData.generatedBy = 'ai';
         scriptData.version = '1.0';
-        
+
         // Calculate actual word count
         const fullScript = scriptData.scenes?.map(scene => scene.script).join(' ') || '';
         scriptData.wordCount = fullScript.split(/\s+/).length;
-        
+
         // Validate scenes structure and calculate total duration
         if (scriptData.scenes && Array.isArray(scriptData.scenes) && scriptData.scenes.length > 0) {
             let calculatedTotalDuration = 0;
             const targetDuration = scriptData.estimatedDuration || originalParams.targetLength || 480;
             const averageSceneDuration = Math.round(targetDuration / scriptData.scenes.length);
-            
+
             scriptData.scenes = scriptData.scenes.map((scene, index) => {
                 // Calculate proper timing if not provided
                 let duration = scene.duration;
                 let startTime = scene.startTime;
                 let endTime = scene.endTime;
-                
+
                 // If duration is not provided or is 0, calculate it
                 if (!duration || duration === 0) {
                     if (startTime !== undefined && endTime !== undefined && endTime > startTime) {
@@ -767,7 +860,7 @@ function parseAIScriptResponse(aiResponse, originalParams) {
                         duration = averageSceneDuration;
                     }
                 }
-                
+
                 // If timing is not provided, calculate it based on scene order
                 if (startTime === undefined || startTime === 0) {
                     startTime = calculatedTotalDuration;
@@ -775,7 +868,7 @@ function parseAIScriptResponse(aiResponse, originalParams) {
                 if (endTime === undefined || endTime === 0) {
                     endTime = startTime + duration;
                 }
-                
+
                 const enhancedScene = {
                     sceneNumber: scene.sceneNumber || index + 1,
                     title: scene.title || `Scene ${index + 1}`,
@@ -788,16 +881,16 @@ function parseAIScriptResponse(aiResponse, originalParams) {
                     keyPoints: scene.keyPoints || [],
                     ...scene
                 };
-                
+
                 // Add to total duration calculation
                 calculatedTotalDuration += enhancedScene.duration;
-                
+
                 return enhancedScene;
             });
-            
+
             // Set totalDuration based on calculated value, ensuring it's never 0
             scriptData.totalDuration = calculatedTotalDuration > 0 ? calculatedTotalDuration : targetDuration;
-            
+
             // INDUSTRY STANDARDS VALIDATION
             const validationResult = performScriptValidation(scriptData);
             if (validationResult.overall !== 'good' && validationResult.warnings.length > 0) {
@@ -810,7 +903,7 @@ function parseAIScriptResponse(aiResponse, originalParams) {
             // If no scenes, use estimatedDuration
             scriptData.totalDuration = scriptData.estimatedDuration || originalParams.targetLength || 0;
         }
-        
+
         // Add metadata
         scriptData.metadata = {
             originalParams,
@@ -818,12 +911,12 @@ function parseAIScriptResponse(aiResponse, originalParams) {
             aiModel: config.ai?.models?.primary?.id || 'claude-3-sonnet',
             promptVersion: '1.0'
         };
-        
+
         return scriptData;
-        
+
     } catch (error) {
         console.error('Error parsing AI script response:', error);
-        
+
         // Fallback: create a basic script structure
         return createFallbackScript(aiResponse, originalParams);
     }
@@ -835,18 +928,18 @@ function parseAIScriptResponse(aiResponse, originalParams) {
 function createFallbackScript(aiResponse, originalParams) {
     const { topic, title, targetLength } = originalParams;
     const targetDuration = targetLength || 480; // Default to 8 minutes
-    
+
     // Create multiple scenes from the AI response for better structure
     const words = aiResponse.split(/\s+/);
     const wordsPerScene = Math.ceil(words.length / 4); // Aim for 4 scenes
     const sceneDuration = Math.round(targetDuration / 4);
-    
+
     const scenes = [];
     for (let i = 0; i < 4; i++) {
         const startWord = i * wordsPerScene;
         const endWord = Math.min((i + 1) * wordsPerScene, words.length);
         const sceneText = words.slice(startWord, endWord).join(' ');
-        
+
         if (sceneText.trim()) {
             scenes.push({
                 sceneNumber: i + 1,
@@ -865,7 +958,7 @@ function createFallbackScript(aiResponse, originalParams) {
             });
         }
     }
-    
+
     return {
         scriptId: `script-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
         title: title || `Understanding ${topic}`,
@@ -907,13 +1000,13 @@ async function storeScript(scriptData, projectId = null) {
         ...scriptData,
         ttl: Math.floor(Date.now() / 1000) + (90 * 24 * 60 * 60) // 90 days TTL
     };
-    
+
     // Store in DynamoDB
     await docClient.send(new PutCommand({
         TableName: SCRIPTS_TABLE,
         Item: item
     }));
-    
+
     // Also save to S3 in organized project structure
     if (projectId && process.env.S3_BUCKET_NAME) {
         try {
@@ -930,10 +1023,10 @@ async function storeScript(scriptData, projectId = null) {
                     createdAt: scriptData.createdAt
                 }
             };
-            
+
             // Generate organized S3 paths
             const s3Paths = generateS3Paths(projectId, scriptData.title || 'Generated Video');
-            
+
             await s3Client.send(new PutObjectCommand({
                 Bucket: process.env.S3_BUCKET_NAME,
                 Key: s3Paths.script.json,
@@ -946,20 +1039,20 @@ async function storeScript(scriptData, projectId = null) {
                     estimatedDuration: scriptData.estimatedDuration?.toString() || '0'
                 }
             }));
-            
+
             console.log(`Script saved to S3: ${s3Key}`);
             scriptData.s3Key = s3Key;
             scriptData.s3Url = `s3://${process.env.S3_BUCKET_NAME}/${s3Key}`;
-            
+
             // Also generate and save YouTube metadata
             await generateAndSaveMetadata(scriptData, projectId);
-            
+
         } catch (error) {
             console.error('Error saving script to S3:', error);
             // Don't fail the whole operation if S3 save fails
         }
     }
-    
+
     console.log(`Script stored with ID: ${scriptData.scriptId}`);
     return scriptData;
 }
@@ -970,13 +1063,13 @@ async function storeScript(scriptData, projectId = null) {
 async function generateAndSaveMetadata(scriptData, projectId) {
     try {
         console.log(`Generating YouTube metadata for project: ${projectId}`);
-        
+
         // Generate YouTube-optimized metadata using AI
         const metadata = await generateYouTubeMetadata(scriptData);
-        
+
         // Save metadata to S3 using organized structure
         const s3Paths = generateS3Paths(projectId, scriptData.title || 'Generated Video');
-        
+
         await s3Client.send(new PutObjectCommand({
             Bucket: process.env.S3_BUCKET_NAME,
             Key: s3Paths.metadata.youtube,
@@ -988,9 +1081,9 @@ async function generateAndSaveMetadata(scriptData, projectId) {
                 generatedAt: new Date().toISOString()
             }
         }));
-        
+
         console.log(`YouTube metadata saved to S3: ${metadataKey}`);
-        
+
         // Also save project summary
         const projectSummary = {
             projectId: projectId,
@@ -1011,7 +1104,7 @@ async function generateAndSaveMetadata(scriptData, projectId) {
             },
             status: 'script_generated'
         };
-        
+
         await s3Client.send(new PutObjectCommand({
             Bucket: process.env.S3_BUCKET_NAME,
             Key: s3Paths.metadata.project,
@@ -1022,9 +1115,9 @@ async function generateAndSaveMetadata(scriptData, projectId) {
                 createdAt: new Date().toISOString()
             }
         }));
-        
+
         console.log(`Project summary saved to S3: ${summaryKey}`);
-        
+
     } catch (error) {
         console.error('Error generating/saving metadata:', error);
         // Don't fail the whole operation if metadata generation fails
@@ -1037,7 +1130,7 @@ async function generateAndSaveMetadata(scriptData, projectId) {
 async function generateYouTubeMetadata(scriptData) {
     try {
         // Extract scene timestamps for description
-        const sceneTimestamps = scriptData.scenes ? 
+        const sceneTimestamps = scriptData.scenes ?
             scriptData.scenes.map((scene, index) => ({
                 time: `${Math.floor(index * (scriptData.estimatedDuration / scriptData.scenes.length) / 60)}:${String(Math.floor(index * (scriptData.estimatedDuration / scriptData.scenes.length) % 60)).padStart(2, '0')}`,
                 title: scene.title || `Section ${index + 1}`,
@@ -1141,30 +1234,30 @@ Respond in JSON format:
         const response = await bedrockClient.send(command);
         const result = JSON.parse(new TextDecoder().decode(response.body));
         const metadata = JSON.parse(result.content[0].text);
-        
+
         // Add additional metadata
         metadata.generatedAt = new Date().toISOString();
         metadata.scriptId = scriptData.scriptId;
         metadata.originalTopic = scriptData.topic;
         metadata.estimatedDuration = scriptData.estimatedDuration;
         metadata.wordCount = scriptData.wordCount;
-        
+
         return metadata;
-        
+
     } catch (error) {
         console.error('Error generating YouTube metadata:', error);
-        
+
         // Comprehensive fallback metadata if AI generation fails
         const topicKeywords = scriptData.topic.toLowerCase().split(' ');
         const duration = Math.floor(scriptData.estimatedDuration / 60);
-        
+
         return {
             titles: [
                 `${scriptData.topic} - Complete Beginner's Guide 2025`,
                 `How to ${scriptData.topic}: Step-by-Step Tutorial`,
                 `${scriptData.topic} Explained Simply (${duration} Min Guide)`
             ],
-            description: `🎯 Master ${scriptData.topic} with this comprehensive beginner's guide!\n\nIn this ${duration}-minute tutorial, you'll discover everything you need to know about ${scriptData.topic}. Perfect for beginners who want to get started quickly and effectively.\n\n📚 What You'll Learn:\n✅ Essential ${scriptData.topic} concepts\n✅ Step-by-step practical guidance\n✅ Common mistakes to avoid\n✅ Pro tips for success\n\n⏰ Timestamps:\n0:00 Introduction\n1:30 Getting Started\n${Math.floor(duration/2)}:00 Advanced Tips\n${duration-1}:30 Conclusion & Next Steps\n\n🔔 SUBSCRIBE for more beginner-friendly tutorials!\n👍 LIKE if this video helped you!\n💬 COMMENT your biggest ${scriptData.topic} question below!\n📤 SHARE with someone who needs this!\n\n🔗 Related Videos:\n• ${scriptData.topic} Mistakes to Avoid\n• Advanced ${scriptData.topic} Strategies\n• ${scriptData.topic} Tools & Resources\n\n📱 Follow us:\n• Instagram: @YourChannel\n• Twitter: @YourChannel\n• Website: yourwebsite.com\n\n#${topicKeywords.join('').replace(/\s+/g, '')} #Tutorial #Beginners #Education #HowTo #Guide #Tips #Learn #2025`,
+            description: `🎯 Master ${scriptData.topic} with this comprehensive beginner's guide!\n\nIn this ${duration}-minute tutorial, you'll discover everything you need to know about ${scriptData.topic}. Perfect for beginners who want to get started quickly and effectively.\n\n📚 What You'll Learn:\n✅ Essential ${scriptData.topic} concepts\n✅ Step-by-step practical guidance\n✅ Common mistakes to avoid\n✅ Pro tips for success\n\n⏰ Timestamps:\n0:00 Introduction\n1:30 Getting Started\n${Math.floor(duration / 2)}:00 Advanced Tips\n${duration - 1}:30 Conclusion & Next Steps\n\n🔔 SUBSCRIBE for more beginner-friendly tutorials!\n👍 LIKE if this video helped you!\n💬 COMMENT your biggest ${scriptData.topic} question below!\n📤 SHARE with someone who needs this!\n\n🔗 Related Videos:\n• ${scriptData.topic} Mistakes to Avoid\n• Advanced ${scriptData.topic} Strategies\n• ${scriptData.topic} Tools & Resources\n\n📱 Follow us:\n• Instagram: @YourChannel\n• Twitter: @YourChannel\n• Website: yourwebsite.com\n\n#${topicKeywords.join('').replace(/\s+/g, '')} #Tutorial #Beginners #Education #HowTo #Guide #Tips #Learn #2025`,
             tags: [
                 ...topicKeywords,
                 `${scriptData.topic.toLowerCase()} tutorial`,
@@ -1195,10 +1288,10 @@ Respond in JSON format:
                 `Before/After split with "${scriptData.topic} MASTERY" text overlay`
             ],
             timestamps: [
-                {"time": "0:00", "title": "Introduction", "description": `Welcome to ${scriptData.topic} guide`},
-                {"time": "1:30", "title": "Getting Started", "description": "Basic concepts and setup"},
-                {"time": `${Math.floor(duration/2)}:00`, "title": "Advanced Tips", "description": "Pro strategies and techniques"},
-                {"time": `${duration-1}:30`, "title": "Conclusion", "description": "Summary and next steps"}
+                { "time": "0:00", "title": "Introduction", "description": `Welcome to ${scriptData.topic} guide` },
+                { "time": "1:30", "title": "Getting Started", "description": "Basic concepts and setup" },
+                { "time": `${Math.floor(duration / 2)}:00`, "title": "Advanced Tips", "description": "Pro strategies and techniques" },
+                { "time": `${duration - 1}:30`, "title": "Conclusion", "description": "Summary and next steps" }
             ],
             callToActions: {
                 subscribe: `🔔 Subscribe for more ${scriptData.topic.toLowerCase()} content and beginner tutorials!`,
@@ -1240,7 +1333,7 @@ async function getTopicData(topicId) {
                 SK: 'METADATA'
             }
         }));
-        
+
         return result.Item;
     } catch (error) {
         console.error('Error getting topic data:', error);
@@ -1259,7 +1352,7 @@ async function getScripts(queryParams) {
         sortBy = 'createdAt',
         sortOrder = 'desc'
     } = queryParams;
-    
+
     try {
         // For now, implement a simple scan
         // In production, you'd want to use GSI for better performance
@@ -1271,31 +1364,31 @@ async function getScripts(queryParams) {
             },
             Limit: parseInt(limit)
         };
-        
+
         // Add additional filters
         if (topic) {
             params.FilterExpression += ' AND contains(topic, :topic)';
             params.ExpressionAttributeValues[':topic'] = topic;
         }
-        
+
         if (style) {
             params.FilterExpression += ' AND #style = :style';
             params.ExpressionAttributeNames = { '#style': 'style' };
             params.ExpressionAttributeValues[':style'] = style;
         }
-        
+
         const result = await docClient.send(new ScanCommand(params));
         let scripts = result.Items || [];
-        
+
         // Sort results
         scripts.sort((a, b) => {
             const aVal = a[sortBy] || '';
             const bVal = b[sortBy] || '';
-            return sortOrder === 'desc' ? 
-                (bVal > aVal ? 1 : -1) : 
+            return sortOrder === 'desc' ?
+                (bVal > aVal ? 1 : -1) :
                 (aVal > bVal ? 1 : -1);
         });
-        
+
         return createResponse(200, {
             scripts: scripts.map(script => ({
                 scriptId: script.scriptId,
@@ -1311,12 +1404,12 @@ async function getScripts(queryParams) {
             filters: { topic, style },
             sorting: { sortBy, sortOrder }
         });
-        
+
     } catch (error) {
         console.error('Error getting scripts:', error);
-        return createResponse(500, { 
+        return createResponse(500, {
             error: 'Failed to get scripts',
-            message: error.message 
+            message: error.message
         });
     }
 }
@@ -1333,20 +1426,20 @@ async function getScript(scriptId) {
                 SK: 'METADATA'
             }
         }));
-        
+
         if (!result.Item) {
             return createResponse(404, { error: 'Script not found' });
         }
-        
+
         return createResponse(200, {
             script: result.Item
         });
-        
+
     } catch (error) {
         console.error('Error getting script:', error);
-        return createResponse(500, { 
+        return createResponse(500, {
             error: 'Failed to get script',
-            message: error.message 
+            message: error.message
         });
     }
 }
@@ -1356,41 +1449,41 @@ async function getScript(scriptId) {
  */
 async function optimizeScript(requestBody) {
     const { scriptId, optimizations = [] } = requestBody;
-    
+
     try {
         // Get existing script
         const scriptResult = await getScript(scriptId);
         if (scriptResult.statusCode !== 200) {
             return scriptResult;
         }
-        
+
         const script = scriptResult.body ? JSON.parse(scriptResult.body).script : null;
         if (!script) {
             return createResponse(404, { error: 'Script not found' });
         }
-        
+
         // Apply optimizations using AI
         const optimizedScript = await optimizeScriptWithAI(script, optimizations);
-        
+
         // Store optimized version
         optimizedScript.scriptId = `${scriptId}-optimized-${Date.now()}`;
         optimizedScript.parentScriptId = scriptId;
         optimizedScript.optimizations = optimizations;
-        
+
         const storedScript = await storeScript(optimizedScript);
-        
+
         return createResponse(200, {
             message: 'Script optimized successfully',
             originalScript: script,
             optimizedScript: storedScript,
             optimizations: optimizations
         });
-        
+
     } catch (error) {
         console.error('Error optimizing script:', error);
-        return createResponse(500, { 
+        return createResponse(500, {
             error: 'Failed to optimize script',
-            message: error.message 
+            message: error.message
         });
     }
 }
@@ -1400,10 +1493,10 @@ async function optimizeScript(requestBody) {
  */
 async function validateScript(requestBody) {
     const { scriptId, script: scriptData } = requestBody;
-    
+
     try {
         let script = scriptData;
-        
+
         // If scriptId provided, get script from database
         if (scriptId && !script) {
             const scriptResult = await getScript(scriptId);
@@ -1412,14 +1505,14 @@ async function validateScript(requestBody) {
             }
             script = JSON.parse(scriptResult.body).script;
         }
-        
+
         if (!script) {
             return createResponse(400, { error: 'Script data or scriptId required' });
         }
-        
+
         // Perform validation checks
         const validation = performScriptValidation(script);
-        
+
         return createResponse(200, {
             validation,
             script: {
@@ -1429,12 +1522,12 @@ async function validateScript(requestBody) {
                 estimatedDuration: script.estimatedDuration
             }
         });
-        
+
     } catch (error) {
         console.error('Error validating script:', error);
-        return createResponse(500, { 
+        return createResponse(500, {
             error: 'Failed to validate script',
-            message: error.message 
+            message: error.message
         });
     }
 }
@@ -1450,11 +1543,11 @@ function performScriptValidation(script) {
         recommendations: [],
         warnings: []
     };
-    
+
     // Check 1: Word count appropriateness
     const targetWords = (script.estimatedDuration / 60) * 150; // 150 words per minute
     const wordCountRatio = script.wordCount / targetWords;
-    
+
     if (wordCountRatio >= 0.8 && wordCountRatio <= 1.2) {
         validation.checks.wordCount = { status: 'pass', score: 20 };
     } else if (wordCountRatio >= 0.6 && wordCountRatio <= 1.4) {
@@ -1464,7 +1557,7 @@ function performScriptValidation(script) {
         validation.checks.wordCount = { status: 'fail', score: 0 };
         validation.warnings.push('Word count significantly mismatched with target duration');
     }
-    
+
     // Check 2: Scene structure
     const sceneCount = script.scenes?.length || 0;
     if (sceneCount >= 3 && sceneCount <= 8) {
@@ -1475,7 +1568,7 @@ function performScriptValidation(script) {
         validation.checks.sceneStructure = { status: 'fail', score: 5 };
         validation.recommendations.push('Consider restructuring into 3-8 main scenes');
     }
-    
+
     // Check 3: Hook effectiveness
     const hook = script.hook || '';
     if (hook.length > 20 && (hook.includes('?') || hook.includes('!'))) {
@@ -1487,7 +1580,7 @@ function performScriptValidation(script) {
         validation.checks.hook = { status: 'fail', score: 5 };
         validation.recommendations.push('Hook needs to be more compelling and longer');
     }
-    
+
     // Check 4: Call to action
     const cta = script.callToAction || '';
     if (cta.length > 10) {
@@ -1496,9 +1589,9 @@ function performScriptValidation(script) {
         validation.checks.callToAction = { status: 'fail', score: 0 };
         validation.recommendations.push('Add a clear call to action');
     }
-    
+
     // Check 5: Visual cues
-    const hasVisualCues = script.scenes?.some(scene => 
+    const hasVisualCues = script.scenes?.some(scene =>
         scene.visualCues && scene.visualCues.length > 0
     );
     if (hasVisualCues) {
@@ -1507,7 +1600,7 @@ function performScriptValidation(script) {
         validation.checks.visualCues = { status: 'warning', score: 5 };
         validation.recommendations.push('Add visual cues to improve production quality');
     }
-    
+
     // Check 6: Keywords and SEO
     const hasKeywords = script.keywords && script.keywords.length >= 3;
     if (hasKeywords) {
@@ -1516,11 +1609,11 @@ function performScriptValidation(script) {
         validation.checks.seo = { status: 'warning', score: 5 };
         validation.recommendations.push('Add more keywords for better SEO');
     }
-    
+
     // Calculate overall score
     validation.score = Object.values(validation.checks)
         .reduce((sum, check) => sum + check.score, 0);
-    
+
     // Determine overall status
     if (validation.score >= 70) {
         validation.overall = 'excellent';
@@ -1531,7 +1624,7 @@ function performScriptValidation(script) {
     } else {
         validation.overall = 'poor';
     }
-    
+
     return validation;
 }
 

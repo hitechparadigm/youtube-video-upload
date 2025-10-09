@@ -620,8 +620,12 @@ JSON format:
     "semanticKeywords": ["content automation", "creative tools", "digital workflow", "marketing technology", "productivity software"],
     "questionKeywords": ["what are the best ${baseTopic}", "how to choose ${baseTopic}", "why use ${baseTopic}", "when to use ${baseTopic}"]
   },
-  "durationGuidance": {
-    "recommendedDuration": ${Math.floor(videoDuration/60)},
+  "videoStructure": {
+    "recommendedScenes": ${Math.ceil(videoDuration / 80)},
+    "hookDuration": 15,
+    "mainContentDuration": ${Math.floor(videoDuration * 0.8)},
+    "conclusionDuration": ${Math.floor(videoDuration * 0.15)},
+    "totalDuration": ${videoDuration},
     "contentComplexity": "moderate",
     "attentionSpanConsiderations": "Use engagement hooks every 45-60 seconds",
     "pacingRecommendations": "Mix quick tips with detailed explanations"
@@ -786,8 +790,12 @@ const generateFallbackContext = ({ baseTopic, targetAudience, videoDuration, vid
         `which ${baseTopic} is best`
       ]
     },
-    durationGuidance: {
-      recommendedDuration: Math.floor(videoDuration/60),
+    videoStructure: {
+      recommendedScenes: Math.ceil(videoDuration / 80),
+      hookDuration: 15,
+      mainContentDuration: Math.floor(videoDuration * 0.8),
+      conclusionDuration: Math.floor(videoDuration * 0.15),
+      totalDuration: videoDuration,
       contentComplexity: "moderate",
       attentionSpanConsiderations: "Use engagement hooks every 45-60 seconds",
       pacingRecommendations: "Mix quick tips with detailed explanations"
