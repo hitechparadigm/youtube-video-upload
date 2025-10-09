@@ -4,18 +4,18 @@
  * Updated to use new direct video processing implementation
  */
 
-// Import the updated handler from index.js
-const { handler: indexHandler } = require('./index');
+// Import the updated handler from index.js (ES module syntax)
+import { handler as indexHandler } from './index.js';
 
 /**
  * Lambda handler for video assembly requests
  * Delegates to the updated implementation in index.js
  */
-exports.handler = async (event) => {
+export const handler = async (event, context) => {
     console.log('Video Assembly Handler (handler.js) delegating to index.js implementation');
     
     // Delegate to the updated implementation in index.js
-    return await indexHandler(event);
+    return await indexHandler(event, context);
 };
 
 // All functionality is now handled by index.js

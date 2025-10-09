@@ -58,12 +58,12 @@
  * - Thumbnail generation automation
  */
 
-const { YouTubeService } = require('./youtube-service');
+import { YouTubeService } from './youtube-service.js';
 
 /**
  * Lambda handler for YouTube publishing requests
  */
-exports.handler = async (event) => {
+export const handler = async (event, context) => {
     console.log('YouTube Publisher Handler invoked:', JSON.stringify(event, null, 2));
 
     try {
@@ -236,7 +236,7 @@ function createApiResponse(statusCode, body) {
 /**
  * Health check endpoint
  */
-exports.healthCheck = async () => {
+export const healthCheck = async () => {
     return {
         statusCode: 200,
         body: JSON.stringify({

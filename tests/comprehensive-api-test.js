@@ -199,12 +199,16 @@ async function testAllEndpoints() {
             },
             body: JSON.stringify({
                 projectId: testProjectId,
-                scriptContent: 'This is a test script for video assembly.',
-                audioUrl: 'https://example.com/test-audio.mp3',
-                mediaAssets: [{
-                    type: 'image',
-                    url: 'https://example.com/test-image.jpg',
-                    duration: 5
+                scenes: [{
+                    sceneNumber: 1,
+                    title: 'Test Scene',
+                    content: 'This is a test script for video assembly.',
+                    duration: 10,
+                    mediaAssets: [{
+                        type: 'image',
+                        url: 'https://example.com/test-image.jpg',
+                        duration: 5
+                    }]
                 }]
             })
         });

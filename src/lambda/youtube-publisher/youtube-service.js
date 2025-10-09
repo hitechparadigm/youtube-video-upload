@@ -3,13 +3,13 @@
  * Handles video upload and metadata optimization for YouTube
  */
 
-const { S3Client, GetObjectCommand } = require('@aws-sdk/client-s3');
-const { SecretsManagerClient, GetSecretValueCommand } = require('@aws-sdk/client-secrets-manager');
-const { DynamoDBDocumentClient, PutCommand, UpdateCommand } = require('@aws-sdk/lib-dynamodb');
-const { DynamoDBClient } = require('@aws-sdk/client-dynamodb');
-const { google } = require('googleapis');
-const fs = require('fs');
-const path = require('path');
+import { S3Client, GetObjectCommand } from '@aws-sdk/client-s3';
+import { SecretsManagerClient, GetSecretValueCommand } from '@aws-sdk/client-secrets-manager';
+import { DynamoDBDocumentClient, PutCommand, UpdateCommand } from '@aws-sdk/lib-dynamodb';
+import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
+import { google } from 'googleapis';
+import fs from 'fs';
+import path from 'path';
 
 class YouTubeService {
     constructor() {
@@ -497,4 +497,4 @@ class YouTubeService {
     }
 }
 
-module.exports = { YouTubeService };
+export { YouTubeService };

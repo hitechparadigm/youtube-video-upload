@@ -3,10 +3,10 @@
  * Combines media assets with audio using FFmpeg processing
  */
 
-const { S3Client, GetObjectCommand, PutObjectCommand } = require('@aws-sdk/client-s3');
-const { ECSClient, RunTaskCommand } = require('@aws-sdk/client-ecs');
-const { DynamoDBDocumentClient, PutCommand, UpdateCommand } = require('@aws-sdk/lib-dynamodb');
-const { DynamoDBClient } = require('@aws-sdk/client-dynamodb');
+import { S3Client, GetObjectCommand, PutObjectCommand } from '@aws-sdk/client-s3';
+import { ECSClient, RunTaskCommand } from '@aws-sdk/client-ecs';
+import { DynamoDBDocumentClient, PutCommand, UpdateCommand } from '@aws-sdk/lib-dynamodb';
+import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
 
 class VideoProcessor {
     constructor() {
@@ -414,4 +414,4 @@ class VideoProcessor {
     }
 }
 
-module.exports = { VideoProcessor };
+export { VideoProcessor };
