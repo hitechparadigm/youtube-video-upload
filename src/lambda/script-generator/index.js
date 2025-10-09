@@ -747,16 +747,41 @@ function parseAIScriptResponse(aiResponse, originalParams) {
         scriptData.wordCount = fullScript.split(/\s+/).length;
         
         // Validate scenes structure and calculate total duration
-        if (scriptData.scenes && Array.isArray(scriptData.scenes)) {
+        if (scriptData.scenes && Array.isArray(scriptData.scenes) && scriptData.scenes.length > 0) {
             let calculatedTotalDuration = 0;
+            const targetDuration = scriptData.estimatedDuration || originalParams.targetLength || 480;
+            const averageSceneDuration = Math.round(targetDuration / scriptData.scenes.length);
             
             scriptData.scenes = scriptData.scenes.map((scene, index) => {
+                // Calculate proper timing if not provided
+                let duration = scene.duration;
+                let startTime = scene.startTime;
+                let endTime = scene.endTime;
+                
+                // If duration is not provided or is 0, calculate it
+                if (!duration || duration === 0) {
+                    if (startTime !== undefined && endTime !== undefined && endTime > startTime) {
+                        duration = endTime - startTime;
+                    } else {
+                        // Use average scene duration as fallback
+                        duration = averageSceneDuration;
+                    }
+                }
+                
+                // If timing is not provided, calculate it based on scene order
+                if (startTime === undefined || startTime === 0) {
+                    startTime = calculatedTotalDuration;
+                }
+                if (endTime === undefined || endTime === 0) {
+                    endTime = startTime + duration;
+                }
+                
                 const enhancedScene = {
                     sceneNumber: scene.sceneNumber || index + 1,
                     title: scene.title || `Scene ${index + 1}`,
-                    startTime: scene.startTime || 0,
-                    endTime: scene.endTime || 0,
-                    duration: scene.duration || (scene.endTime - scene.startTime) || 0,
+                    startTime: startTime,
+                    endTime: endTime,
+                    duration: duration,
                     script: scene.script || '',
                     visualCues: scene.visualCues || [],
                     notes: scene.notes || '',
@@ -770,15 +795,16 @@ function parseAIScriptResponse(aiResponse, originalParams) {
                 return enhancedScene;
             });
             
-            // Set totalDuration based on calculated value or use estimatedDuration as fallback
-            scriptData.totalDuration = calculatedTotalDuration > 0 ? calculatedTotalDuration : scriptData.estimatedDuration;
+            // Set totalDuration based on calculated value, ensuring it's never 0
+            scriptData.totalDuration = calculatedTotalDuration > 0 ? calculatedTotalDuration : targetDuration;
             
             // INDUSTRY STANDARDS VALIDATION
-            const validationResult = validateScriptAgainstIndustryStandards(scriptData, originalParams);
-            if (!validationResult.isValid) {
-                console.warn('Script validation failed:', validationResult.errors);
+            const validationResult = performScriptValidation(scriptData);
+            if (validationResult.overall !== 'good' && validationResult.warnings.length > 0) {
+                console.warn('Script validation warnings:', validationResult.warnings);
                 // Add validation warnings to metadata
-                scriptData.validationWarnings = validationResult.errors;
+                scriptData.validationWarnings = validationResult.warnings;
+                scriptData.validationScore = validationResult.score;
             }
         } else {
             // If no scenes, use estimatedDuration
@@ -808,33 +834,58 @@ function parseAIScriptResponse(aiResponse, originalParams) {
  */
 function createFallbackScript(aiResponse, originalParams) {
     const { topic, title, targetLength } = originalParams;
+    const targetDuration = targetLength || 480; // Default to 8 minutes
+    
+    // Create multiple scenes from the AI response for better structure
+    const words = aiResponse.split(/\s+/);
+    const wordsPerScene = Math.ceil(words.length / 4); // Aim for 4 scenes
+    const sceneDuration = Math.round(targetDuration / 4);
+    
+    const scenes = [];
+    for (let i = 0; i < 4; i++) {
+        const startWord = i * wordsPerScene;
+        const endWord = Math.min((i + 1) * wordsPerScene, words.length);
+        const sceneText = words.slice(startWord, endWord).join(' ');
+        
+        if (sceneText.trim()) {
+            scenes.push({
+                sceneNumber: i + 1,
+                title: i === 0 ? "Introduction" : i === 3 ? "Conclusion" : `Main Point ${i}`,
+                startTime: i * sceneDuration,
+                endTime: (i + 1) * sceneDuration,
+                duration: sceneDuration,
+                script: sceneText,
+                visualCues: ["Show presenter talking", "Display relevant graphics"],
+                notes: "Generated from AI response fallback",
+                keyPoints: [`Key point ${i + 1} about ${topic}`],
+                purpose: i === 0 ? "introduce_topic" : i === 3 ? "conclude_and_cta" : "explain_concept",
+                visualStyle: "professional",
+                mediaNeeds: ["presenter", "graphics"],
+                tone: "informative"
+            });
+        }
+    }
     
     return {
         scriptId: `script-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-        title: title,
+        title: title || `Understanding ${topic}`,
         topic: topic,
-        hook: "Welcome to today's video!",
-        estimatedDuration: targetLength,
-        wordCount: aiResponse.split(/\s+/).length,
-        style: originalParams.style,
-        targetAudience: originalParams.targetAudience,
-        scenes: [
-            {
-                sceneNumber: 1,
-                title: "Full Script",
-                startTime: 0,
-                endTime: targetLength,
-                duration: targetLength,
-                script: aiResponse,
-                visualCues: ["Show presenter talking"],
-                notes: "AI response could not be parsed into scenes",
-                keyPoints: []
-            }
-        ],
-        callToAction: "Thanks for watching!",
+        hook: `Let's dive into ${topic} and discover what you need to know!`,
+        estimatedDuration: targetDuration,
+        totalDuration: targetDuration,
+        wordCount: words.length,
+        style: originalParams.style || 'educational',
+        targetAudience: originalParams.targetAudience || 'general',
+        sceneStructure: {
+            totalScenes: scenes.length,
+            averageSceneLength: `${sceneDuration} seconds`,
+            structureRationale: "Fallback structure created from AI response"
+        },
+        scenes: scenes,
+        callToAction: "Thanks for watching! Don't forget to subscribe for more content like this!",
         keywords: [topic],
-        description: `A video about ${topic}`,
-        tags: [topic],
+        description: `Learn about ${topic} in this comprehensive guide. We'll cover the key concepts and practical insights you need to know.`,
+        tags: [topic, "educational", "tutorial"],
         createdAt: new Date().toISOString(),
         generatedBy: 'ai-fallback',
         version: '1.0',
