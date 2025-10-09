@@ -38,11 +38,11 @@ import {
   storeContext, 
   retrieveContext, 
   validateContext 
-} from '../../shared/context-manager.js';
+} from '/opt/nodejs/context-manager.js';
 import { 
   invokeLambda,
   executeWithRetry 
-} from '../../shared/aws-service-manager.js';
+} from '/opt/nodejs/aws-service-manager.js';
 import { 
   wrapHandler, 
   AppError, 
@@ -50,7 +50,7 @@ import {
   validateRequiredParams,
   withTimeout,
   monitorPerformance 
-} from '../../shared/error-handler.js';
+} from '/opt/nodejs/error-handler.js';
 
 // Configuration
 const LAMBDA_FUNCTIONS = {
@@ -592,3 +592,4 @@ async function stopExecution(requestBody, context) {
 // Export handler with shared error handling wrapper
 export const lambdaHandler = wrapHandler(handler);
 export { lambdaHandler as handler };
+

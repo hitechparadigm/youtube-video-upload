@@ -38,7 +38,7 @@ import {
   retrieveContext, 
   createProject, 
   validateContext 
-} from '../../shared/context-manager.js';
+} from '/opt/nodejs/context-manager.js';
 import { 
   queryDynamoDB, 
   putDynamoDBItem, 
@@ -46,7 +46,7 @@ import {
   deleteDynamoDBItem, 
   scanDynamoDB,
   executeWithRetry 
-} from '../../shared/aws-service-manager.js';
+} from '/opt/nodejs/aws-service-manager.js';
 import { 
   wrapHandler, 
   AppError, 
@@ -54,7 +54,7 @@ import {
   validateRequiredParams,
   withTimeout,
   monitorPerformance 
-} from '../../shared/error-handler.js';
+} from '/opt/nodejs/error-handler.js';
 
 // Use Node.js built-in crypto.randomUUID instead of uuid package
 const uuidv4 = randomUUID;
@@ -200,10 +200,9 @@ const getTopics = async (queryParams) => {
  * Create new topic using shared utilities
  */
 const createTopic = async (requestBody) => {
+  const topicId = uuidv4();
   return await monitorPerformance(async () => {
     validateRequiredParams(requestBody, ['topic'], 'topic creation');
-
-    const topicId = uuidv4();
     const topic = {
       topicId,
       topic: requestBody.topic.trim(),
@@ -823,3 +822,5 @@ const extractKeywords = (topicText) => {
 // Export handler with shared error handling wrapper
 export const lambdaHandler = wrapHandler(handler);
 export { lambdaHandler as handler };
+
+

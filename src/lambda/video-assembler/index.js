@@ -37,13 +37,13 @@ import {
   storeContext, 
   retrieveContext, 
   validateContext 
-} from '../../shared/context-manager.js';
+} from '/opt/nodejs/context-manager.js';
 import { 
   uploadToS3,
   downloadFromS3,
   listS3Objects,
   executeWithRetry 
-} from '../../shared/aws-service-manager.js';
+} from '/opt/nodejs/aws-service-manager.js';
 import { 
   wrapHandler, 
   AppError, 
@@ -51,7 +51,7 @@ import {
   validateRequiredParams,
   withTimeout,
   monitorPerformance 
-} from '../../shared/error-handler.js';
+} from '/opt/nodejs/error-handler.js';
 
 // Configuration
 const VIDEOS_TABLE = process.env.VIDEOS_TABLE_NAME || 'automated-video-pipeline-production';
@@ -504,3 +504,4 @@ async function assembleVideo(requestBody, context) {
 // Export handler with shared error handling wrapper
 export const lambdaHandler = wrapHandler(handler);
 export { lambdaHandler as handler };
+

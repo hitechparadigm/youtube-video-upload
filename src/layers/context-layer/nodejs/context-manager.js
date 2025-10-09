@@ -1,574 +1,285 @@
 /**
- * Context Management System for AI Agent Communication
- * Handles context storage, validation, and transfer between agents
+ * 🔄 CONTEXT MANAGER UTILITY
+ * 
+ * Shared utility for context validation, storage, and retrieval across all Lambda functions.
+ * Provides consistent context handling patterns for the automated video pipeline.
+ * 
+ * KEY FEATURES:
+ * - Schema validation for all context types (topic, scene, media, audio, video)
+ * - Context compression and caching for performance optimization
+ * - Error handling and retry logic for context operations
+ * - Consistent storage patterns across S3 and DynamoDB
  */
 
-const { DynamoDBClient } = require('@aws-sdk/client-dynamodb');
-const { DynamoDBDocumentClient, PutCommand, GetCommand, UpdateCommand, DeleteCommand, QueryCommand } = require('@aws-sdk/lib-dynamodb');
-const { S3Client, PutObjectCommand, GetObjectCommand } = require('@aws-sdk/client-s3');
-const { gzipSync, gunzipSync } = require('zlib');
+import { S3Client, PutObjectCommand, GetObjectCommand } from '@aws-sdk/client-s3';
+import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
+import { DynamoDBDocumentClient, PutCommand, GetCommand } from '@aws-sdk/lib-dynamodb';
+import { gzipSync, gunzipSync } from 'zlib';
 
 // Initialize AWS clients
-let dynamoClient = null;
-let docClient = null;
-let s3Client = null;
+const s3Client = new S3Client({ region: process.env.AWS_REGION || 'us-east-1' });
+const dynamoClient = new DynamoDBClient({ region: process.env.AWS_REGION || 'us-east-1' });
+const docClient = DynamoDBDocumentClient.from(dynamoClient);
 
-// Configuration
-let CONTEXT_TABLE = null;
-let S3_BUCKET = null;
-
-/**
- * Initialize the context manager
- */
-function initializeContextManager() {
-    if (dynamoClient) return; // Already initialized
-    
-    const region = process.env.AWS_REGION || 'us-east-1';
-    dynamoClient = new DynamoDBClient({ region });
-    docClient = DynamoDBDocumentClient.from(dynamoClient, {
-        marshallOptions: {
-            removeUndefinedValues: true
-        }
-    });
-    s3Client = new S3Client({ region });
-    
-    CONTEXT_TABLE = process.env.CONTEXT_TABLE_NAME || 'automated-video-pipeline-context';
-    S3_BUCKET = process.env.S3_BUCKET_NAME || 'automated-video-pipeline-786673323159-us-east-1';
-    
-    console.log('Context Manager initialized');
-}
-
-/**
- * Context validation schemas for different agent types
- */
+// Context validation schemas
 const CONTEXT_SCHEMAS = {
-    topic: {
-        required: ['mainTopic', 'expandedTopics', 'videoStructure', 'seoContext'],
-        optional: ['contentGuidance', 'sceneContexts'],
-        validation: {
-            expandedTopics: (value) => Array.isArray(value) && value.length >= 0,
-            videoStructure: (value) => value && typeof value.recommendedScenes === 'number',
-            seoContext: (value) => value && Array.isArray(value.primaryKeywords)
-        }
-    },
-    scene: {
-        required: ['scenes'],
-        optional: ['totalDuration', 'sceneCount', 'selectedSubtopic', 'projectId', 'baseTopic', 'videoStructure', 'overallStyle', 'targetAudience', 'sceneFlow', 'contextUsage', 'generatedAt', 'readyForMediaCuration', 'contextVersion'],
-        validation: {
-            scenes: (value) => Array.isArray(value),
-            totalDuration: (value) => value === undefined || value === null || (typeof value === 'number' && value >= 0),
-            sceneCount: (value) => value === undefined || value === null || (typeof value === 'number' && value >= 0)
-        }
-    },
-    media: {
-        required: ['sceneMediaMapping', 'totalAssets', 'coverageComplete'],
-        optional: ['qualityScore', 'visualFlow'],
-        validation: {
-            sceneMediaMapping: (value) => Array.isArray(value) && value.length >= 0,
-            totalAssets: (value) => typeof value === 'number' && value >= 0,
-            coverageComplete: (value) => typeof value === 'boolean'
-        }
-    },
-    audio: {
-        required: ['masterAudioId', 'totalDuration'],
-        optional: ['sceneAudios', 'timingMarks', 'synchronizationData', 'audioQuality', 'contextIntegration', 'totalScenes', 'voiceId', 'engine', 'generatedAt'],
-        validation: {
-            masterAudioId: (value) => typeof value === 'string' && value.length > 0,
-            totalDuration: (value) => typeof value === 'number' && value > 0,
-            sceneAudios: (value) => value === undefined || Array.isArray(value),
-            totalScenes: (value) => value === undefined || (typeof value === 'number' && value >= 0)
-        }
-    },
-    assembly: {
-        required: ['videoId', 'finalVideoPath', 'duration', 'status'],
-        optional: ['qualityMetrics', 'processingTime'],
-        validation: {
-            duration: (value) => typeof value === 'number' && value > 0,
-            status: (value) => ['processing', 'completed', 'failed'].includes(value)
-        }
-    },
-    summary: {
-        required: ['projectId', 'createdAt', 'stages'],
-        optional: ['lastUpdated', 'status'],
-        validation: {
-            projectId: (value) => typeof value === 'string' && value.length > 0,
-            stages: (value) => typeof value === 'object' && value !== null,
-            createdAt: (value) => typeof value === 'string'
-        }
-    }
+  topic: {
+    required: ['projectId', 'selectedTopic', 'expandedTopics', 'videoStructure', 'seoContext'],
+    optional: ['contentGuidance', 'sceneContexts', 'targetAudience']
+  },
+  scene: {
+    required: ['projectId', 'scenes', 'totalDuration', 'selectedSubtopic'],
+    optional: ['videoStructure', 'contentStrategy', 'engagementElements']
+  },
+  media: {
+    required: ['projectId', 'sceneMediaMapping', 'totalAssets'],
+    optional: ['industryStandards', 'qualityMetrics', 'fallbackAssets']
+  },
+  audio: {
+    required: ['projectId', 'masterAudioId', 'timingMarks'],
+    optional: ['synchronizationData', 'voiceSettings', 'qualityMetrics']
+  },
+  video: {
+    required: ['projectId', 'videoMetadata', 'processingResults'],
+    optional: ['qualityMetrics', 'technicalSpecs', 'optimizationData']
+  }
 };
 
 /**
- * Store context object with automatic compression and storage optimization
+ * Validates context object against schema
+ * @param {Object} context - Context object to validate
+ * @param {string} contextType - Type of context (topic, scene, media, audio, video)
+ * @returns {Object} Validation result with success flag and errors
  */
-async function storeContext(contextId, contextType, contextData, options = {}) {
-    try {
-        initializeContextManager();
-        
-        const {
-            ttlHours = 24,
-            compress = true,
-            useS3ForLarge = true,
-            maxDynamoSize = 350000 // DynamoDB item size limit minus buffer
-        } = options;
-        
-        // Validate context against schema
-        const validationResult = validateContext(contextType, contextData);
-        if (!validationResult.isValid) {
-            throw new Error(`Context validation failed: ${validationResult.errors.join(', ')}`);
-        }
-        
-        // Prepare context metadata
-        const contextMetadata = {
-            contextId,
-            contextType,
-            createdAt: new Date().toISOString(),
-            ttl: Math.floor(Date.now() / 1000) + (ttlHours * 3600),
-            version: '1.0',
-            compressed: false,
-            storedInS3: false,
-            size: 0
-        };
-        
-        // Serialize and optionally compress the context data
-        let serializedData = JSON.stringify(contextData);
-        let finalData = serializedData;
-        
-        if (compress) {
-            const compressed = gzipSync(Buffer.from(serializedData));
-            if (compressed.length < serializedData.length * 0.8) { // Only use if significant compression
-                finalData = compressed.toString('base64');
-                contextMetadata.compressed = true;
-                console.log(`Context compressed: ${serializedData.length} -> ${compressed.length} bytes`);
-            }
-        }
-        
-        contextMetadata.size = finalData.length;
-        
-        // Determine storage location based on size
-        if (useS3ForLarge && finalData.length > maxDynamoSize) {
-            // Store large contexts in S3
-            const s3Key = `contexts/${contextType}/${contextId}.json${contextMetadata.compressed ? '.gz' : ''}`;
-            
-            await s3Client.send(new PutObjectCommand({
-                Bucket: S3_BUCKET,
-                Key: s3Key,
-                Body: contextMetadata.compressed ? Buffer.from(finalData, 'base64') : finalData,
-                ContentType: contextMetadata.compressed ? 'application/gzip' : 'application/json',
-                Metadata: {
-                    contextId,
-                    contextType,
-                    compressed: contextMetadata.compressed.toString(),
-                    createdAt: contextMetadata.createdAt
-                }
-            }));
-            
-            contextMetadata.storedInS3 = true;
-            contextMetadata.s3Key = s3Key;
-            contextMetadata.contextData = null; // Don't store data in DynamoDB
-            
-            console.log(`Large context stored in S3: ${s3Key} (${finalData.length} bytes)`);
-        } else {
-            // Store in DynamoDB
-            contextMetadata.contextData = finalData;
-            console.log(`Context stored in DynamoDB (${finalData.length} bytes)`);
-        }
-        
-        // Store metadata in DynamoDB
-        await docClient.send(new PutCommand({
-            TableName: CONTEXT_TABLE,
-            Item: {
-                PK: `CONTEXT#${contextId}`,
-                SK: 'METADATA',
-                ...contextMetadata
-            }
-        }));
-        
-        console.log(`Context stored successfully: ${contextId} (${contextType})`);
-        
-        return {
-            contextId,
-            contextType,
-            size: contextMetadata.size,
-            compressed: contextMetadata.compressed,
-            storedInS3: contextMetadata.storedInS3,
-            s3Key: contextMetadata.s3Key
-        };
-        
-    } catch (error) {
-        console.error('Error storing context:', error);
-        throw error;
+export function validateContext(context, contextType) {
+  const schema = CONTEXT_SCHEMAS[contextType];
+  if (!schema) {
+    return { success: false, errors: [`Unknown context type: ${contextType}`] };
+  }
+
+  const errors = [];
+  
+  // Check required fields
+  for (const field of schema.required) {
+    if (!context[field]) {
+      errors.push(`Missing required field: ${field}`);
     }
+  }
+
+  // Validate projectId format
+  if (context.projectId && !context.projectId.match(/^\d{4}-\d{2}-\d{2}_\d{2}-\d{2}-\d{2}_/)) {
+    errors.push('Invalid projectId format. Expected: YYYY-MM-DD_HH-MM-SS_topic-name');
+  }
+
+  return {
+    success: errors.length === 0,
+    errors,
+    warnings: []
+  };
 }
 
 /**
- * Retrieve context object with automatic decompression
+ * Compresses context object for storage optimization
+ * @param {Object} context - Context object to compress
+ * @returns {Buffer} Compressed context data
  */
-async function getContext(contextId) {
-    try {
-        initializeContextManager();
-        
-        // Get context metadata from DynamoDB
-        const result = await docClient.send(new GetCommand({
-            TableName: CONTEXT_TABLE,
-            Key: {
-                PK: `CONTEXT#${contextId}`,
-                SK: 'METADATA'
-            }
-        }));
-        
-        if (!result.Item) {
-            throw new Error(`Context not found: ${contextId}`);
-        }
-        
-        const metadata = result.Item;
-        
-        // Check if context has expired
-        const now = Math.floor(Date.now() / 1000);
-        if (metadata.ttl && metadata.ttl < now) {
-            console.log(`Context expired: ${contextId}`);
-            await deleteContext(contextId); // Clean up expired context
-            throw new Error(`Context expired: ${contextId}`);
-        }
-        
-        let contextData;
-        
-        if (metadata.storedInS3) {
-            // Retrieve from S3
-            const s3Response = await s3Client.send(new GetObjectCommand({
-                Bucket: S3_BUCKET,
-                Key: metadata.s3Key
-            }));
-            
-            const s3Data = await streamToBuffer(s3Response.Body);
-            
-            if (metadata.compressed) {
-                const decompressed = gunzipSync(s3Data);
-                contextData = JSON.parse(decompressed.toString());
-            } else {
-                contextData = JSON.parse(s3Data.toString());
-            }
-            
-            console.log(`Context retrieved from S3: ${metadata.s3Key}`);
-        } else {
-            // Retrieve from DynamoDB
-            let rawData = metadata.contextData;
-            
-            if (metadata.compressed) {
-                const decompressed = gunzipSync(Buffer.from(rawData, 'base64'));
-                contextData = JSON.parse(decompressed.toString());
-            } else {
-                contextData = JSON.parse(rawData);
-            }
-            
-            console.log(`Context retrieved from DynamoDB: ${contextId}`);
-        }
-        
-        return {
-            contextId: metadata.contextId,
-            contextType: metadata.contextType,
-            contextData,
-            metadata: {
-                createdAt: metadata.createdAt,
-                size: metadata.size,
-                compressed: metadata.compressed,
-                storedInS3: metadata.storedInS3,
-                version: metadata.version
-            }
-        };
-        
-    } catch (error) {
-        console.error('Error retrieving context:', error);
-        throw error;
-    }
+export function compressContext(context) {
+  const jsonString = JSON.stringify(context);
+  return gzipSync(Buffer.from(jsonString, 'utf8'));
 }
 
 /**
- * Update existing context with new data
+ * Decompresses context object from storage
+ * @param {Buffer} compressedData - Compressed context data
+ * @returns {Object} Decompressed context object
  */
-async function updateContext(contextId, updates, options = {}) {
-    try {
-        initializeContextManager();
-        
-        // Get existing context
-        const existingContext = await getContext(contextId);
-        
-        // Merge updates with existing data
-        const updatedData = {
-            ...existingContext.contextData,
-            ...updates,
-            updatedAt: new Date().toISOString()
-        };
-        
-        // Store updated context (this will replace the existing one)
-        return await storeContext(contextId, existingContext.contextType, updatedData, options);
-        
-    } catch (error) {
-        console.error('Error updating context:', error);
-        throw error;
-    }
+export function decompressContext(compressedData) {
+  const decompressed = gunzipSync(compressedData);
+  return JSON.parse(decompressed.toString('utf8'));
 }
 
 /**
- * Delete context and clean up storage
+ * Stores context in appropriate storage (S3 for large objects, DynamoDB for small ones)
+ * @param {Object} context - Context object to store
+ * @param {string} contextType - Type of context
+ * @returns {Promise<string>} Storage location identifier
  */
-async function deleteContext(contextId) {
-    try {
-        initializeContextManager();
-        
-        // Get context metadata to check if stored in S3
-        const result = await docClient.send(new GetCommand({
-            TableName: CONTEXT_TABLE,
-            Key: {
-                PK: `CONTEXT#${contextId}`,
-                SK: 'METADATA'
-            }
-        }));
-        
-        if (result.Item && result.Item.storedInS3 && result.Item.s3Key) {
-            // Delete from S3
-            try {
-                await s3Client.send(new DeleteObjectCommand({
-                    Bucket: S3_BUCKET,
-                    Key: result.Item.s3Key
-                }));
-                console.log(`Deleted context from S3: ${result.Item.s3Key}`);
-            } catch (s3Error) {
-                console.warn('Error deleting from S3:', s3Error);
-                // Continue with DynamoDB deletion even if S3 deletion fails
-            }
+export async function storeContext(context, contextType) {
+  const validation = validateContext(context, contextType);
+  if (!validation.success) {
+    throw new Error(`Context validation failed: ${validation.errors.join(', ')}`);
+  }
+
+  const contextSize = JSON.stringify(context).length;
+  const storageKey = `${context.projectId}/${contextType}-context.json`;
+
+  try {
+    // Use S3 for large contexts (>100KB) or DynamoDB for small ones
+    if (contextSize > 100000) {
+      const compressedData = compressContext(context);
+      
+      await s3Client.send(new PutObjectCommand({
+        Bucket: process.env.S3_BUCKET,
+        Key: `contexts/${storageKey}`,
+        Body: compressedData,
+        ContentType: 'application/json',
+        ContentEncoding: 'gzip',
+        Metadata: {
+          contextType,
+          projectId: context.projectId,
+          size: contextSize.toString(),
+          compressed: 'true'
         }
-        
-        // Delete from DynamoDB
-        await docClient.send(new DeleteCommand({
-            TableName: CONTEXT_TABLE,
-            Key: {
-                PK: `CONTEXT#${contextId}`,
-                SK: 'METADATA'
-            }
-        }));
-        
-        console.log(`Context deleted: ${contextId}`);
-        
-    } catch (error) {
-        console.error('Error deleting context:', error);
-        throw error;
+      }));
+
+      return `s3://${process.env.S3_BUCKET}/contexts/${storageKey}`;
+    } else {
+      // Store in DynamoDB for smaller contexts
+      await docClient.send(new PutCommand({
+        TableName: process.env.CONTEXT_TABLE,
+        Item: {
+          contextId: storageKey,
+          contextType,
+          projectId: context.projectId,
+          data: context,
+          createdAt: new Date().toISOString(),
+          ttl: Math.floor(Date.now() / 1000) + (7 * 24 * 60 * 60) // 7 days TTL
+        }
+      }));
+
+      return `dynamodb://${process.env.CONTEXT_TABLE}/${storageKey}`;
     }
+  } catch (error) {
+    throw new Error(`Failed to store context: ${error.message}`);
+  }
 }
 
 /**
- * Validate context data against schema
+ * Retrieves context from storage
+ * @param {string} contextId - Context identifier (projectId/contextType format)
+ * @param {string} contextType - Type of context to retrieve
+ * @returns {Promise<Object>} Retrieved context object
  */
-function validateContext(contextType, contextData) {
-    const schema = CONTEXT_SCHEMAS[contextType];
-    if (!schema) {
-        return {
-            isValid: false,
-            errors: [`Unknown context type: ${contextType}`]
-        };
+export async function retrieveContext(contextId, contextType) {
+  const storageKey = contextId.includes('/') ? contextId : `${contextId}/${contextType}-context.json`;
+
+  try {
+    // Try DynamoDB first (faster for small contexts)
+    try {
+      const result = await docClient.send(new GetCommand({
+        TableName: process.env.CONTEXT_TABLE,
+        Key: { contextId: storageKey }
+      }));
+
+      if (result.Item) {
+        return result.Item.data;
+      }
+    } catch (dynamoError) {
+      // Continue to S3 if DynamoDB fails
     }
+
+    // Try S3 for larger contexts
+    const s3Result = await s3Client.send(new GetObjectCommand({
+      Bucket: process.env.S3_BUCKET,
+      Key: `contexts/${storageKey}`
+    }));
+
+    const bodyBytes = await s3Result.Body.transformToByteArray();
+    const isCompressed = s3Result.ContentEncoding === 'gzip';
     
-    const errors = [];
-    
-    // Check required fields
-    for (const field of schema.required) {
-        if (!(field in contextData)) {
-            errors.push(`Missing required field: ${field}`);
-        } else if (schema.validation[field]) {
-            const isValid = schema.validation[field](contextData[field]);
-            if (!isValid) {
-                errors.push(`Invalid value for field: ${field}`);
-            }
-        }
+    if (isCompressed) {
+      return decompressContext(Buffer.from(bodyBytes));
+    } else {
+      return JSON.parse(Buffer.from(bodyBytes).toString('utf8'));
     }
-    
-    // Validate optional fields if present
-    for (const field of schema.optional) {
-        if (field in contextData && schema.validation[field]) {
-            const isValid = schema.validation[field](contextData[field]);
-            if (!isValid) {
-                errors.push(`Invalid value for optional field: ${field}`);
-            }
-        }
-    }
-    
-    return {
-        isValid: errors.length === 0,
-        errors
-    };
+  } catch (error) {
+    throw new Error(`Failed to retrieve context: ${error.message}`);
+  }
 }
 
 /**
- * List contexts by type or pattern
+ * Creates a new project with organized folder structure
+ * @param {string} topic - Topic name for the project
+ * @returns {Promise<string>} Generated project ID
  */
-async function listContexts(options = {}) {
+export async function createProject(topic) {
+  const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+  const sanitizedTopic = topic.toLowerCase()
+    .replace(/[^a-z0-9\s-]/g, '')
+    .replace(/\s+/g, '-')
+    .slice(0, 50);
+  
+  const projectId = `${timestamp}_${sanitizedTopic}`;
+
+  // Create project folder structure in S3
+  const folders = ['01-context', '02-script', '03-media', '04-audio', '05-video', '06-metadata'];
+  
+  for (const folder of folders) {
+    await s3Client.send(new PutObjectCommand({
+      Bucket: process.env.S3_BUCKET,
+      Key: `videos/${projectId}/${folder}/.gitkeep`,
+      Body: '',
+      ContentType: 'text/plain'
+    }));
+  }
+
+  return projectId;
+}
+
+/**
+ * Gets context with retry logic and error handling
+ * @param {string} contextId - Context identifier
+ * @param {string} contextType - Type of context
+ * @param {number} maxRetries - Maximum number of retry attempts
+ * @returns {Promise<Object>} Retrieved context object
+ */
+export async function getContextWithRetry(contextId, contextType, maxRetries = 3) {
+  let lastError;
+  
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
     try {
-        initializeContextManager();
-        
-        const {
-            contextType = null,
-            limit = 50,
-            includeExpired = false
-        } = options;
-        
-        let queryParams = {
-            TableName: CONTEXT_TABLE,
-            Limit: limit
-        };
-        
-        if (contextType) {
-            // Query by context type using GSI (would need to be created)
-            queryParams.IndexName = 'ContextTypeIndex';
-            queryParams.KeyConditionExpression = 'contextType = :contextType';
-            queryParams.ExpressionAttributeValues = {
-                ':contextType': contextType
-            };
-        } else {
-            // Scan all contexts
-            queryParams = {
-                TableName: CONTEXT_TABLE,
-                Limit: limit,
-                FilterExpression: 'begins_with(PK, :pk)',
-                ExpressionAttributeValues: {
-                    ':pk': 'CONTEXT#'
-                }
-            };
-        }
-        
-        const result = contextType 
-            ? await docClient.send(new QueryCommand(queryParams))
-            : await docClient.send(new ScanCommand(queryParams));
-        
-        const contexts = result.Items || [];
-        const now = Math.floor(Date.now() / 1000);
-        
-        // Filter out expired contexts unless requested
-        const filteredContexts = includeExpired 
-            ? contexts 
-            : contexts.filter(item => !item.ttl || item.ttl >= now);
-        
-        return filteredContexts.map(item => ({
-            contextId: item.contextId,
-            contextType: item.contextType,
-            createdAt: item.createdAt,
-            size: item.size,
-            compressed: item.compressed,
-            storedInS3: item.storedInS3,
-            ttl: item.ttl,
-            expired: item.ttl && item.ttl < now
-        }));
-        
+      return await retrieveContext(contextId, contextType);
     } catch (error) {
-        console.error('Error listing contexts:', error);
-        throw error;
+      lastError = error;
+      
+      if (attempt < maxRetries) {
+        const delay = Math.pow(2, attempt) * 1000; // Exponential backoff
+        await new Promise(resolve => setTimeout(resolve, delay));
+      }
     }
+  }
+  
+  throw new Error(`Failed to retrieve context after ${maxRetries} attempts: ${lastError.message}`);
 }
 
 /**
- * Clean up expired contexts
+ * Validates context compatibility between agents
+ * @param {Object} sourceContext - Context from source agent
+ * @param {string} sourceType - Source context type
+ * @param {string} targetType - Target context type expected
+ * @returns {Object} Compatibility check result
  */
-async function cleanupExpiredContexts() {
-    try {
-        initializeContextManager();
-        
-        console.log('Starting cleanup of expired contexts...');
-        
-        const allContexts = await listContexts({ includeExpired: true, limit: 1000 });
-        const now = Math.floor(Date.now() / 1000);
-        
-        const expiredContexts = allContexts.filter(ctx => ctx.ttl && ctx.ttl < now);
-        
-        console.log(`Found ${expiredContexts.length} expired contexts to clean up`);
-        
-        for (const context of expiredContexts) {
-            try {
-                await deleteContext(context.contextId);
-                console.log(`Cleaned up expired context: ${context.contextId}`);
-            } catch (error) {
-                console.error(`Error cleaning up context ${context.contextId}:`, error);
-            }
-        }
-        
-        console.log(`Cleanup completed. Removed ${expiredContexts.length} expired contexts`);
-        
-        return {
-            totalContexts: allContexts.length,
-            expiredContexts: expiredContexts.length,
-            cleanedUp: expiredContexts.length
-        };
-        
-    } catch (error) {
-        console.error('Error during cleanup:', error);
-        throw error;
-    }
-}
+export function validateContextCompatibility(sourceContext, sourceType, targetType) {
+  const compatibilityRules = {
+    'topic->scene': ['projectId', 'videoStructure', 'expandedTopics'],
+    'scene->media': ['projectId', 'scenes', 'totalDuration'],
+    'scene->audio': ['projectId', 'scenes', 'totalDuration'],
+    'media->video': ['projectId', 'sceneMediaMapping'],
+    'audio->video': ['projectId', 'masterAudioId', 'timingMarks']
+  };
 
-/**
- * Get context statistics
- */
-async function getContextStats() {
-    try {
-        initializeContextManager();
-        
-        const allContexts = await listContexts({ includeExpired: true, limit: 1000 });
-        const now = Math.floor(Date.now() / 1000);
-        
-        const stats = {
-            total: allContexts.length,
-            active: 0,
-            expired: 0,
-            byType: {},
-            totalSize: 0,
-            compressed: 0,
-            storedInS3: 0,
-            storedInDynamoDB: 0
-        };
-        
-        for (const context of allContexts) {
-            // Count by status
-            if (context.ttl && context.ttl < now) {
-                stats.expired++;
-            } else {
-                stats.active++;
-            }
-            
-            // Count by type
-            stats.byType[context.contextType] = (stats.byType[context.contextType] || 0) + 1;
-            
-            // Size and storage stats
-            stats.totalSize += context.size || 0;
-            if (context.compressed) stats.compressed++;
-            if (context.storedInS3) stats.storedInS3++;
-            else stats.storedInDynamoDB++;
-        }
-        
-        return stats;
-        
-    } catch (error) {
-        console.error('Error getting context stats:', error);
-        throw error;
-    }
-}
+  const ruleKey = `${sourceType}->${targetType}`;
+  const requiredFields = compatibilityRules[ruleKey];
 
-/**
- * Helper function to convert stream to buffer
- */
-async function streamToBuffer(stream) {
-    const chunks = [];
-    for await (const chunk of stream) {
-        chunks.push(chunk);
-    }
-    return Buffer.concat(chunks);
-}
+  if (!requiredFields) {
+    return { compatible: true, warnings: [`No compatibility rules defined for ${ruleKey}`] };
+  }
 
-module.exports = {
-    storeContext,
-    getContext,
-    updateContext,
-    deleteContext,
-    validateContext,
-    listContexts,
-    cleanupExpiredContexts,
-    getContextStats,
-    CONTEXT_SCHEMAS
-};
+  const missingFields = requiredFields.filter(field => !sourceContext[field]);
+  
+  return {
+    compatible: missingFields.length === 0,
+    missingFields,
+    warnings: missingFields.length > 0 ? [`Missing required fields for ${ruleKey}: ${missingFields.join(', ')}`] : []
+  };
+}

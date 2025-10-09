@@ -40,12 +40,12 @@ import path from 'path';
 import { 
   retrieveContext, 
   validateContext 
-} from '../../shared/context-manager.js';
+} from '/opt/nodejs/context-manager.js';
 import { 
   downloadFromS3,
   getSecret,
   executeWithRetry 
-} from '../../shared/aws-service-manager.js';
+} from '/opt/nodejs/aws-service-manager.js';
 import { 
   wrapHandler, 
   AppError, 
@@ -53,7 +53,7 @@ import {
   validateRequiredParams,
   withTimeout,
   monitorPerformance 
-} from '../../shared/error-handler.js';
+} from '/opt/nodejs/error-handler.js';
 
 // Initialize YouTube API
 const youtube = google.youtube('v3');
@@ -405,3 +405,4 @@ async function getUploadStatus(videoId) {
 // Export handler with shared error handling wrapper
 export const lambdaHandler = wrapHandler(handler);
 export { lambdaHandler as handler };
+

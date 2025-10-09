@@ -2,6 +2,7 @@
   "name": "media-curator",
   "version": "1.0.0",
   "description": "AI-powered media curation service for video production",
+  "type": "module",
   "main": "index.js",
   "scripts": {
     "test": "jest"

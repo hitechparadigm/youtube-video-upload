@@ -12,7 +12,7 @@
     "test:coverage": "jest --coverage",
     "test:watch": "jest --watch",
     "test:health": "node scripts/utils/health-check.js",
-    "test:legacy": "node tests/legacy-e2e-test.js",
+    "test:e2e": "node tests/e2e-pipeline.test.js",
     "test:infrastructure": "node scripts/validate-infrastructure.js",
     "deploy": "cd infrastructure && npm run deploy",
     "destroy": "cd infrastructure && npm run destroy",

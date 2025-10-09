@@ -6,19 +6,22 @@ export default {
   // Test environment
   testEnvironment: 'node',
   
-  // Module type
+  // ES modules support
   preset: null,
   extensionsToTreatAsEsm: ['.js'],
   
   // Transform configuration for ES modules
   transform: {
     '^.+\\.js$': ['babel-jest', { 
-      presets: [['@babel/preset-env', { targets: { node: 'current' } }]] 
+      presets: [['@babel/preset-env', { 
+        targets: { node: 'current' },
+        modules: false
+      }]] 
     }]
   },
   
   // Module name mapping
-  moduleNameMapping: {
+  moduleNameMapper: {
     '^(\\.{1,2}/.*)\\.js$': '$1'
   },
   
@@ -33,6 +36,9 @@ export default {
   testPathIgnorePatterns: [
     '/node_modules/',
     '/infrastructure/node_modules/',
+    '/infrastructure/cdk-out-temp.*/',
+    '/infrastructure/cdk-deploy-final/',
+    '/infrastructure/cdk.out/',
     '/src/lambda/*/node_modules/',
     '/dist/',
     '/build/'
