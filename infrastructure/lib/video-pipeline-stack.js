@@ -305,9 +305,12 @@ export class VideoPipelineStack extends Stack {
       timeout: Duration.minutes(5),
       memorySize: 512,
       role: lambdaRole,
+      layers: [contextLayer], // FIX: Add the missing context layer!
       environment: {
         EXECUTIONS_TABLE_NAME: executionsTable.tableName,
         TOPICS_TABLE_NAME: topicsTable.tableName,
+        S3_BUCKET: primaryBucket.bucketName,
+        CONTEXT_TABLE: contextTable.tableName,
         NODE_ENV: environment
       }
     });
