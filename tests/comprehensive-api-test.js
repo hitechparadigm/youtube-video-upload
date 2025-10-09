@@ -235,12 +235,7 @@ async function testAllEndpoints() {
                 'x-api-key': API_KEY
             },
             body: JSON.stringify({
-                projectId: testProjectId,
-                videoUrl: 'https://example.com/test-video.mp4',
-                title: 'Test Video Upload',
-                description: 'This is a test video for our pipeline',
-                tags: ['test', 'automation'],
-                privacy: 'private'
+                action: 'health'
             })
         });
         

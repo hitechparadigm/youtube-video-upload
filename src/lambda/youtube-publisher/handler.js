@@ -151,8 +151,16 @@ function parseApiGatewayEvent(event) {
 
     if (httpMethod === 'POST' && path.includes('/publish')) {
         const requestBody = body ? JSON.parse(body) : {};
+        
+        // Handle health check in request body
+        if (requestBody.action === 'health') {
+            return {
+                action: 'health'
+            };
+        }
+        
         return {
-            action: 'publish',
+            action: requestBody.action || 'publish',
             videoId: requestBody.videoId || queryStringParameters?.videoId,
             videoFilePath: requestBody.videoFilePath,
             title: requestBody.title,

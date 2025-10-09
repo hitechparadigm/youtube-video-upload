@@ -3,7 +3,7 @@
  * Shows how to integrate with the YouTube publisher
  */
 
-const { YouTubeService } = require('./youtube-service');
+import { YouTubeService } from './youtube-service.js';
 
 /**
  * Example: Publish a completed video to YouTube
@@ -206,7 +206,7 @@ async function exampleBatchPublish(videoList) {
 }
 
 // Export examples for testing
-module.exports = {
+export {
     exampleYouTubePublish,
     exampleMetadataOptimization,
     exampleStatusCheck,

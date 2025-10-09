@@ -3,7 +3,7 @@
  * Shows how to integrate with the video processor
  */
 
-const { VideoProcessor } = require('./video-processor');
+import { VideoProcessor } from './video-processor.js';
 
 /**
  * Example: Assemble a video from script and media assets
@@ -158,7 +158,7 @@ function createStepFunctionsInput(scriptResult, mediaResult, audioResult) {
 }
 
 // Export examples for testing
-module.exports = {
+export {
     exampleVideoAssembly,
     checkVideoStatus,
     createStepFunctionsInput
