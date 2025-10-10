@@ -177,12 +177,12 @@ export class VideoPipelineStack extends Stack {
     const topicManagementFunction = new Function(this, 'TopicManagementFunction', {
       functionName: `${projectName}-topic-management-v2`,
       runtime: Runtime.NODEJS_20_X,
-      handler: 'handler.handler',
+      handler: 'handler.handler', // Using fixed layer
       code: Code.fromAsset(join(process.cwd(), '../src/lambda/topic-management')),
       timeout: Duration.minutes(5), // Increased from 30 seconds to 5 minutes for AI processing
       memorySize: 512, // Increased from 256MB to 512MB for better performance
       role: lambdaRole,
-      layers: [contextLayer],
+      layers: [contextLayer], // Re-enabled with fixed layer
       environment: {
         TOPICS_TABLE_NAME: topicsTable.tableName,
         S3_BUCKET_NAME: primaryBucket.bucketName,
@@ -202,7 +202,7 @@ export class VideoPipelineStack extends Stack {
       timeout: Duration.minutes(5),
       memorySize: 1024,
       role: lambdaRole,
-      layers: [configLayer, contextLayer],
+      layers: [configLayer, contextLayer], // Re-enabled with fixed layer
       environment: {
         S3_BUCKET_NAME: primaryBucket.bucketName,
         S3_BUCKET: primaryBucket.bucketName,  // For context manager compatibility
@@ -218,12 +218,12 @@ export class VideoPipelineStack extends Stack {
     const mediaCuratorFunction = new Function(this, 'MediaCuratorFunction', {
       functionName: `${projectName}-media-curator-v2`,
       runtime: Runtime.NODEJS_20_X,
-      handler: 'index.handler',
+      handler: 'handler.handler',
       code: Code.fromAsset(join(process.cwd(), '../src/lambda/media-curator')),
       timeout: Duration.minutes(10),
       memorySize: 512,
       role: lambdaRole,
-      layers: [contextLayer],
+      layers: [contextLayer], // Re-enabled with fixed layer
       environment: {
         S3_BUCKET_NAME: primaryBucket.bucketName,
         S3_BUCKET: primaryBucket.bucketName,  // For context manager compatibility
@@ -243,7 +243,7 @@ export class VideoPipelineStack extends Stack {
       timeout: Duration.minutes(5),
       memorySize: 512,
       role: lambdaRole,
-      layers: [configLayer, contextLayer],
+      layers: [configLayer, contextLayer], // Re-enabled with fixed layer
       environment: {
         S3_BUCKET_NAME: primaryBucket.bucketName,
         S3_BUCKET: primaryBucket.bucketName,  // For context manager compatibility
@@ -262,7 +262,7 @@ export class VideoPipelineStack extends Stack {
       timeout: Duration.minutes(15),
       memorySize: 1024,
       role: lambdaRole,
-      layers: [contextLayer],
+      layers: [contextLayer], // Re-enabled with fixed layer
       environment: {
         S3_BUCKET_NAME: primaryBucket.bucketName,
         S3_BUCKET: primaryBucket.bucketName,  // For context manager compatibility
@@ -284,7 +284,7 @@ export class VideoPipelineStack extends Stack {
       timeout: Duration.minutes(15),
       memorySize: 1024,
       role: lambdaRole,
-      layers: [contextLayer],
+      layers: [contextLayer], // Re-enabled with fixed layer
       environment: {
         S3_BUCKET_NAME: primaryBucket.bucketName,
         S3_BUCKET: primaryBucket.bucketName,  // For context manager compatibility
@@ -409,15 +409,44 @@ export class VideoPipelineStack extends Stack {
       stage: api.deploymentStage
     });
 
-    // API Resources and Methods
+    // API Resources and Methods - Simplified and Enhanced by Default
     const topicsResource = api.root.addResource('topics');
     topicsResource.addMethod('GET', new LambdaIntegration(topicManagementFunction), { apiKeyRequired: true });
-    topicsResource.addMethod('POST', new LambdaIntegration(topicManagementFunction), { apiKeyRequired: true });
+    topicsResource.addMethod('POST', new LambdaIntegration(topicManagementFunction), { apiKeyRequired: true }); // Enhanced by default
+
+    // Health endpoint
+    const topicsHealthResource = topicsResource.addResource('health');
+    topicsHealthResource.addMethod('GET', new LambdaIntegration(topicManagementFunction), { apiKeyRequired: true });
 
     const topicResource = topicsResource.addResource('{topicId}');
     topicResource.addMethod('GET', new LambdaIntegration(topicManagementFunction), { apiKeyRequired: true });
     topicResource.addMethod('PUT', new LambdaIntegration(topicManagementFunction), { apiKeyRequired: true });
     topicResource.addMethod('DELETE', new LambdaIntegration(topicManagementFunction), { apiKeyRequired: true });
+
+    // Script Generator endpoints
+    const scriptsResource = api.root.addResource('scripts');
+    scriptsResource.addResource('generate').addMethod('POST', new LambdaIntegration(scriptGeneratorFunction), { apiKeyRequired: true });
+    scriptsResource.addResource('health').addMethod('GET', new LambdaIntegration(scriptGeneratorFunction), { apiKeyRequired: true });
+
+    // Media Curator endpoints
+    const mediaResource = api.root.addResource('media');
+    mediaResource.addResource('curate').addMethod('POST', new LambdaIntegration(mediaCuratorFunction), { apiKeyRequired: true });
+    mediaResource.addResource('health').addMethod('GET', new LambdaIntegration(mediaCuratorFunction), { apiKeyRequired: true });
+
+    // Audio Generator endpoints
+    const audioResource = api.root.addResource('audio');
+    audioResource.addResource('generate').addMethod('POST', new LambdaIntegration(audioGeneratorFunction), { apiKeyRequired: true });
+    audioResource.addResource('health').addMethod('GET', new LambdaIntegration(audioGeneratorFunction), { apiKeyRequired: true });
+
+    // Video Assembler endpoints
+    const videoResource = api.root.addResource('video');
+    videoResource.addResource('assemble').addMethod('POST', new LambdaIntegration(videoAssemblerFunction), { apiKeyRequired: true });
+    videoResource.addResource('health').addMethod('GET', new LambdaIntegration(videoAssemblerFunction), { apiKeyRequired: true });
+
+    // YouTube Publisher endpoints
+    const youtubeResource = api.root.addResource('youtube');
+    youtubeResource.addResource('publish').addMethod('POST', new LambdaIntegration(youtubePublisherFunction), { apiKeyRequired: true });
+    youtubeResource.addResource('health').addMethod('GET', new LambdaIntegration(youtubePublisherFunction), { apiKeyRequired: true });
 
     // Workflow endpoints
     const workflowResource = api.root.addResource('workflow');
@@ -425,15 +454,6 @@ export class VideoPipelineStack extends Stack {
     workflowResource.addResource('status').addMethod('GET', new LambdaIntegration(workflowOrchestratorFunction), { apiKeyRequired: true });
     workflowResource.addResource('list').addMethod('GET', new LambdaIntegration(workflowOrchestratorFunction), { apiKeyRequired: true });
     workflowResource.addResource('stats').addMethod('GET', new LambdaIntegration(workflowOrchestratorFunction), { apiKeyRequired: true });
-
-    // Media endpoints
-    const mediaResource = api.root.addResource('media');
-    mediaResource.addResource('search').addMethod('POST', new LambdaIntegration(mediaCuratorFunction), { apiKeyRequired: true });
-    mediaResource.addResource('curate').addMethod('POST', new LambdaIntegration(mediaCuratorFunction), { apiKeyRequired: true });
-
-    // Video endpoints
-    const videoResource = api.root.addResource('video');
-    videoResource.addResource('assemble').addMethod('POST', new LambdaIntegration(videoAssemblerFunction), { apiKeyRequired: true });
     videoResource.addResource('publish').addMethod('POST', new LambdaIntegration(youtubePublisherFunction), { apiKeyRequired: true });
 
     // ========================================

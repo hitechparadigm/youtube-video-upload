@@ -25,7 +25,7 @@
         "validateOnSynth": false,
         "assumeRoleArn": "arn:${AWS::Partition}:iam::786673323159:role/cdk-hnb659fds-deploy-role-786673323159-us-east-1",
         "cloudFormationExecutionRoleArn": "arn:${AWS::Partition}:iam::786673323159:role/cdk-hnb659fds-cfn-exec-role-786673323159-us-east-1",
-        "stackTemplateAssetObjectUrl": "s3://cdk-hnb659fds-assets-786673323159-us-east-1/a98b2f5ba27129d2c90cbea592869bcd8fbec7427cd854054cdbbf00fd6a4fa6.json",
+        "stackTemplateAssetObjectUrl": "s3://cdk-hnb659fds-assets-786673323159-us-east-1/01e80eafe043f9bf9f40e72a55edd22a4eb93eb8d8da93d294271ba52dbef1d3.json",
         "requiresBootstrapStackVersion": 6,
         "bootstrapStackVersionSsmParameter": "/cdk-bootstrap/hnb659fds/version",
         "additionalDependencies": [
@@ -247,7 +247,7 @@
         "/VideoPipelineStack/VideoPipelineAPI/Deployment/Resource": [
           {
             "type": "aws:cdk:logicalId",
-            "data": "VideoPipelineAPIDeploymentC06F0BD86f20880a655f49fd9e5bf8ad9f7d30eb"
+            "data": "VideoPipelineAPIDeploymentC06F0BD8ef975ab546441e263c06b9ac8f65c9b3"
           }
         ],
         "/VideoPipelineStack/VideoPipelineAPI/DeploymentStage.prod/Resource": [
@@ -314,6 +314,36 @@
           {
             "type": "aws:cdk:logicalId",
             "data": "VideoPipelineAPItopicsPOST1FB44524"
+          }
+        ],
+        "/VideoPipelineStack/VideoPipelineAPI/Default/topics/health/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "VideoPipelineAPItopicshealthA93864C9"
+          }
+        ],
+        "/VideoPipelineStack/VideoPipelineAPI/Default/topics/health/OPTIONS/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "VideoPipelineAPItopicshealthOPTIONS90E6E901"
+          }
+        ],
+        "/VideoPipelineStack/VideoPipelineAPI/Default/topics/health/GET/ApiPermission.VideoPipelineStackVideoPipelineAPI7A2C3071.GET..topics.health": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "VideoPipelineAPItopicshealthGETApiPermissionVideoPipelineStackVideoPipelineAPI7A2C3071GETtopicshealth6A7C93A2"
+          }
+        ],
+        "/VideoPipelineStack/VideoPipelineAPI/Default/topics/health/GET/ApiPermission.Test.VideoPipelineStackVideoPipelineAPI7A2C3071.GET..topics.health": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "VideoPipelineAPItopicshealthGETApiPermissionTestVideoPipelineStackVideoPipelineAPI7A2C3071GETtopicshealth96159548"
+          }
+        ],
+        "/VideoPipelineStack/VideoPipelineAPI/Default/topics/health/GET/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "VideoPipelineAPItopicshealthGET5C1844BE"
           }
         ],
         "/VideoPipelineStack/VideoPipelineAPI/Default/topics/{topicId}/Resource": [

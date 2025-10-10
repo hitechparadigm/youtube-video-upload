@@ -1,0 +1,8 @@
+﻿{
+    "path":  "/scripts/generate",
+    "body":  "{\r\n    \"videoStyle\":  \"engaging\",\r\n    \"targetLength\":  360,\r\n    \"baseTopic\":  \"Travel to Canada - Ultimate Guide 2025\",\r\n    \"projectId\":  \"test-script-123\"\r\n}",
+    "headers":  {
+                    "Content-Type":  "application/json"
+                },
+    "httpMethod":  "POST"
+}

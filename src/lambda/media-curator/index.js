@@ -27,31 +27,28 @@
  * - Maintains all enhanced Media Curator capabilities
  */
 
-import { BedrockRuntimeClient, InvokeModelCommand } from '@aws-sdk/client-bedrock-runtime';
-import { RekognitionClient, DetectLabelsCommand } from '@aws-sdk/client-rekognition';
-import https from 'https';
-import { randomUUID } from 'crypto';
+const { BedrockRuntimeClient, InvokeModelCommand  } = require('@aws-sdk/client-bedrock-runtime');
+const { RekognitionClient, DetectLabelsCommand  } = require('@aws-sdk/client-rekognition');
+const https = require('https');
+const { randomUUID  } = require('crypto');
 
 // Import shared utilities
-import { 
-  storeContext, 
+const { storeContext, 
   retrieveContext, 
   validateContext 
-} from '/opt/nodejs/context-manager.js';
-import { 
-  uploadToS3,
+} = require('/opt/nodejs/context-manager');
+const { uploadToS3,
   downloadFromS3,
   getSecret,
   executeWithRetry 
-} from '/opt/nodejs/aws-service-manager.js';
-import { 
-  wrapHandler, 
+} = require('/opt/nodejs/aws-service-manager');
+const { wrapHandler, 
   AppError, 
   ERROR_TYPES, 
   validateRequiredParams,
   withTimeout,
   monitorPerformance 
-} from '/opt/nodejs/error-handler.js';
+} = require('/opt/nodejs/error-handler');
 
 const uuidv4 = randomUUID;
 
@@ -75,51 +72,51 @@ const handler = async (event, context) => {
 
   // Route requests
   switch (httpMethod) {
-    case 'GET':
-      if (path === '/health') {
-        return {
-          statusCode: 200,
-          headers: {
-            'Content-Type': 'application/json',
-            'Access-Control-Allow-Origin': '*'
-          },
-          body: JSON.stringify({
-            service: 'media-curator',
-            status: 'healthy',
-            timestamp: new Date().toISOString(),
-            version: '3.0.0-refactored',
-            industryStandards: true,
-            professionalPacing: true,
-            contextAware: true,
-            sharedUtilities: true
-          })
-        };
-      }
-      break;
+  case 'GET':
+    if (path === '/health') {
+      return {
+        statusCode: 200,
+        headers: {
+          'Content-Type': 'application/json',
+          'Access-Control-Allow-Origin': '*'
+        },
+        body: JSON.stringify({
+          service: 'media-curator',
+          status: 'healthy',
+          timestamp: new Date().toISOString(),
+          version: '3.0.0-refactored',
+          industryStandards: true,
+          professionalPacing: true,
+          contextAware: true,
+          sharedUtilities: true
+        })
+      };
+    }
+    break;
 
-    case 'POST':
-      if (path === '/media/curate-from-project') {
-        return await curateMediaFromProject(requestBody, context);
-      } else if (path === '/media/curate') {
-        // Temporary simple test version
-        return {
-          statusCode: 200,
-          headers: {
-            'Content-Type': 'application/json',
-            'Access-Control-Allow-Origin': '*'
-          },
-          body: JSON.stringify({
-            success: true,
-            message: 'Media Curate endpoint working - simplified test version',
-            projectId: requestBody.projectId,
-            receivedParams: Object.keys(requestBody),
-            timestamp: new Date().toISOString()
-          })
-        };
-      } else if (path === '/media/search') {
-        return await searchMedia(requestBody, context);
-      }
-      break;
+  case 'POST':
+    if (path === '/media/curate-from-project') {
+      return await curateMediaFromProject(requestBody, context);
+    } else if (path === '/media/curate') {
+      // Temporary simple test version
+      return {
+        statusCode: 200,
+        headers: {
+          'Content-Type': 'application/json',
+          'Access-Control-Allow-Origin': '*'
+        },
+        body: JSON.stringify({
+          success: true,
+          message: 'Media Curate endpoint working - simplified test version',
+          projectId: requestBody.projectId,
+          receivedParams: Object.keys(requestBody),
+          timestamp: new Date().toISOString()
+        })
+      };
+    } else if (path === '/media/search') {
+      return await searchMedia(requestBody, context);
+    }
+    break;
   }
 
   throw new AppError('Endpoint not found', ERROR_TYPES.NOT_FOUND, 404);
@@ -225,7 +222,7 @@ async function curateMediaFromProject(requestBody, context) {
 
     // Store media context using shared context manager
     await storeContext(mediaContext, 'media');
-    console.log(`💾 Stored media context for Video Assembler AI`);
+    console.log('💾 Stored media context for Video Assembler AI');
 
     return {
       statusCode: 200,
@@ -262,20 +259,20 @@ function calculateIndustryVisualPacing(scene) {
   let visualsNeeded;
   
   switch (purpose) {
-    case 'hook':
-      // Fast engagement for hooks
-      averageDuration = 3; // 2-3 seconds per visual
-      visualsNeeded = Math.min(Math.ceil(duration / averageDuration), 5);
-      break;
-    case 'conclusion':
-      // Slower pacing for conclusions
-      averageDuration = 5; // 4-6 seconds per visual
-      visualsNeeded = Math.min(Math.ceil(duration / averageDuration), 4);
-      break;
-    default:
-      // Standard content pacing
-      averageDuration = 4; // 3-5 seconds per visual
-      visualsNeeded = Math.min(Math.ceil(duration / averageDuration), 6);
+  case 'hook':
+    // Fast engagement for hooks
+    averageDuration = 3; // 2-3 seconds per visual
+    visualsNeeded = Math.min(Math.ceil(duration / averageDuration), 5);
+    break;
+  case 'conclusion':
+    // Slower pacing for conclusions
+    averageDuration = 5; // 4-6 seconds per visual
+    visualsNeeded = Math.min(Math.ceil(duration / averageDuration), 4);
+    break;
+  default:
+    // Standard content pacing
+    averageDuration = 4; // 3-5 seconds per visual
+    visualsNeeded = Math.min(Math.ceil(duration / averageDuration), 6);
   }
   
   // Ensure minimum 2 visuals, maximum 8 per scene (industry limits)
@@ -512,6 +509,6 @@ async function searchMedia(requestBody, context) {
 }
 
 // Export handler with shared error handling wrapper
-export const lambdaHandler = wrapHandler(handler);
-export { lambdaHandler as handler };
+const lambdaHandler  = wrapHandler(handler);
+module.exports = { handler: lambdaHandler };
 

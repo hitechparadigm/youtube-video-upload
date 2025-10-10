@@ -413,7 +413,7 @@
     ],
     "Content": {
      "S3Bucket": "cdk-hnb659fds-assets-786673323159-us-east-1",
-     "S3Key": "1dc1b011de2f9d83bacd5faca7cc8a6a24bae935a45f86f7636b6c2ac6a60d61.zip"
+     "S3Key": "e515202356296a95ade302a33d9e8c5526730fb19895948432531ee377a5705d.zip"
     },
     "Description": "Context integration layer for AI agent communication",
     "LayerName": "automated-video-pipeline-context"
@@ -422,7 +422,7 @@
    "DeletionPolicy": "Retain",
    "Metadata": {
     "aws:cdk:path": "VideoPipelineStack/ContextLayer/Resource",
-    "aws:asset:path": "asset.1dc1b011de2f9d83bacd5faca7cc8a6a24bae935a45f86f7636b6c2ac6a60d61",
+    "aws:asset:path": "asset.e515202356296a95ade302a33d9e8c5526730fb19895948432531ee377a5705d",
     "aws:asset:is-bundled": false,
     "aws:asset:property": "Content"
    }
@@ -432,7 +432,7 @@
    "Properties": {
     "Code": {
      "S3Bucket": "cdk-hnb659fds-assets-786673323159-us-east-1",
-     "S3Key": "5ea3f04556c0ba6a906a60b568529b4e435abc853ff462d3c2ea36ae489bb47b.zip"
+     "S3Key": "8011669e34605c358ebeffa380d653d272d783d9403378ae940e831781e0a7df.zip"
     },
     "Environment": {
      "Variables": {
@@ -455,12 +455,7 @@
      }
     },
     "FunctionName": "automated-video-pipeline-topic-management-v2",
-    "Handler": "handler.handler",
-    "Layers": [
-     {
-      "Ref": "ContextLayerBFE43D68"
-     }
-    ],
+    "Handler": "standalone.handler",
     "MemorySize": 512,
     "Role": {
      "Fn::GetAtt": [
@@ -495,7 +490,7 @@
    ],
    "Metadata": {
     "aws:cdk:path": "VideoPipelineStack/TopicManagementFunction/Resource",
-    "aws:asset:path": "asset.5ea3f04556c0ba6a906a60b568529b4e435abc853ff462d3c2ea36ae489bb47b",
+    "aws:asset:path": "asset.8011669e34605c358ebeffa380d653d272d783d9403378ae940e831781e0a7df",
     "aws:asset:is-bundled": false,
     "aws:asset:property": "Code"
    }
@@ -505,7 +500,7 @@
    "Properties": {
     "Code": {
      "S3Bucket": "cdk-hnb659fds-assets-786673323159-us-east-1",
-     "S3Key": "721528cacfd47dd56bb74f9cd0201cdaa994efd371eb0ef271cc7d80a94929dc.zip"
+     "S3Key": "9bb2c3dbaabc6b356850833c2866a579cc5184187210f976cea5bc448ed87971.zip"
     },
     "Environment": {
      "Variables": {
@@ -527,15 +522,7 @@
      }
     },
     "FunctionName": "automated-video-pipeline-script-generator-v2",
-    "Handler": "handler.handler",
-    "Layers": [
-     {
-      "Ref": "ConfigLayer1A4B087F"
-     },
-     {
-      "Ref": "ContextLayerBFE43D68"
-     }
-    ],
+    "Handler": "standalone.handler",
     "MemorySize": 1024,
     "Role": {
      "Fn::GetAtt": [
@@ -570,7 +557,7 @@
    ],
    "Metadata": {
     "aws:cdk:path": "VideoPipelineStack/ScriptGeneratorFunction/Resource",
-    "aws:asset:path": "asset.721528cacfd47dd56bb74f9cd0201cdaa994efd371eb0ef271cc7d80a94929dc",
+    "aws:asset:path": "asset.9bb2c3dbaabc6b356850833c2866a579cc5184187210f976cea5bc448ed87971",
     "aws:asset:is-bundled": false,
     "aws:asset:property": "Code"
    }
@@ -580,7 +567,7 @@
    "Properties": {
     "Code": {
      "S3Bucket": "cdk-hnb659fds-assets-786673323159-us-east-1",
-     "S3Key": "a5584c4fa8948d8adbd83fc617bb9c79729227c6384dd54489164e5260b88c45.zip"
+     "S3Key": "d4897d62d040a5505d9e6514603bb94bf9c021b19e6a1c5e413e0aca855238e8.zip"
     },
     "Environment": {
      "Variables": {
@@ -601,12 +588,7 @@
      }
     },
     "FunctionName": "automated-video-pipeline-media-curator-v2",
-    "Handler": "index.handler",
-    "Layers": [
-     {
-      "Ref": "ContextLayerBFE43D68"
-     }
-    ],
+    "Handler": "standalone.handler",
     "MemorySize": 512,
     "Role": {
      "Fn::GetAtt": [
@@ -641,7 +623,7 @@
    ],
    "Metadata": {
     "aws:cdk:path": "VideoPipelineStack/MediaCuratorFunction/Resource",
-    "aws:asset:path": "asset.a5584c4fa8948d8adbd83fc617bb9c79729227c6384dd54489164e5260b88c45",
+    "aws:asset:path": "asset.d4897d62d040a5505d9e6514603bb94bf9c021b19e6a1c5e413e0aca855238e8",
     "aws:asset:is-bundled": false,
     "aws:asset:property": "Code"
    }
@@ -651,7 +633,7 @@
    "Properties": {
     "Code": {
      "S3Bucket": "cdk-hnb659fds-assets-786673323159-us-east-1",
-     "S3Key": "7aa5bd09ae45c0310509a281de713c98188878b1e72384e19aea6b91a0cae68c.zip"
+     "S3Key": "3c59e85825ebdb1e98fe2b9fdc0731aef93244b3d7e089c18a7a33e954d5ad12.zip"
     },
     "Environment": {
      "Variables": {
@@ -671,15 +653,7 @@
      }
     },
     "FunctionName": "automated-video-pipeline-audio-generator-v2",
-    "Handler": "handler.handler",
-    "Layers": [
-     {
-      "Ref": "ConfigLayer1A4B087F"
-     },
-     {
-      "Ref": "ContextLayerBFE43D68"
-     }
-    ],
+    "Handler": "standalone.handler",
     "MemorySize": 512,
     "Role": {
      "Fn::GetAtt": [
@@ -714,7 +688,7 @@
    ],
    "Metadata": {
     "aws:cdk:path": "VideoPipelineStack/AudioGeneratorFunction/Resource",
-    "aws:asset:path": "asset.7aa5bd09ae45c0310509a281de713c98188878b1e72384e19aea6b91a0cae68c",
+    "aws:asset:path": "asset.3c59e85825ebdb1e98fe2b9fdc0731aef93244b3d7e089c18a7a33e954d5ad12",
     "aws:asset:is-bundled": false,
     "aws:asset:property": "Code"
    }
@@ -724,7 +698,7 @@
    "Properties": {
     "Code": {
      "S3Bucket": "cdk-hnb659fds-assets-786673323159-us-east-1",
-     "S3Key": "fa2bea449980fe8806f159cfc0122d82869748f79e08a7847384cad2f585b5cc.zip"
+     "S3Key": "6a20205da0d03f2852dd222409dc353743ed9abdbf34bbb7168826d1ebe5e5bc.zip"
     },
     "Environment": {
      "Variables": {
@@ -749,12 +723,7 @@
      }
     },
     "FunctionName": "automated-video-pipeline-video-assembler-v2",
-    "Handler": "handler.handler",
-    "Layers": [
-     {
-      "Ref": "ContextLayerBFE43D68"
-     }
-    ],
+    "Handler": "standalone.handler",
     "MemorySize": 1024,
     "Role": {
      "Fn::GetAtt": [
@@ -789,7 +758,7 @@
    ],
    "Metadata": {
     "aws:cdk:path": "VideoPipelineStack/VideoAssemblerFunction/Resource",
-    "aws:asset:path": "asset.fa2bea449980fe8806f159cfc0122d82869748f79e08a7847384cad2f585b5cc",
+    "aws:asset:path": "asset.6a20205da0d03f2852dd222409dc353743ed9abdbf34bbb7168826d1ebe5e5bc",
     "aws:asset:is-bundled": false,
     "aws:asset:property": "Code"
    }
@@ -799,7 +768,7 @@
    "Properties": {
     "Code": {
      "S3Bucket": "cdk-hnb659fds-assets-786673323159-us-east-1",
-     "S3Key": "b683fc99560eeba4c3af073af061c87c358b07837c9d6364a9e37ce1d7881018.zip"
+     "S3Key": "14b7510182d667f8a6d7d72e0e94cb9804b71b636bdbffa42e021e6785a94fd2.zip"
     },
     "Environment": {
      "Variables": {
@@ -823,12 +792,7 @@
      }
     },
     "FunctionName": "automated-video-pipeline-youtube-publisher-v2",
-    "Handler": "handler.handler",
-    "Layers": [
-     {
-      "Ref": "ContextLayerBFE43D68"
-     }
-    ],
+    "Handler": "standalone.handler",
     "MemorySize": 1024,
     "Role": {
      "Fn::GetAtt": [
@@ -863,7 +827,7 @@
    ],
    "Metadata": {
     "aws:cdk:path": "VideoPipelineStack/YouTubePublisherFunction/Resource",
-    "aws:asset:path": "asset.b683fc99560eeba4c3af073af061c87c358b07837c9d6364a9e37ce1d7881018",
+    "aws:asset:path": "asset.14b7510182d667f8a6d7d72e0e94cb9804b71b636bdbffa42e021e6785a94fd2",
     "aws:asset:is-bundled": false,
     "aws:asset:property": "Code"
    }
@@ -873,7 +837,7 @@
    "Properties": {
     "Code": {
      "S3Bucket": "cdk-hnb659fds-assets-786673323159-us-east-1",
-     "S3Key": "e02468feb49552d35de0b1ff67c5da09157661c2e71cd1ebe70c74d7090a6bf2.zip"
+     "S3Key": "bc53dea2f34c249d9cfaadb5c3adbdb3bbe40b3c23caf39e54e090bcded29180.zip"
     },
     "Environment": {
      "Variables": {
@@ -883,11 +847,22 @@
       "TOPICS_TABLE_NAME": {
        "Ref": "TopicsTableB8A0263C"
       },
+      "S3_BUCKET": {
+       "Ref": "PrimaryBucket2E757879"
+      },
+      "CONTEXT_TABLE": {
+       "Ref": "ContextTableE95A339A"
+      },
       "NODE_ENV": "production"
      }
     },
     "FunctionName": "automated-video-pipeline-workflow-orchestrator-v2",
     "Handler": "handler.handler",
+    "Layers": [
+     {
+      "Ref": "ContextLayerBFE43D68"
+     }
+    ],
     "MemorySize": 512,
     "Role": {
      "Fn::GetAtt": [
@@ -922,7 +897,7 @@
    ],
    "Metadata": {
     "aws:cdk:path": "VideoPipelineStack/WorkflowOrchestratorFunction/Resource",
-    "aws:asset:path": "asset.e02468feb49552d35de0b1ff67c5da09157661c2e71cd1ebe70c74d7090a6bf2",
+    "aws:asset:path": "asset.bc53dea2f34c249d9cfaadb5c3adbdb3bbe40b3c23caf39e54e090bcded29180",
     "aws:asset:is-bundled": false,
     "aws:asset:property": "Code"
    }
@@ -1005,7 +980,7 @@
        ]
       },
       "Id": "Target0",
-      "Input": "{\"action\":\"start-scheduled\",\"source\":\"eventbridge-schedule\",\"baseTopic\":\"Auto-scheduled from Google Sheets\",\"scheduledBy\":\"eventbridge\",\"useGoogleSheets\":true,\"timestamp\":\"2025-10-09T18:21:38.572Z\"}"
+      "Input": "{\"action\":\"start-scheduled\",\"source\":\"eventbridge-schedule\",\"baseTopic\":\"Auto-scheduled from Google Sheets\",\"scheduledBy\":\"eventbridge\",\"useGoogleSheets\":true,\"timestamp\":\"2025-10-10T00:03:51.018Z\"}"
      }
     ]
    },
@@ -1069,7 +1044,7 @@
        ]
       },
       "Id": "Target0",
-      "Input": "{\"action\":\"start-scheduled\",\"source\":\"eventbridge-high-priority\",\"baseTopic\":\"High-priority auto-scheduled\",\"scheduledBy\":\"eventbridge-priority\",\"useGoogleSheets\":true,\"priorityOnly\":true,\"timestamp\":\"2025-10-09T18:21:38.579Z\"}"
+      "Input": "{\"action\":\"start-scheduled\",\"source\":\"eventbridge-high-priority\",\"baseTopic\":\"High-priority auto-scheduled\",\"scheduledBy\":\"eventbridge-priority\",\"useGoogleSheets\":true,\"priorityOnly\":true,\"timestamp\":\"2025-10-10T00:03:51.026Z\"}"
      }
     ]
    },
@@ -1127,7 +1102,7 @@
     "aws:cdk:path": "VideoPipelineStack/VideoPipelineAPI/Resource"
    }
   },
-  "VideoPipelineAPIDeploymentC06F0BD86f20880a655f49fd9e5bf8ad9f7d30eb": {
+  "VideoPipelineAPIDeploymentC06F0BD8ef975ab546441e263c06b9ac8f65c9b3": {
    "Type": "AWS::ApiGateway::Deployment",
    "Properties": {
     "Description": "API for Automated Video Pipeline",
@@ -1151,6 +1126,9 @@
     "VideoPipelineAPItopicstopicIdPUT204A3495",
     "VideoPipelineAPItopicstopicId877F6683",
     "VideoPipelineAPItopicsGETDC1EB2B9",
+    "VideoPipelineAPItopicshealthGET5C1844BE",
+    "VideoPipelineAPItopicshealthOPTIONS90E6E901",
+    "VideoPipelineAPItopicshealthA93864C9",
     "VideoPipelineAPItopicsOPTIONSEFA954B9",
     "VideoPipelineAPItopicsPOST1FB44524",
     "VideoPipelineAPItopicsF8A446F2",
@@ -1186,7 +1164,7 @@
    "Type": "AWS::ApiGateway::Stage",
    "Properties": {
     "DeploymentId": {
-     "Ref": "VideoPipelineAPIDeploymentC06F0BD86f20880a655f49fd9e5bf8ad9f7d30eb"
+     "Ref": "VideoPipelineAPIDeploymentC06F0BD8ef975ab546441e263c06b9ac8f65c9b3"
     },
     "RestApiId": {
      "Ref": "VideoPipelineAPIC7F4C465"
@@ -1512,6 +1490,160 @@
    },
    "Metadata": {
     "aws:cdk:path": "VideoPipelineStack/VideoPipelineAPI/Default/topics/POST/Resource"
+   }
+  },
+  "VideoPipelineAPItopicshealthA93864C9": {
+   "Type": "AWS::ApiGateway::Resource",
+   "Properties": {
+    "ParentId": {
+     "Ref": "VideoPipelineAPItopicsF8A446F2"
+    },
+    "PathPart": "health",
+    "RestApiId": {
+     "Ref": "VideoPipelineAPIC7F4C465"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "VideoPipelineStack/VideoPipelineAPI/Default/topics/health/Resource"
+   }
+  },
+  "VideoPipelineAPItopicshealthOPTIONS90E6E901": {
+   "Type": "AWS::ApiGateway::Method",
+   "Properties": {
+    "ApiKeyRequired": false,
+    "AuthorizationType": "NONE",
+    "HttpMethod": "OPTIONS",
+    "Integration": {
+     "IntegrationResponses": [
+      {
+       "ResponseParameters": {
+        "method.response.header.Access-Control-Allow-Headers": "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'",
+        "method.response.header.Access-Control-Allow-Origin": "'*'",
+        "method.response.header.Access-Control-Allow-Methods": "'OPTIONS,GET,PUT,POST,DELETE,PATCH,HEAD'"
+       },
+       "StatusCode": "204"
+      }
+     ],
+     "RequestTemplates": {
+      "application/json": "{ statusCode: 200 }"
+     },
+     "Type": "MOCK"
+    },
+    "MethodResponses": [
+     {
+      "ResponseParameters": {
+       "method.response.header.Access-Control-Allow-Headers": true,
+       "method.response.header.Access-Control-Allow-Origin": true,
+       "method.response.header.Access-Control-Allow-Methods": true
+      },
+      "StatusCode": "204"
+     }
+    ],
+    "ResourceId": {
+     "Ref": "VideoPipelineAPItopicshealthA93864C9"
+    },
+    "RestApiId": {
+     "Ref": "VideoPipelineAPIC7F4C465"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "VideoPipelineStack/VideoPipelineAPI/Default/topics/health/OPTIONS/Resource"
+   }
+  },
+  "VideoPipelineAPItopicshealthGETApiPermissionVideoPipelineStackVideoPipelineAPI7A2C3071GETtopicshealth6A7C93A2": {
+   "Type": "AWS::Lambda::Permission",
+   "Properties": {
+    "Action": "lambda:InvokeFunction",
+    "FunctionName": {
+     "Fn::GetAtt": [
+      "TopicManagementFunctionC81B46F7",
+      "Arn"
+     ]
+    },
+    "Principal": "apigateway.amazonaws.com",
+    "SourceArn": {
+     "Fn::Join": [
+      "",
+      [
+       "arn:aws:execute-api:us-east-1:786673323159:",
+       {
+        "Ref": "VideoPipelineAPIC7F4C465"
+       },
+       "/",
+       {
+        "Ref": "VideoPipelineAPIDeploymentStageprod938D37FF"
+       },
+       "/GET/topics/health"
+      ]
+     ]
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "VideoPipelineStack/VideoPipelineAPI/Default/topics/health/GET/ApiPermission.VideoPipelineStackVideoPipelineAPI7A2C3071.GET..topics.health"
+   }
+  },
+  "VideoPipelineAPItopicshealthGETApiPermissionTestVideoPipelineStackVideoPipelineAPI7A2C3071GETtopicshealth96159548": {
+   "Type": "AWS::Lambda::Permission",
+   "Properties": {
+    "Action": "lambda:InvokeFunction",
+    "FunctionName": {
+     "Fn::GetAtt": [
+      "TopicManagementFunctionC81B46F7",
+      "Arn"
+     ]
+    },
+    "Principal": "apigateway.amazonaws.com",
+    "SourceArn": {
+     "Fn::Join": [
+      "",
+      [
+       "arn:aws:execute-api:us-east-1:786673323159:",
+       {
+        "Ref": "VideoPipelineAPIC7F4C465"
+       },
+       "/test-invoke-stage/GET/topics/health"
+      ]
+     ]
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "VideoPipelineStack/VideoPipelineAPI/Default/topics/health/GET/ApiPermission.Test.VideoPipelineStackVideoPipelineAPI7A2C3071.GET..topics.health"
+   }
+  },
+  "VideoPipelineAPItopicshealthGET5C1844BE": {
+   "Type": "AWS::ApiGateway::Method",
+   "Properties": {
+    "ApiKeyRequired": true,
+    "AuthorizationType": "NONE",
+    "HttpMethod": "GET",
+    "Integration": {
+     "IntegrationHttpMethod": "POST",
+     "Type": "AWS_PROXY",
+     "Uri": {
+      "Fn::Join": [
+       "",
+       [
+        "arn:aws:apigateway:us-east-1:lambda:path/2015-03-31/functions/",
+        {
+         "Fn::GetAtt": [
+          "TopicManagementFunctionC81B46F7",
+          "Arn"
+         ]
+        },
+        "/invocations"
+       ]
+      ]
+     }
+    },
+    "ResourceId": {
+     "Ref": "VideoPipelineAPItopicshealthA93864C9"
+    },
+    "RestApiId": {
+     "Ref": "VideoPipelineAPIC7F4C465"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "VideoPipelineStack/VideoPipelineAPI/Default/topics/health/GET/Resource"
    }
   },
   "VideoPipelineAPItopicstopicId877F6683": {

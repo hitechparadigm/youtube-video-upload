@@ -32,28 +32,25 @@
  * - Category: Most relevant YouTube category for algorithm
  */
 
-import { google } from 'googleapis';
-import fs from 'fs';
-import path from 'path';
+const { google  } = require('googleapis');
+const fs = require('fs');
+const path = require('path');
 
 // Import shared utilities
-import { 
-  retrieveContext, 
+const { retrieveContext, 
   validateContext 
-} from '/opt/nodejs/context-manager.js';
-import { 
-  downloadFromS3,
+} = require('/opt/nodejs/context-manager');
+const { downloadFromS3,
   getSecret,
   executeWithRetry 
-} from '/opt/nodejs/aws-service-manager.js';
-import { 
-  wrapHandler, 
+} = require('/opt/nodejs/aws-service-manager');
+const { wrapHandler, 
   AppError, 
   ERROR_TYPES, 
   validateRequiredParams,
   withTimeout,
   monitorPerformance 
-} from '/opt/nodejs/error-handler.js';
+} = require('/opt/nodejs/error-handler');
 
 // Initialize YouTube API
 const youtube = google.youtube('v3');
@@ -74,42 +71,42 @@ const handler = async (event, context) => {
 
   // Route requests
   switch (httpMethod) {
-    case 'GET':
-      if (path === '/health') {
-        return {
-          statusCode: 200,
-          headers: {
-            'Content-Type': 'application/json',
-            'Access-Control-Allow-Origin': '*'
-          },
-          body: JSON.stringify({
-            service: 'youtube-publisher',
-            status: 'healthy',
-            timestamp: new Date().toISOString(),
-            version: '3.0.0-refactored',
-            youtubeApiIntegration: true,
-            seoOptimization: true,
-            oauthAuthentication: true,
-            sharedUtilities: true
-          })
-        };
-      } else if (path === '/youtube/status') {
-        const videoId = queryStringParameters?.videoId;
-        return await getUploadStatus(videoId);
-      }
-      break;
+  case 'GET':
+    if (path === '/health') {
+      return {
+        statusCode: 200,
+        headers: {
+          'Content-Type': 'application/json',
+          'Access-Control-Allow-Origin': '*'
+        },
+        body: JSON.stringify({
+          service: 'youtube-publisher',
+          status: 'healthy',
+          timestamp: new Date().toISOString(),
+          version: '3.0.0-refactored',
+          youtubeApiIntegration: true,
+          seoOptimization: true,
+          oauthAuthentication: true,
+          sharedUtilities: true
+        })
+      };
+    } else if (path === '/youtube/status') {
+      const videoId = queryStringParameters?.videoId;
+      return await getUploadStatus(videoId);
+    }
+    break;
 
-    case 'POST':
-      if (path === '/youtube/publish') {
-        return await publishToYouTube(requestBody, context);
-      } else if (path === '/youtube/publish-from-project') {
-        return await publishFromProject(requestBody, context);
-      } else if (path === '/youtube/optimize') {
-        return await optimizeVideoSEO(requestBody, context);
-      } else if (path === '/youtube/thumbnail') {
-        return await uploadThumbnail(requestBody, context);
-      }
-      break;
+  case 'POST':
+    if (path === '/youtube/publish') {
+      return await publishToYouTube(requestBody, context);
+    } else if (path === '/youtube/publish-from-project') {
+      return await publishFromProject(requestBody, context);
+    } else if (path === '/youtube/optimize') {
+      return await optimizeVideoSEO(requestBody, context);
+    } else if (path === '/youtube/thumbnail') {
+      return await uploadThumbnail(requestBody, context);
+    }
+    break;
   }
 
   throw new AppError('Endpoint not found', ERROR_TYPES.NOT_FOUND, 404);
@@ -177,7 +174,7 @@ async function publishFromProject(requestBody, context) {
     if (publishOptions.uploadThumbnail) {
       try {
         await uploadVideoThumbnail(oauth2Client, uploadResult.videoId, assemblyContext);
-        console.log(`🖼️ Custom thumbnail uploaded`);
+        console.log('🖼️ Custom thumbnail uploaded');
       } catch (error) {
         console.warn(`⚠️ Thumbnail upload failed: ${error.message}`);
       }
@@ -220,7 +217,7 @@ function optimizeVideoMetadata(assemblyContext, publishOptions) {
   
   // SEO-optimized title (max 60 characters)
   const title = youtubeInstructions.title || contentMetadata.title || 'Educational Video';
-  const optimizedTitle = title.length > 60 ? title.substring(0, 57) + '...' : title;
+  const optimizedTitle = title.length > 60 ? `${title.substring(0, 57)  }...` : title;
   
   // SEO-optimized description with structure
   const baseDescription = youtubeInstructions.description || contentMetadata.description || '';
@@ -228,8 +225,8 @@ function optimizeVideoMetadata(assemblyContext, publishOptions) {
 
 🎯 Key Topics Covered:
 ${(assemblyContext.videoMetadata?.scenes || []).map((scene, index) => 
-  `${index + 1}. ${scene.title || `Topic ${index + 1}`}`
-).join('\n')}
+    `${index + 1}. ${scene.title || `Topic ${index + 1}`}`
+  ).join('\n')}
 
 📚 This video was created using advanced AI technology and professional video production standards.
 
@@ -403,6 +400,6 @@ async function getUploadStatus(videoId) {
 }
 
 // Export handler with shared error handling wrapper
-export const lambdaHandler = wrapHandler(handler);
-export { lambdaHandler as handler };
+const lambdaHandler  = wrapHandler(handler);
+module.exports = { handler: lambdaHandler };
 

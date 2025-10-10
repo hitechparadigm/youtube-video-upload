@@ -33,25 +33,22 @@
  */
 
 // Import shared utilities
-import { 
-  storeContext, 
+const { storeContext, 
   retrieveContext, 
   validateContext 
-} from '/opt/nodejs/context-manager.js';
-import { 
-  uploadToS3,
+} = require('/opt/nodejs/context-manager');
+const { uploadToS3,
   downloadFromS3,
   listS3Objects,
   executeWithRetry 
-} from '/opt/nodejs/aws-service-manager.js';
-import { 
-  wrapHandler, 
+} = require('/opt/nodejs/aws-service-manager');
+const { wrapHandler, 
   AppError, 
   ERROR_TYPES, 
   validateRequiredParams,
   withTimeout,
   monitorPerformance 
-} from '/opt/nodejs/error-handler.js';
+} = require('/opt/nodejs/error-handler');
 
 // Configuration
 const VIDEOS_TABLE = process.env.VIDEOS_TABLE_NAME || 'automated-video-pipeline-production';
@@ -73,44 +70,44 @@ const handler = async (event, context) => {
 
   // Route requests
   switch (httpMethod) {
-    case 'GET':
-      if (path === '/health') {
-        return {
-          statusCode: 200,
-          headers: {
-            'Content-Type': 'application/json',
-            'Access-Control-Allow-Origin': '*'
-          },
-          body: JSON.stringify({
-            service: 'video-assembler',
-            status: 'healthy',
-            timestamp: new Date().toISOString(),
-            version: '3.0.0-refactored',
-            lambdaBasedProcessing: true,
-            contextAware: true,
-            professionalQuality: true,
-            sharedUtilities: true,
-            videoSpecs: {
-              resolution: '1920x1080',
-              frameRate: '30fps',
-              format: 'MP4',
-              codec: 'H.264'
-            }
-          })
-        };
-      } else if (path === '/video/status') {
-        const videoId = queryStringParameters?.videoId;
-        return await getVideoStatus(videoId);
-      }
-      break;
+  case 'GET':
+    if (path === '/health') {
+      return {
+        statusCode: 200,
+        headers: {
+          'Content-Type': 'application/json',
+          'Access-Control-Allow-Origin': '*'
+        },
+        body: JSON.stringify({
+          service: 'video-assembler',
+          status: 'healthy',
+          timestamp: new Date().toISOString(),
+          version: '3.0.0-refactored',
+          lambdaBasedProcessing: true,
+          contextAware: true,
+          professionalQuality: true,
+          sharedUtilities: true,
+          videoSpecs: {
+            resolution: '1920x1080',
+            frameRate: '30fps',
+            format: 'MP4',
+            codec: 'H.264'
+          }
+        })
+      };
+    } else if (path === '/video/status') {
+      const videoId = queryStringParameters?.videoId;
+      return await getVideoStatus(videoId);
+    }
+    break;
 
-    case 'POST':
-      if (path === '/video/assemble-from-project') {
-        return await assembleVideoFromProject(requestBody, context);
-      } else if (path === '/video/assemble') {
-        return await assembleVideo(requestBody, context);
-      }
-      break;
+  case 'POST':
+    if (path === '/video/assemble-from-project') {
+      return await assembleVideoFromProject(requestBody, context);
+    } else if (path === '/video/assemble') {
+      return await assembleVideo(requestBody, context);
+    }
+    break;
   }
 
   throw new AppError('Endpoint not found', ERROR_TYPES.NOT_FOUND, 404);
@@ -216,7 +213,7 @@ async function assembleVideoFromProject(requestBody, context) {
 
     // Store assembly context using shared context manager
     await storeContext(assemblyContext, 'video');
-    console.log(`💾 Stored assembly context for YouTube Publisher AI`);
+    console.log('💾 Stored assembly context for YouTube Publisher AI');
 
     return {
       statusCode: 200,
@@ -502,6 +499,6 @@ async function assembleVideo(requestBody, context) {
 }
 
 // Export handler with shared error handling wrapper
-export const lambdaHandler = wrapHandler(handler);
-export { lambdaHandler as handler };
+const lambdaHandler  = wrapHandler(handler);
+module.exports = { handler: lambdaHandler };
 

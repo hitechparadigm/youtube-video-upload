@@ -15,7 +15,7 @@
 /**
  * Error types for classification and handling
  */
-export const ERROR_TYPES = {
+const ERROR_TYPES = {
   VALIDATION: 'ValidationError',
   AUTHENTICATION: 'AuthenticationError',
   AUTHORIZATION: 'AuthorizationError',
@@ -59,7 +59,7 @@ const RETRYABLE_ERRORS = [
 /**
  * Custom error class for application errors
  */
-export class AppError extends Error {
+class AppError extends Error {
   constructor(message, type = ERROR_TYPES.INTERNAL, statusCode = null, details = {}) {
     super(message);
     this.name = 'AppError';
@@ -77,7 +77,7 @@ export class AppError extends Error {
  * @param {Object} context - Additional context information
  * @param {string} level - Log level (error, warn, info)
  */
-export function logError(error, context = {}, level = 'error') {
+function logError(error, context = {}, level = 'error') {
   const logEntry = {
     timestamp: new Date().toISOString(),
     level,
@@ -115,7 +115,7 @@ export function logError(error, context = {}, level = 'error') {
  * @param {Object} context - Request context
  * @returns {Object} API Gateway response object
  */
-export function createErrorResponse(error, context = {}) {
+function createErrorResponse(error, context = {}) {
   const isAppError = error instanceof AppError;
   const statusCode = isAppError ? error.statusCode : 500;
   const errorType = isAppError ? error.type : ERROR_TYPES.INTERNAL;
@@ -159,7 +159,7 @@ export function createErrorResponse(error, context = {}) {
  * @param {Error} error - Error to check
  * @returns {boolean} Whether the error is retryable
  */
-export function shouldRetry(error) {
+function shouldRetry(error) {
   // Don't retry operational errors (validation, auth, etc.)
   if (error instanceof AppError && error.isOperational) {
     return error.type === ERROR_TYPES.RATE_LIMIT || error.type === ERROR_TYPES.TIMEOUT;
@@ -178,7 +178,7 @@ export function shouldRetry(error) {
  * @param {number} maxDelay - Maximum delay in milliseconds
  * @returns {number} Delay in milliseconds
  */
-export function getRetryDelay(attempt, baseDelay = 1000, maxDelay = 30000) {
+function getRetryDelay(attempt, baseDelay = 1000, maxDelay = 30000) {
   // Exponential backoff: baseDelay * 2^(attempt-1)
   const exponentialDelay = baseDelay * Math.pow(2, attempt - 1);
   
@@ -195,7 +195,7 @@ export function getRetryDelay(attempt, baseDelay = 1000, maxDelay = 30000) {
  * @param {Object} options - Retry options
  * @returns {Promise<any>} Operation result
  */
-export async function executeWithRetry(operation, options = {}) {
+async function executeWithRetry(operation, options = {}) {
   const {
     maxRetries = 3,
     baseDelay = 1000,
@@ -237,7 +237,7 @@ export async function executeWithRetry(operation, options = {}) {
  * @param {Function} handler - Lambda handler function
  * @returns {Function} Wrapped handler with error handling
  */
-export function wrapHandler(handler) {
+function wrapHandler(handler) {
   return async (event, context) => {
     try {
       const result = await handler(event, context);
@@ -262,7 +262,7 @@ export function wrapHandler(handler) {
  * @param {Array<string>} required - Required parameter names
  * @param {string} context - Context for error message
  */
-export function validateRequiredParams(params, required, context = 'operation') {
+function validateRequiredParams(params, required, context = 'operation') {
   const missing = required.filter(param => 
     params[param] === undefined || params[param] === null || params[param] === ''
   );
@@ -284,7 +284,7 @@ export function validateRequiredParams(params, required, context = 'operation') 
  * @param {string} operationName - Name for error messages
  * @returns {Promise<any>} Operation result or timeout error
  */
-export function withTimeout(operation, timeoutMs, operationName = 'operation') {
+function withTimeout(operation, timeoutMs, operationName = 'operation') {
   return Promise.race([
     operation(),
     new Promise((_, reject) => {
@@ -307,7 +307,7 @@ export function withTimeout(operation, timeoutMs, operationName = 'operation') {
  * @param {string} operation - Operation that failed
  * @returns {AppError} Converted application error
  */
-export function handleAWSError(error, service, operation) {
+function handleAWSError(error, service, operation) {
   let errorType = ERROR_TYPES.AWS_SERVICE;
   let statusCode = 503;
 
@@ -358,7 +358,7 @@ export function handleAWSError(error, service, operation) {
  * @param {Object} context - Additional context
  * @returns {Promise<any>} Operation result with performance logging
  */
-export async function monitorPerformance(operation, operationName, context = {}) {
+async function monitorPerformance(operation, operationName, context = {}) {
   const startTime = Date.now();
   
   try {
@@ -392,4 +392,19 @@ export async function monitorPerformance(operation, operationName, context = {})
     
     throw error;
   }
-}
+}// Ex
+port all functions and classes
+module.exports = {
+  ERROR_TYPES,
+  AppError,
+  logError,
+  createErrorResponse,
+  shouldRetry,
+  getRetryDelay,
+  executeWithRetry,
+  wrapHandler,
+  validateRequiredParams,
+  withTimeout,
+  handleAWSError,
+  monitorPerformance
+};

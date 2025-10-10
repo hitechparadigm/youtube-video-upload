@@ -18,7 +18,7 @@ describe('End-to-End Pipeline Integration', () => {
     
     createProject.mockResolvedValue(testProjectId);
     storeContext.mockResolvedValue('context-stored');
-    uploadToS3.mockResolvedValue(`s3://test-bucket/test-key`);
+    uploadToS3.mockResolvedValue('s3://test-bucket/test-key');
     getSecret.mockResolvedValue({
       'pexels-api-key': 'test-pexels-key',
       'pixabay-api-key': 'test-pixabay-key',

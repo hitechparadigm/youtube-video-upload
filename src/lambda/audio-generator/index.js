@@ -31,26 +31,23 @@
  * - FALLBACK: Matthew Neural (Neural, US English, authoritative)
  */
 
-import { PollyClient, SynthesizeSpeechCommand, DescribeVoicesCommand } from '@aws-sdk/client-polly';
+const { PollyClient, SynthesizeSpeechCommand, DescribeVoicesCommand  } = require('@aws-sdk/client-polly');
 
 // Import shared utilities
-import { 
-  storeContext, 
+const { storeContext, 
   retrieveContext, 
   validateContext 
-} from '/opt/nodejs/context-manager.js';
-import { 
-  uploadToS3,
+} = require('/opt/nodejs/context-manager');
+const { uploadToS3,
   executeWithRetry 
-} from '/opt/nodejs/aws-service-manager.js';
-import { 
-  wrapHandler, 
+} = require('/opt/nodejs/aws-service-manager');
+const { wrapHandler, 
   AppError, 
   ERROR_TYPES, 
   validateRequiredParams,
   withTimeout,
   monitorPerformance 
-} from '/opt/nodejs/error-handler.js';
+} = require('/opt/nodejs/error-handler');
 
 // Initialize AWS clients
 const pollyClient = new PollyClient({ region: process.env.AWS_REGION || 'us-east-1' });
@@ -74,38 +71,38 @@ const handler = async (event, context) => {
 
   // Route requests
   switch (httpMethod) {
-    case 'GET':
-      if (path === '/health') {
-        return {
-          statusCode: 200,
-          headers: {
-            'Content-Type': 'application/json',
-            'Access-Control-Allow-Origin': '*'
-          },
-          body: JSON.stringify({
-            service: 'audio-generator',
-            status: 'healthy',
-            timestamp: new Date().toISOString(),
-            version: '3.0.0-refactored',
-            generativeVoices: true,
-            contextAware: true,
-            sceneAwarePacing: true,
-            sharedUtilities: true,
-            primaryVoices: ['Ruth (Generative)', 'Stephen (Generative)']
-          })
-        };
-      } else if (path === '/audio/voices') {
-        return await getAvailableVoices();
-      }
-      break;
+  case 'GET':
+    if (path === '/health') {
+      return {
+        statusCode: 200,
+        headers: {
+          'Content-Type': 'application/json',
+          'Access-Control-Allow-Origin': '*'
+        },
+        body: JSON.stringify({
+          service: 'audio-generator',
+          status: 'healthy',
+          timestamp: new Date().toISOString(),
+          version: '3.0.0-refactored',
+          generativeVoices: true,
+          contextAware: true,
+          sceneAwarePacing: true,
+          sharedUtilities: true,
+          primaryVoices: ['Ruth (Generative)', 'Stephen (Generative)']
+        })
+      };
+    } else if (path === '/audio/voices') {
+      return await getAvailableVoices();
+    }
+    break;
 
-    case 'POST':
-      if (path === '/audio/generate-from-project') {
-        return await generateAudioFromProject(requestBody, context);
-      } else if (path === '/audio/generate') {
-        return await generateAudio(requestBody, context);
-      }
-      break;
+  case 'POST':
+    if (path === '/audio/generate-from-project') {
+      return await generateAudioFromProject(requestBody, context);
+    } else if (path === '/audio/generate') {
+      return await generateAudio(requestBody, context);
+    }
+    break;
   }
 
   throw new AppError('Endpoint not found', ERROR_TYPES.NOT_FOUND, 404);
@@ -169,7 +166,7 @@ async function generateAudioFromProject(requestBody, context) {
 
       // Add rate limiting delay for generative voices (2 TPS limit)
       if (i > 0 && selectedVoice.type === 'generative') {
-        console.log(`⏱️ Rate limiting delay: 500ms for generative voice`);
+        console.log('⏱️ Rate limiting delay: 500ms for generative voice');
         await new Promise(resolve => setTimeout(resolve, 500)); // 500ms delay for 2 TPS
       }
 
@@ -245,7 +242,7 @@ async function generateAudioFromProject(requestBody, context) {
 
     // Store audio context using shared context manager
     await storeContext(audioContext, 'audio');
-    console.log(`💾 Stored audio context for Video Assembler AI`);
+    console.log('💾 Stored audio context for Video Assembler AI');
 
     return {
       statusCode: 200,
@@ -308,25 +305,25 @@ function calculateSceneAwarePacing(scene, mediaContext) {
   let pauseDuration = 300; // milliseconds
 
   switch (purpose) {
-    case 'hook':
-      // Faster pacing for engagement
-      speakingRate = 'fast';
-      pauseDuration = 200;
-      break;
-    case 'conclusion':
-      // Slower, more deliberate pacing
-      speakingRate = 'slow';
-      pauseDuration = 500;
-      break;
-    default:
-      // Adjust based on visual pacing
-      if (averageVisualDuration < 4) {
-        speakingRate = 'fast'; // Match fast visuals
-        pauseDuration = 250;
-      } else if (averageVisualDuration > 6) {
-        speakingRate = 'slow'; // Match slower visuals
-        pauseDuration = 400;
-      }
+  case 'hook':
+    // Faster pacing for engagement
+    speakingRate = 'fast';
+    pauseDuration = 200;
+    break;
+  case 'conclusion':
+    // Slower, more deliberate pacing
+    speakingRate = 'slow';
+    pauseDuration = 500;
+    break;
+  default:
+    // Adjust based on visual pacing
+    if (averageVisualDuration < 4) {
+      speakingRate = 'fast'; // Match fast visuals
+      pauseDuration = 250;
+    } else if (averageVisualDuration > 6) {
+      speakingRate = 'slow'; // Match slower visuals
+      pauseDuration = 400;
+    }
   }
 
   return {
@@ -505,6 +502,6 @@ async function generateAudio(requestBody, context) {
 }
 
 // Export handler with shared error handling wrapper
-export const lambdaHandler = wrapHandler(handler);
-export { lambdaHandler as handler };
+const lambdaHandler  = wrapHandler(handler);
+module.exports = { handler: lambdaHandler };
 

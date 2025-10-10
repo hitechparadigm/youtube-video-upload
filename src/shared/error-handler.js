@@ -98,14 +98,14 @@ export function logError(error, context = {}, level = 'error') {
 
   // Use appropriate console method based on level
   switch (level) {
-    case 'error':
-      console.error(JSON.stringify(logEntry));
-      break;
-    case 'warn':
-      console.warn(JSON.stringify(logEntry));
-      break;
-    default:
-      console.log(JSON.stringify(logEntry));
+  case 'error':
+    console.error(JSON.stringify(logEntry));
+    break;
+  case 'warn':
+    console.warn(JSON.stringify(logEntry));
+    break;
+  default:
+    console.log(JSON.stringify(logEntry));
   }
 }
 
@@ -313,29 +313,29 @@ export function handleAWSError(error, service, operation) {
 
   // Map specific AWS errors to appropriate types
   switch (error.name) {
-    case 'ValidationException':
-      errorType = ERROR_TYPES.VALIDATION;
-      statusCode = 400;
-      break;
-    case 'AccessDeniedException':
-    case 'UnauthorizedOperation':
-      errorType = ERROR_TYPES.AUTHORIZATION;
-      statusCode = 403;
-      break;
-    case 'ResourceNotFoundException':
-    case 'NoSuchKey':
-      errorType = ERROR_TYPES.NOT_FOUND;
-      statusCode = 404;
-      break;
-    case 'ThrottlingException':
-    case 'TooManyRequestsException':
-      errorType = ERROR_TYPES.RATE_LIMIT;
-      statusCode = 429;
-      break;
-    case 'RequestTimeout':
-      errorType = ERROR_TYPES.TIMEOUT;
-      statusCode = 504;
-      break;
+  case 'ValidationException':
+    errorType = ERROR_TYPES.VALIDATION;
+    statusCode = 400;
+    break;
+  case 'AccessDeniedException':
+  case 'UnauthorizedOperation':
+    errorType = ERROR_TYPES.AUTHORIZATION;
+    statusCode = 403;
+    break;
+  case 'ResourceNotFoundException':
+  case 'NoSuchKey':
+    errorType = ERROR_TYPES.NOT_FOUND;
+    statusCode = 404;
+    break;
+  case 'ThrottlingException':
+  case 'TooManyRequestsException':
+    errorType = ERROR_TYPES.RATE_LIMIT;
+    statusCode = 429;
+    break;
+  case 'RequestTimeout':
+    errorType = ERROR_TYPES.TIMEOUT;
+    statusCode = 504;
+    break;
   }
 
   return new AppError(

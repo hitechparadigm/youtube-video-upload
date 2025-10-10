@@ -12,11 +12,11 @@
  * - Retry logic and exponential backoff for resilient operations
  */
 
-import { S3Client, PutObjectCommand, GetObjectCommand, ListObjectsV2Command, DeleteObjectCommand } from '@aws-sdk/client-s3';
-import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
-import { DynamoDBDocumentClient, QueryCommand, PutCommand, UpdateCommand, DeleteCommand, ScanCommand } from '@aws-sdk/lib-dynamodb';
-import { SecretsManagerClient, GetSecretValueCommand } from '@aws-sdk/client-secrets-manager';
-import { LambdaClient, InvokeCommand } from '@aws-sdk/client-lambda';
+const { S3Client, PutObjectCommand, GetObjectCommand, ListObjectsV2Command, DeleteObjectCommand } = require('@aws-sdk/client-s3');
+const { DynamoDBClient } = require('@aws-sdk/client-dynamodb');
+const { DynamoDBDocumentClient, QueryCommand, PutCommand, UpdateCommand, DeleteCommand, ScanCommand } = require('@aws-sdk/lib-dynamodb');
+const { SecretsManagerClient, GetSecretValueCommand } = require('@aws-sdk/client-secrets-manager');
+const { LambdaClient, InvokeCommand } = require('@aws-sdk/client-lambda');
 
 // Initialize AWS clients
 const s3Client = new S3Client({ region: process.env.AWS_REGION || 'us-east-1' });
@@ -41,7 +41,7 @@ const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
  * @param {Object} options - Upload options (contentType, metadata, etc.)
  * @returns {Promise<string>} S3 object URL
  */
-export async function uploadToS3(bucket, key, data, options = {}) {
+async function uploadToS3(bucket, key, data, options = {}) {
   try {
     const command = new PutObjectCommand({
       Bucket: bucket,
@@ -67,7 +67,7 @@ export async function uploadToS3(bucket, key, data, options = {}) {
  * @param {Object} options - Download options
  * @returns {Promise<Buffer>} Downloaded data
  */
-export async function downloadFromS3(bucket, key, options = {}) {
+async function downloadFromS3(bucket, key, options = {}) {
   try {
     const command = new GetObjectCommand({
       Bucket: bucket,
@@ -89,7 +89,7 @@ export async function downloadFromS3(bucket, key, options = {}) {
  * @param {Object} options - List options (maxKeys, continuationToken)
  * @returns {Promise<Object>} List result with objects and pagination info
  */
-export async function listS3Objects(bucket, prefix = '', options = {}) {
+async function listS3Objects(bucket, prefix = '', options = {}) {
   try {
     const command = new ListObjectsV2Command({
       Bucket: bucket,
@@ -117,7 +117,7 @@ export async function listS3Objects(bucket, prefix = '', options = {}) {
  * @param {string} key - S3 object key
  * @returns {Promise<void>}
  */
-export async function deleteFromS3(bucket, key) {
+async function deleteFromS3(bucket, key) {
   try {
     const command = new DeleteObjectCommand({
       Bucket: bucket,
@@ -140,7 +140,7 @@ export async function deleteFromS3(bucket, key) {
  * @param {Object} queryParams - Query parameters
  * @returns {Promise<Array>} Query results
  */
-export async function queryDynamoDB(tableName, queryParams) {
+async function queryDynamoDB(tableName, queryParams) {
   try {
     const command = new QueryCommand({
       TableName: tableName,
@@ -161,7 +161,7 @@ export async function queryDynamoDB(tableName, queryParams) {
  * @param {Object} options - Put options (conditionExpression, etc.)
  * @returns {Promise<void>}
  */
-export async function putDynamoDBItem(tableName, item, options = {}) {
+async function putDynamoDBItem(tableName, item, options = {}) {
   try {
     const command = new PutCommand({
       TableName: tableName,
@@ -182,7 +182,7 @@ export async function putDynamoDBItem(tableName, item, options = {}) {
  * @param {Object} updateParams - Update parameters
  * @returns {Promise<Object>} Updated item attributes
  */
-export async function updateDynamoDBItem(tableName, key, updateParams) {
+async function updateDynamoDBItem(tableName, key, updateParams) {
   try {
     const command = new UpdateCommand({
       TableName: tableName,
@@ -204,7 +204,7 @@ export async function updateDynamoDBItem(tableName, key, updateParams) {
  * @param {Object} key - Item key
  * @returns {Promise<void>}
  */
-export async function deleteDynamoDBItem(tableName, key) {
+async function deleteDynamoDBItem(tableName, key) {
   try {
     const command = new DeleteCommand({
       TableName: tableName,
@@ -223,7 +223,7 @@ export async function deleteDynamoDBItem(tableName, key) {
  * @param {Object} scanParams - Scan parameters
  * @returns {Promise<Array>} Scan results
  */
-export async function scanDynamoDB(tableName, scanParams = {}) {
+async function scanDynamoDB(tableName, scanParams = {}) {
   try {
     const command = new ScanCommand({
       TableName: tableName,
@@ -247,7 +247,7 @@ export async function scanDynamoDB(tableName, scanParams = {}) {
  * @param {boolean} forceRefresh - Force refresh cache
  * @returns {Promise<Object>} Secret value (parsed JSON)
  */
-export async function getSecret(secretName, forceRefresh = false) {
+async function getSecret(secretName, forceRefresh = false) {
   const cacheKey = secretName;
   const cached = secretsCache.get(cacheKey);
 
@@ -283,7 +283,7 @@ export async function getSecret(secretName, forceRefresh = false) {
  * @param {string} fallback - Fallback value if key not found
  * @returns {Promise<string>} Secret key value
  */
-export async function getSecretKey(secretName, key, fallback = null) {
+async function getSecretKey(secretName, key, fallback = null) {
   try {
     const secrets = await getSecret(secretName);
     return secrets[key] || fallback;
@@ -306,7 +306,7 @@ export async function getSecretKey(secretName, key, fallback = null) {
  * @param {string} invocationType - Invocation type (RequestResponse, Event, DryRun)
  * @returns {Promise<Object>} Lambda response
  */
-export async function invokeLambda(functionName, payload, invocationType = 'RequestResponse') {
+async function invokeLambda(functionName, payload, invocationType = 'RequestResponse') {
   try {
     const command = new InvokeCommand({
       FunctionName: functionName,
@@ -338,7 +338,7 @@ export async function invokeLambda(functionName, payload, invocationType = 'Requ
  * @param {number} baseDelay - Base delay in milliseconds
  * @returns {Promise<any>} Operation result
  */
-export async function executeWithRetry(operation, maxRetries = 3, baseDelay = 1000) {
+async function executeWithRetry(operation, maxRetries = 3, baseDelay = 1000) {
   let lastError;
   
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
@@ -396,3 +396,21 @@ export function validateAWSConfig() {
     contextTable: process.env.CONTEXT_TABLE
   };
 }
+//
+ Export all functions
+module.exports = {
+  uploadToS3,
+  downloadFromS3,
+  listS3Objects,
+  deleteFromS3,
+  queryDynamoDB,
+  putDynamoDBItem,
+  updateDynamoDBItem,
+  deleteDynamoDBItem,
+  scanDynamoDB,
+  getSecret,
+  getSecretKey,
+  invokeLambda,
+  executeWithRetry,
+  validateEnvironment
+};

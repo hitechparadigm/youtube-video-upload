@@ -21,40 +21,39 @@
  * 
  * ENDPOINTS:
  * - GET /topics - List all topics
- * - POST /topics - Create new topic
- * - POST /topics/enhanced - Generate enhanced topic context (main endpoint)
+ * - POST /topics - Create enhanced topic context with AI analysis (main endpoint)
  * - GET /health - Health check
  * 
  * INTEGRATION FLOW:
  * EventBridge Schedule → Workflow Orchestrator → Topic Management AI → Script Generator AI
  */
 
-import { BedrockRuntimeClient, InvokeModelCommand } from '@aws-sdk/client-bedrock-runtime';
-import { randomUUID } from 'crypto';
+const { BedrockRuntimeClient, InvokeModelCommand } = require('@aws-sdk/client-bedrock-runtime');
+const { randomUUID } = require('crypto');
 
 // Import shared utilities
-import { 
+const { 
   storeContext, 
   retrieveContext, 
   createProject, 
   validateContext 
-} from '/opt/nodejs/context-manager.js';
-import { 
+} = require('/opt/nodejs/context-manager');
+const { 
   queryDynamoDB, 
   putDynamoDBItem, 
   updateDynamoDBItem, 
   deleteDynamoDBItem, 
   scanDynamoDB,
   executeWithRetry 
-} from '/opt/nodejs/aws-service-manager.js';
-import { 
+} = require('/opt/nodejs/aws-service-manager');
+const { 
   wrapHandler, 
   AppError, 
   ERROR_TYPES, 
   validateRequiredParams,
   withTimeout,
   monitorPerformance 
-} from '/opt/nodejs/error-handler.js';
+} = require('/opt/nodejs/error-handler');
 
 // Use Node.js built-in crypto.randomUUID instead of uuid package
 const uuidv4 = randomUUID;
@@ -81,47 +80,45 @@ const handler = async (event, context) => {
 
   // Route requests based on HTTP method and path
   switch (httpMethod) {
-    case 'GET':
-      if (event.path === '/health') {
-        return {
-          statusCode: 200,
-          headers: {
-            'Content-Type': 'application/json',
-            'Access-Control-Allow-Origin': '*'
-          },
-          body: JSON.stringify({
-            success: true,
-            result: {
-              service: 'topic-management',
-              status: 'healthy',
-              timestamp: new Date().toISOString(),
-              version: '3.0.0-refactored',
-              type: 'google-sheets-integration',
-              sharedUtilities: true
-            }
-          })
-        };
-      }
-      return pathParameters?.topicId
-        ? await getTopicById(pathParameters.topicId)
-        : await getTopics(queryStringParameters || {});
+  case 'GET':
+    if (event.path === '/health') {
+      return {
+        statusCode: 200,
+        headers: {
+          'Content-Type': 'application/json',
+          'Access-Control-Allow-Origin': '*'
+        },
+        body: JSON.stringify({
+          success: true,
+          result: {
+            service: 'topic-management',
+            status: 'healthy',
+            timestamp: new Date().toISOString(),
+            version: '3.0.0-refactored',
+            type: 'google-sheets-integration',
+            sharedUtilities: true
+          }
+        })
+      };
+    }
+    return pathParameters?.topicId
+      ? await getTopicById(pathParameters.topicId)
+      : await getTopics(queryStringParameters || {});
 
-    case 'POST':
-      if (event.path && event.path.includes('/enhanced')) {
-        return await generateEnhancedTopicContext(requestBody, context);
-      }
-      return await createTopic(requestBody);
+  case 'POST':
+    // All topic creation is now enhanced by default
+    return await generateEnhancedTopicContext(requestBody, context);
 
-    case 'PUT':
-      validateRequiredParams(pathParameters || {}, ['topicId'], 'topic update');
-      return await updateTopic(pathParameters.topicId, requestBody);
+  case 'PUT':
+    validateRequiredParams(pathParameters || {}, ['topicId'], 'topic update');
+    return await updateTopic(pathParameters.topicId, requestBody);
 
-    case 'DELETE':
-      validateRequiredParams(pathParameters || {}, ['topicId'], 'topic deletion');
-      return await deleteTopic(pathParameters.topicId);
+  case 'DELETE':
+    validateRequiredParams(pathParameters || {}, ['topicId'], 'topic deletion');
+    return await deleteTopic(pathParameters.topicId);
 
-    default:
-      throw new AppError('Method not allowed', ERROR_TYPES.VALIDATION, 405);
+  default:
+    throw new AppError('Method not allowed', ERROR_TYPES.VALIDATION, 405);
   }
 };
 
@@ -171,7 +168,7 @@ const getTopics = async (queryParams) => {
     if (priority) {
       const priorityFilter = 'priority = :priority';
       if (scanParams.FilterExpression) {
-        scanParams.FilterExpression += ' AND ' + priorityFilter;
+        scanParams.FilterExpression += ` AND ${  priorityFilter}`;
         scanParams.ExpressionAttributeValues[':priority'] = parseInt(priority);
       } else {
         scanParams.FilterExpression = priorityFilter;
@@ -392,7 +389,7 @@ const generateEnhancedTopicContext = async (requestBody, context) => {
     
     // Store topic context using shared context manager
     await storeContext(topicContext, 'topic');
-    console.log(`💾 Stored topic context for AI coordination`);
+    console.log('💾 Stored topic context for AI coordination');
 
     // Step 5: Store the generated topic to prevent future repetition
     await storeGeneratedTopic(finalBaseTopic, topicContext);
@@ -490,7 +487,7 @@ const readTopicsFromGoogleSheets = async () => {
  */
 const getRecentGeneratedSubtopics = async () => {
   try {
-    console.log(`🔍 Checking for recent subtopics (optimized - skipping for performance)`);
+    console.log('🔍 Checking for recent subtopics (optimized - skipping for performance)');
     
     // PERFORMANCE OPTIMIZATION: Skip recent subtopic checking during testing
     // This was causing the 30-second timeout due to full table scans
@@ -722,18 +719,18 @@ const generateFallbackContext = ({ baseTopic, targetAudience, videoDuration, vid
     mainTopic: baseTopic,
     expandedTopics: finalSubtopics.map((subtopic, index) => ({
       subtopic: subtopic,
-      priority: index === 0 ? "high" : "medium",
-      contentComplexity: index < 2 ? "simple" : "moderate",
-      visualNeeds: index === 0 ? "explanatory graphics" : "step-by-step visuals",
+      priority: index === 0 ? 'high' : 'medium',
+      contentComplexity: index < 2 ? 'simple' : 'moderate',
+      visualNeeds: index === 0 ? 'explanatory graphics' : 'step-by-step visuals',
       trendScore: 80 - (index * 5),
-      estimatedCoverage: index < 2 ? "60-90 seconds" : "90-120 seconds"
+      estimatedCoverage: index < 2 ? '60-90 seconds' : '90-120 seconds'
     })),
     contentGuidance: {
-      complexConcepts: [baseTopic + " fundamentals", "advanced techniques", "best practices"],
-      quickWins: ["basic tips", "quick start guide", "immediate benefits"],
-      visualOpportunities: ["charts", "diagrams", "examples", "tool demonstrations"],
-      emotionalBeats: ["success stories", "common mistakes", "transformation moments"],
-      callToActionSuggestions: ["subscribe for more tips", "try these tools", "share your results"]
+      complexConcepts: [`${baseTopic  } fundamentals`, 'advanced techniques', 'best practices'],
+      quickWins: ['basic tips', 'quick start guide', 'immediate benefits'],
+      visualOpportunities: ['charts', 'diagrams', 'examples', 'tool demonstrations'],
+      emotionalBeats: ['success stories', 'common mistakes', 'transformation moments'],
+      callToActionSuggestions: ['subscribe for more tips', 'try these tools', 'share your results']
     },
     seoContext: {
       primaryKeywords: [
@@ -759,21 +756,21 @@ const generateFallbackContext = ({ baseTopic, targetAudience, videoDuration, vid
         `${baseTopic} in 2025`
       ],
       trendingTerms: [
-        "AI-powered tools",
-        "automation 2025",
-        "digital transformation",
-        "productivity hacks",
-        "workflow optimization",
-        "creator economy",
-        "tech trends 2025"
+        'AI-powered tools',
+        'automation 2025',
+        'digital transformation',
+        'productivity hacks',
+        'workflow optimization',
+        'creator economy',
+        'tech trends 2025'
       ],
       semanticKeywords: [
-        "automation tools",
-        "digital workflow",
-        "productivity software",
-        "creative solutions",
-        "efficiency tools",
-        "modern techniques"
+        'automation tools',
+        'digital workflow',
+        'productivity software',
+        'creative solutions',
+        'efficiency tools',
+        'modern techniques'
       ],
       questionKeywords: [
         `what is ${baseTopic}`,
@@ -789,16 +786,16 @@ const generateFallbackContext = ({ baseTopic, targetAudience, videoDuration, vid
       mainContentDuration: Math.floor(videoDuration * 0.8),
       conclusionDuration: Math.floor(videoDuration * 0.15),
       totalDuration: videoDuration,
-      contentComplexity: "moderate",
-      attentionSpanConsiderations: "Use engagement hooks every 45-60 seconds",
-      pacingRecommendations: "Mix quick tips with detailed explanations"
+      contentComplexity: 'moderate',
+      attentionSpanConsiderations: 'Use engagement hooks every 45-60 seconds',
+      pacingRecommendations: 'Mix quick tips with detailed explanations'
     },
     metadata: {
       generatedAt: new Date().toISOString(),
       model: 'fallback-enhanced',
       inputParameters: { baseTopic, targetAudience, videoDuration, videoStyle },
       confidence: 0.7,
-      note: "Enhanced fallback with comprehensive SEO and no scene decisions"
+      note: 'Enhanced fallback with comprehensive SEO and no scene decisions'
     }
   };
 };
@@ -820,7 +817,7 @@ const extractKeywords = (topicText) => {
 };
 
 // Export handler with shared error handling wrapper
-export const lambdaHandler = wrapHandler(handler);
-export { lambdaHandler as handler };
+const lambdaHandler = wrapHandler(handler);
+module.exports = { handler: lambdaHandler };
 
 

@@ -2,17 +2,16 @@
   "name": "automated-video-pipeline",
   "version": "1.0.0",
   "description": "AWS-based automated video generation pipeline with configurable media sources, Node.js 20.x runtime, and complete project isolation",
-  "type": "module",
+
   "main": "index.js",
   "scripts": {
     "test": "jest",
     "test:unit": "jest --selectProjects=\"Unit Tests\"",
     "test:integration": "jest --selectProjects=\"Integration Tests\"",
-    "test:e2e": "jest --selectProjects=\"End-to-End Tests\"",
+    "test:e2e": "node tests/e2e-pipeline.test.js",
     "test:coverage": "jest --coverage",
     "test:watch": "jest --watch",
     "test:health": "node scripts/utils/health-check.js",
-    "test:e2e": "node tests/e2e-pipeline.test.js",
     "test:infrastructure": "node scripts/validate-infrastructure.js",
     "deploy": "cd infrastructure && npm run deploy",
     "destroy": "cd infrastructure && npm run destroy",
@@ -20,7 +19,6 @@
     "diff": "cd infrastructure && npm run diff",
     "upload-video": "node scripts/upload-first-video.js",
     "sync-sheets": "node scripts/sync-spreadsheet.js",
-    "test:health": "node scripts/utils/health-check.js",
     "lint": "eslint src/ tests/",
     "lint:fix": "eslint src/ tests/ --fix"
   },
