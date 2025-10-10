@@ -179,7 +179,7 @@ export class VideoPipelineStack extends Stack {
       runtime: Runtime.NODEJS_20_X,
       handler: 'handler.handler', // Using fixed layer
       code: Code.fromAsset(join(process.cwd(), '../src/lambda/topic-management')),
-      timeout: Duration.minutes(5), // Increased from 30 seconds to 5 minutes for AI processing
+      timeout: Duration.seconds(60), // Increased for AI processing with Bedrock
       memorySize: 512, // Increased from 256MB to 512MB for better performance
       role: lambdaRole,
       layers: [contextLayer], // Re-enabled with fixed layer
@@ -199,7 +199,7 @@ export class VideoPipelineStack extends Stack {
       runtime: Runtime.NODEJS_20_X,
       handler: 'handler.handler',
       code: Code.fromAsset(join(process.cwd(), '../src/lambda/script-generator')),
-      timeout: Duration.minutes(5),
+      timeout: Duration.seconds(60), // Increased for AI processing with Claude
       memorySize: 1024,
       role: lambdaRole,
       layers: [configLayer, contextLayer], // Re-enabled with fixed layer
@@ -220,7 +220,7 @@ export class VideoPipelineStack extends Stack {
       runtime: Runtime.NODEJS_20_X,
       handler: 'handler.handler',
       code: Code.fromAsset(join(process.cwd(), '../src/lambda/media-curator')),
-      timeout: Duration.minutes(10),
+      timeout: Duration.seconds(25), // API Gateway compatible timeout
       memorySize: 512,
       role: lambdaRole,
       layers: [contextLayer], // Re-enabled with fixed layer
@@ -240,7 +240,7 @@ export class VideoPipelineStack extends Stack {
       runtime: Runtime.NODEJS_20_X,
       handler: 'handler.handler',
       code: Code.fromAsset(join(process.cwd(), '../src/lambda/audio-generator')),
-      timeout: Duration.minutes(5),
+      timeout: Duration.seconds(25), // API Gateway compatible timeout
       memorySize: 512,
       role: lambdaRole,
       layers: [configLayer, contextLayer], // Re-enabled with fixed layer
@@ -302,13 +302,40 @@ export class VideoPipelineStack extends Stack {
       runtime: Runtime.NODEJS_20_X,
       handler: 'handler.handler',
       code: Code.fromAsset(join(process.cwd(), '../src/lambda/workflow-orchestrator')),
-      timeout: Duration.minutes(5),
+      timeout: Duration.minutes(5), // Increased for full pipeline orchestration
       memorySize: 512,
       role: lambdaRole,
       layers: [contextLayer], // FIX: Add the missing context layer!
       environment: {
         EXECUTIONS_TABLE_NAME: executionsTable.tableName,
         TOPICS_TABLE_NAME: topicsTable.tableName,
+        S3_BUCKET: primaryBucket.bucketName,
+        CONTEXT_TABLE: contextTable.tableName,
+        NODE_ENV: environment
+      }
+    });
+
+    // Jobs table for async processing
+    const jobsTable = new Table(this, 'JobsTable', {
+      tableName: `${projectName}-jobs-v2`,
+      partitionKey: { name: 'jobId', type: AttributeType.STRING },
+      billingMode: BillingMode.PAY_PER_REQUEST,
+      removalPolicy: RemovalPolicy.DESTROY,
+      timeToLiveAttribute: 'ttl' // Auto-cleanup completed jobs after 24 hours
+    });
+
+    // Async Processor Lambda for handling long-running operations
+    const asyncProcessorFunction = new Function(this, 'AsyncProcessorFunction', {
+      functionName: `${projectName}-async-processor-v3`,
+      runtime: Runtime.NODEJS_20_X,
+      handler: 'index.handler',
+      code: Code.fromAsset(join(process.cwd(), '../src/lambda/async-processor')),
+      timeout: Duration.minutes(15), // Long timeout for actual processing
+      memorySize: 1024,
+      role: lambdaRole,
+      layers: [contextLayer],
+      environment: {
+        JOBS_TABLE_NAME: jobsTable.tableName,
         S3_BUCKET: primaryBucket.bucketName,
         CONTEXT_TABLE: contextTable.tableName,
         NODE_ENV: environment
@@ -456,6 +483,16 @@ export class VideoPipelineStack extends Stack {
     workflowResource.addResource('status').addMethod('GET', new LambdaIntegration(workflowOrchestratorFunction), { apiKeyRequired: true });
     workflowResource.addResource('list').addMethod('GET', new LambdaIntegration(workflowOrchestratorFunction), { apiKeyRequired: true });
     workflowResource.addResource('stats').addMethod('GET', new LambdaIntegration(workflowOrchestratorFunction), { apiKeyRequired: true });
+
+    // Async processing endpoints (timeout-safe)
+    const asyncResource = api.root.addResource('async');
+    asyncResource.addResource('health').addMethod('GET', new LambdaIntegration(asyncProcessorFunction), { apiKeyRequired: true });
+    asyncResource.addResource('start-pipeline').addMethod('POST', new LambdaIntegration(asyncProcessorFunction), { apiKeyRequired: true });
+    
+    const jobsResource = asyncResource.addResource('jobs');
+    const jobResource = jobsResource.addResource('{jobId}');
+    jobResource.addMethod('GET', new LambdaIntegration(asyncProcessorFunction), { apiKeyRequired: true });
+
     videoResource.addResource('publish').addMethod('POST', new LambdaIntegration(youtubePublisherFunction), { apiKeyRequired: true });
 
     // ========================================
@@ -520,6 +557,16 @@ export class VideoPipelineStack extends Stack {
       value: highPrioritySchedule.ruleArn,
       description: 'EventBridge rule for high-priority videos (every 4 hours, disabled by default)'
     });
+
+    // ========================================
+    // Expose properties for other stacks
+    // ========================================
+    
+    this.sharedUtilitiesLayer = contextLayer;
+    this.workflowOrchestratorFunction = workflowOrchestratorFunction;
+    this.topicsTable = topicsTable;
+    this.primaryBucket = primaryBucket;
+    this.contextTable = contextTable;
   }
 
   addOutput(id, props) {

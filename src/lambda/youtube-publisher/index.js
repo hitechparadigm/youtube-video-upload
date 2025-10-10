@@ -123,14 +123,29 @@ async function publishFromProject(requestBody, context) {
 
     console.log(`📺 Publishing video to YouTube for project: ${projectId}`);
 
-    // Retrieve assembly context using shared context manager
-    console.log('🔍 Retrieving assembly context from shared context manager...');
-    const assemblyContext = await retrieveContext(projectId, 'video');
+    // ENHANCED: Retrieve all contexts for comprehensive publishing optimization
+    console.log('🔍 Retrieving all contexts from shared context manager...');
+    
+    const assemblyContext = await retrieveContext('video', projectId);
+    const mediaContext = await retrieveContext('media', projectId);
+    const sceneContext = await retrieveContext('scene', projectId);
 
-    console.log('✅ Retrieved assembly context:');
+    // Validate that all required contexts are available
+    if (!assemblyContext) {
+      throw new AppError(
+        'No video assembly context found for project. Video Assembler AI must run first.',
+        ERROR_TYPES.VALIDATION,
+        400,
+        { projectId, requiredContext: 'video' }
+      );
+    }
+
+    console.log('✅ Retrieved comprehensive contexts:');
     console.log(`   - Video ID: ${assemblyContext.videoMetadata?.videoId}`);
     console.log(`   - Duration: ${assemblyContext.videoMetadata?.duration}s`);
     console.log(`   - Title: ${assemblyContext.contentMetadata?.title}`);
+    console.log(`   - Media assets: ${mediaContext?.totalAssets || 0}`);
+    console.log(`   - Scenes: ${sceneContext?.scenes?.length || 0}`);
 
     // Get YouTube OAuth credentials using shared utilities
     const credentials = await getSecret('automated-video-pipeline/api-keys');

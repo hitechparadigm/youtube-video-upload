@@ -15,10 +15,14 @@ const dynamoClient = new DynamoDBClient({ region: process.env.AWS_REGION || 'us-
  */
 const storeContext = async (context, contextType, projectId) => {
   try {
-    const contextKey = projectId || `${contextType}-${Date.now()}`;
-    const s3Key = `context/${contextKey}/${contextType}-context.json`;
+    // Clean project ID to prevent dash multiplication
+    const cleanProjectId = projectId ? projectId.replace(/-{2,}/g, '-') : `${contextType}-${Date.now()}`;
     
-    // Store in S3 for large contexts
+    // STANDARD STRUCTURE: Always use videos/{projectId}/01-context/{contextType}-context.json
+    // All contexts go in 01-context folder regardless of type for consistency
+    const s3Key = `videos/${cleanProjectId}/01-context/${contextType}-context.json`;
+    
+    // Store in S3 using standard structure
     await s3Client.send(new PutObjectCommand({
       Bucket: process.env.S3_BUCKET,
       Key: s3Key,
@@ -26,13 +30,13 @@ const storeContext = async (context, contextType, projectId) => {
       ContentType: 'application/json'
     }));
     
-    // Store reference in DynamoDB
+    // Store reference in DynamoDB with consistent key format
     const contextRecord = {
-      PK: `CONTEXT#${contextKey}`,
-      SK: contextType,
+      PK: `${contextType}#${cleanProjectId}`,
+      SK: cleanProjectId,
       s3Location: s3Key,
       contextType,
-      projectId: projectId || contextKey,
+      projectId: cleanProjectId,
       createdAt: new Date().toISOString(),
       ttl: Math.floor(Date.now() / 1000) + (24 * 60 * 60) // 24 hours TTL
     };
@@ -42,8 +46,8 @@ const storeContext = async (context, contextType, projectId) => {
       Item: marshall(contextRecord)
     }));
     
-    console.log(`✅ Stored ${contextType} context for project ${projectId || contextKey}`);
-    return { success: true, contextKey, s3Location: s3Key };
+    console.log(`✅ Stored ${contextType} context for project ${cleanProjectId} at standard path: ${s3Key}`);
+    return { success: true, contextKey: cleanProjectId, s3Location: s3Key };
     
   } catch (error) {
     console.error(`❌ Error storing ${contextType} context:`, error);
@@ -56,34 +60,102 @@ const storeContext = async (context, contextType, projectId) => {
  */
 const retrieveContext = async (contextType, projectId) => {
   try {
-    const contextKey = projectId || `${contextType}-context`;
+    // Clean project ID to prevent dash multiplication
+    const cleanProjectId = projectId ? projectId.replace(/-{2,}/g, '-') : `${contextType}-context`;
     
-    // Get reference from DynamoDB
+    // Get reference from DynamoDB with consistent key format
     const response = await dynamoClient.send(new GetItemCommand({
       TableName: process.env.CONTEXT_TABLE,
       Key: marshall({
-        PK: `CONTEXT#${contextKey}`,
-        SK: contextType
+        PK: `${contextType}#${cleanProjectId}`,
+        SK: cleanProjectId
       })
     }));
     
     if (!response.Item) {
-      console.log(`⚠️ No ${contextType} context found for project ${projectId}`);
+      console.log(`⚠️ No ${contextType} context found for project ${cleanProjectId}`);
       return null;
     }
     
     const contextRecord = unmarshall(response.Item);
     
-    // Retrieve from S3
-    const s3Response = await s3Client.send(new GetObjectCommand({
-      Bucket: process.env.S3_BUCKET,
-      Key: contextRecord.s3Location
-    }));
+    // STANDARD PATH: Always use videos/{projectId}/01-context/{contextType}-context.json
+    const standardS3Key = `videos/${cleanProjectId}/01-context/${contextType}-context.json`;
     
-    const contextData = JSON.parse(await s3Response.Body.transformToString());
-    console.log(`✅ Retrieved ${contextType} context for project ${projectId}`);
-    
-    return contextData;
+    try {
+      // Try standard path first
+      const s3Response = await s3Client.send(new GetObjectCommand({
+        Bucket: process.env.S3_BUCKET,
+        Key: standardS3Key
+      }));
+      
+      const contextData = JSON.parse(await s3Response.Body.transformToString());
+      console.log(`✅ Retrieved ${contextType} context for project ${cleanProjectId} from standard path`);
+      
+      // Update DynamoDB record to use standard path if it's different
+      if (contextRecord.s3Location !== standardS3Key) {
+        const updatedRecord = {
+          ...contextRecord,
+          s3Location: standardS3Key,
+          updatedAt: new Date().toISOString()
+        };
+        
+        await dynamoClient.send(new PutItemCommand({
+          TableName: process.env.CONTEXT_TABLE,
+          Item: marshall(updatedRecord)
+        }));
+        
+        console.log(`🔄 Updated DynamoDB record to use standard path: ${standardS3Key}`);
+      }
+      
+      return contextData;
+      
+    } catch (standardError) {
+      console.log(`⚠️ Standard path not found: ${standardS3Key}`);
+      
+      // Fallback: try the stored location (for backward compatibility)
+      if (contextRecord.s3Location && contextRecord.s3Location !== standardS3Key) {
+        try {
+          console.log(`🔄 Trying stored path: ${contextRecord.s3Location}`);
+          const fallbackResponse = await s3Client.send(new GetObjectCommand({
+            Bucket: process.env.S3_BUCKET,
+            Key: contextRecord.s3Location
+          }));
+          
+          const contextData = JSON.parse(await fallbackResponse.Body.transformToString());
+          console.log(`✅ Retrieved ${contextType} context from stored path: ${contextRecord.s3Location}`);
+          
+          // Copy to standard location for future use
+          await s3Client.send(new PutObjectCommand({
+            Bucket: process.env.S3_BUCKET,
+            Key: standardS3Key,
+            Body: JSON.stringify(contextData),
+            ContentType: 'application/json'
+          }));
+          
+          console.log(`📋 Copied context to standard path: ${standardS3Key}`);
+          
+          // Update DynamoDB record
+          const updatedRecord = {
+            ...contextRecord,
+            s3Location: standardS3Key,
+            updatedAt: new Date().toISOString()
+          };
+          
+          await dynamoClient.send(new PutItemCommand({
+            TableName: process.env.CONTEXT_TABLE,
+            Item: marshall(updatedRecord)
+          }));
+          
+          return contextData;
+          
+        } catch (fallbackError) {
+          console.log(`⚠️ Stored path also failed: ${contextRecord.s3Location}`);
+        }
+      }
+      
+      throw new Error(`Context not found at standard path: ${standardS3Key}`);
+    }
     
   } catch (error) {
     console.error(`❌ Error retrieving ${contextType} context:`, error);

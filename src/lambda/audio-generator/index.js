@@ -121,12 +121,21 @@ async function generateAudioFromProject(requestBody, context) {
 
     // Retrieve scene context using shared context manager
     console.log('🔍 Retrieving scene context from shared context manager...');
-    const sceneContext = await retrieveContext(projectId, 'scene');
+    const sceneContext = await retrieveContext('scene', projectId);
+
+    if (!sceneContext) {
+      throw new AppError(
+        'No scene context found for project. Script Generator AI must run first.',
+        ERROR_TYPES.VALIDATION,
+        400,
+        { projectId, requiredContext: 'scene' }
+      );
+    }
 
     // Try to retrieve media context for synchronization (optional)
     let mediaContext = null;
     try {
-      mediaContext = await retrieveContext(projectId, 'media');
+      mediaContext = await retrieveContext('media', projectId);
       console.log('✅ Retrieved media context for synchronization');
     } catch (error) {
       console.log('ℹ️ Media context not available, proceeding with scene-only timing');
@@ -156,7 +165,7 @@ async function generateAudioFromProject(requestBody, context) {
       // Generate audio for this scene with rate limiting
       const audioResult = await executeWithRetry(
         () => withTimeout(
-          () => generateSceneAudio(scene, selectedVoice, pacingConfig),
+          () => generateSceneAudio(scene, selectedVoice, pacingConfig, projectId),
           15000, // 15 second timeout per scene
           `Scene ${scene.sceneNumber} audio generation`
         ),
@@ -241,7 +250,7 @@ async function generateAudioFromProject(requestBody, context) {
     };
 
     // Store audio context using shared context manager
-    await storeContext(audioContext, 'audio');
+    await storeContext(audioContext, 'audio', projectId);
     console.log('💾 Stored audio context for Video Assembler AI');
 
     return {
@@ -337,7 +346,7 @@ function calculateSceneAwarePacing(scene, mediaContext) {
 /**
  * Generate audio for a specific scene using Amazon Polly
  */
-async function generateSceneAudio(scene, voice, pacingConfig) {
+async function generateSceneAudio(scene, voice, pacingConfig, projectId) {
   const script = scene.content?.script || scene.script || '';
   
   if (!script) {
@@ -360,21 +369,24 @@ async function generateSceneAudio(scene, voice, pacingConfig) {
     const response = await pollyClient.send(command);
     
     // Upload audio to S3
-    const audioKey = `audio/${scene.sceneNumber}-${voice.name}-${Date.now()}.mp3`;
+    const audioKey = `videos/${projectId}/04-audio/scene-${scene.sceneNumber}-${voice.name}-${Date.now()}.mp3`;
+    
+    // Get the audio stream as buffer
+    const audioBuffer = await response.AudioStream.transformToByteArray();
+    console.log(`🎵 Generated audio buffer: ${audioBuffer.length} bytes`);
+    
+    if (audioBuffer.length < 1000) {
+      throw new AppError(`Generated audio too small: ${audioBuffer.length} bytes`, ERROR_TYPES.VALIDATION, 400);
+    }
+    
     const audioUrl = await uploadToS3(
-      S3_BUCKET,
+      process.env.S3_BUCKET_NAME || process.env.S3_BUCKET || S3_BUCKET,
       audioKey,
-      await response.AudioStream.transformToByteArray(),
-      {
-        contentType: 'audio/mpeg',
-        metadata: {
-          sceneNumber: scene.sceneNumber.toString(),
-          voiceName: voice.name,
-          voiceType: voice.type,
-          duration: scene.duration.toString()
-        }
-      }
+      audioBuffer,
+      'audio/mpeg'
     );
+    
+    console.log(`✅ Audio uploaded to S3: ${audioKey} (${audioBuffer.length} bytes)`);
 
     return {
       sceneNumber: scene.sceneNumber,

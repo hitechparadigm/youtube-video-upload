@@ -61,8 +61,18 @@ try {
   getProjectSummary = contextIntegration.getProjectSummary;
 } catch (error) {
   console.log('Context integration layer not available, using fallback');
-  // Fallback implementations
-  createProject = async (baseTopic) => `project-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+  // Fallback implementations with READABLE project names
+  createProject = async (baseTopic) => {
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+    const topicSlug = baseTopic.toLowerCase()
+      .replace(/[^a-z0-9\s]/g, '')
+      .replace(/\s+/g, '-')
+      .slice(0, 30);
+    
+    const projectId = `${timestamp}_${topicSlug}`;
+    console.log(`📁 Created readable project ID: ${projectId}`);
+    return projectId;
+  };
   validateContextFlow = async () => ({ valid: true });
   getProjectSummary = async () => ({ summary: 'No context layer' });
 }
@@ -73,8 +83,8 @@ class WorkflowOrchestrator {
     this.docClient = DynamoDBDocumentClient.from(new DynamoDBClient({ region: process.env.AWS_REGION || 'us-east-1' }));
         
     this.config = {
-      executionsTable: process.env.EXECUTIONS_TABLE_NAME || 'automated-video-pipeline-executions',
-      topicsTable: process.env.TOPICS_TABLE_NAME || 'automated-video-pipeline-topics'
+      executionsTable: process.env.EXECUTIONS_TABLE_NAME || 'automated-video-pipeline-executions-v2',
+      topicsTable: process.env.TOPICS_TABLE_NAME || 'automated-video-pipeline-topics-v2'
     };
 
     // Agent configuration for direct invocation
@@ -190,13 +200,15 @@ class WorkflowOrchestrator {
         console.log('   ❌ Topic Management: FAILED');
       }
 
-      // Step 2: Script Generation
+      // Step 2: Script Generation (Simplified endpoint)
       console.log('📝 Step 2: Script Generation...');
       const scriptResult = await this.invokeAgent('scriptGenerator', 'POST', '/scripts/generate', {
         projectId: projectId,
-        baseTopic: config.baseTopic,
-        targetLength: config.videoDuration,
-        videoStyle: config.videoStyle
+        scriptOptions: {
+          targetLength: config.videoDuration,
+          videoStyle: config.videoStyle,
+          targetAudience: config.targetAudience
+        }
       });
 
       flowResults.steps.push({
@@ -240,7 +252,7 @@ class WorkflowOrchestrator {
       console.log('🎵 Step 4: Audio Generation...');
       const audioResult = await this.invokeAgent('audioGenerator', 'POST', '/audio/generate', {
         projectId: projectId,
-        script: scriptResult.data?.script || { hook: config.baseTopic },
+        text: scriptResult.data?.script?.narration || `Welcome to our guide on ${config.baseTopic}. This comprehensive tutorial will walk you through everything you need to know.`,
         voiceId: 'Joanna'
       });
 

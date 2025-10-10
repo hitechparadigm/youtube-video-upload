@@ -21,6 +21,10 @@
     "aws-cdk": "^2.120.0"
   },
   "dependencies": {
+    "@aws-sdk/client-cloudwatch": "^3.907.0",
+    "@aws-sdk/client-cost-explorer": "^3.907.0",
+    "@aws-sdk/client-eventbridge": "^3.907.0",
+    "@aws-sdk/client-sns": "^3.907.0",
     "aws-cdk-lib": "^2.120.0",
     "constructs": "^10.3.0"
   },

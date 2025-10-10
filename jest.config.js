@@ -8,7 +8,6 @@ export default {
   
   // ES modules support
   preset: null,
-  extensionsToTreatAsEsm: ['.js'],
   
   // Transform configuration for ES modules
   transform: {
