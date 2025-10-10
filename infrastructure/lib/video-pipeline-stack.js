@@ -175,7 +175,7 @@ export class VideoPipelineStack extends Stack {
 
     // Topic Management Lambda
     const topicManagementFunction = new Function(this, 'TopicManagementFunction', {
-      functionName: `${projectName}-topic-management-v2`,
+      functionName: `${projectName}-topic-management-v3`,
       runtime: Runtime.NODEJS_20_X,
       handler: 'handler.handler', // Using fixed layer
       code: Code.fromAsset(join(process.cwd(), '../src/lambda/topic-management')),
@@ -195,7 +195,7 @@ export class VideoPipelineStack extends Stack {
 
     // Script Generator Lambda
     const scriptGeneratorFunction = new Function(this, 'ScriptGeneratorFunction', {
-      functionName: `${projectName}-script-generator-v2`,
+      functionName: `${projectName}-script-generator-v3`,
       runtime: Runtime.NODEJS_20_X,
       handler: 'handler.handler',
       code: Code.fromAsset(join(process.cwd(), '../src/lambda/script-generator')),
@@ -216,7 +216,7 @@ export class VideoPipelineStack extends Stack {
 
     // Media Curator Lambda
     const mediaCuratorFunction = new Function(this, 'MediaCuratorFunction', {
-      functionName: `${projectName}-media-curator-v2`,
+      functionName: `${projectName}-media-curator-v3`,
       runtime: Runtime.NODEJS_20_X,
       handler: 'handler.handler',
       code: Code.fromAsset(join(process.cwd(), '../src/lambda/media-curator')),
@@ -236,7 +236,7 @@ export class VideoPipelineStack extends Stack {
 
     // Audio Generator Lambda
     const audioGeneratorFunction = new Function(this, 'AudioGeneratorFunction', {
-      functionName: `${projectName}-audio-generator-v2`,
+      functionName: `${projectName}-audio-generator-v3`,
       runtime: Runtime.NODEJS_20_X,
       handler: 'handler.handler',
       code: Code.fromAsset(join(process.cwd(), '../src/lambda/audio-generator')),
@@ -255,7 +255,7 @@ export class VideoPipelineStack extends Stack {
 
     // Video Assembler Lambda
     const videoAssemblerFunction = new Function(this, 'VideoAssemblerFunction', {
-      functionName: `${projectName}-video-assembler-v2`,
+      functionName: `${projectName}-video-assembler-v3`,
       runtime: Runtime.NODEJS_20_X,
       handler: 'handler.handler',
       code: Code.fromAsset(join(process.cwd(), '../src/lambda/video-assembler')),
@@ -277,7 +277,7 @@ export class VideoPipelineStack extends Stack {
 
     // YouTube Publisher Lambda
     const youtubePublisherFunction = new Function(this, 'YouTubePublisherFunction', {
-      functionName: `${projectName}-youtube-publisher-v2`,
+      functionName: `${projectName}-youtube-publisher-v3`,
       runtime: Runtime.NODEJS_20_X,
       handler: 'handler.handler',
       code: Code.fromAsset(join(process.cwd(), '../src/lambda/youtube-publisher')),
@@ -298,7 +298,7 @@ export class VideoPipelineStack extends Stack {
 
     // Workflow Orchestrator Lambda
     const workflowOrchestratorFunction = new Function(this, 'WorkflowOrchestratorFunction', {
-      functionName: `${projectName}-workflow-orchestrator-v2`,
+      functionName: `${projectName}-workflow-orchestrator-v3`,
       runtime: Runtime.NODEJS_20_X,
       handler: 'handler.handler',
       code: Code.fromAsset(join(process.cwd(), '../src/lambda/workflow-orchestrator')),
