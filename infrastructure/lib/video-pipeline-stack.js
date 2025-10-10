@@ -426,6 +426,8 @@ export class VideoPipelineStack extends Stack {
     // Script Generator endpoints
     const scriptsResource = api.root.addResource('scripts');
     scriptsResource.addResource('generate').addMethod('POST', new LambdaIntegration(scriptGeneratorFunction), { apiKeyRequired: true });
+    scriptsResource.addResource('generate-enhanced').addMethod('POST', new LambdaIntegration(scriptGeneratorFunction), { apiKeyRequired: true });
+    scriptsResource.addResource('generate-from-project').addMethod('POST', new LambdaIntegration(scriptGeneratorFunction), { apiKeyRequired: true });
     scriptsResource.addResource('health').addMethod('GET', new LambdaIntegration(scriptGeneratorFunction), { apiKeyRequired: true });
 
     // Media Curator endpoints
