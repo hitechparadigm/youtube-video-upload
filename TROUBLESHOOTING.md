@@ -260,6 +260,42 @@ if (!context) {
 }
 ```
 
+## 🔍 Historical Issue Analysis
+
+### Script Generator Context Key Bug (Resolved)
+
+**Symptoms:**
+- Script Generator progressively adding extra dashes to project IDs
+- Context retrieval failures with malformed project IDs
+- Multiple S3 folders created from failed attempts
+
+**Root Cause:**
+Project ID manipulation in Script Generator adding extra dashes on each retry:
+```
+Attempt 1: 2025-10-10T14-57--53_travel-tips (double dash)
+Attempt 2: 2025-10-10T14-57---53_travel-tips (triple dash)
+```
+
+**Resolution:**
+Fixed project ID handling in `src/lambda/script-generator/index.js` to prevent dash accumulation.
+
+### API Timeout Cascade Issues (Resolved)
+
+**Symptoms:**
+- Multiple agents timing out simultaneously
+- 502 errors across different endpoints
+- Pipeline coordination failures
+
+**Root Cause:**
+Lambda timeout hierarchy mismatch with AI processing requirements.
+
+**Resolution:**
+Implemented proper timeout hierarchy:
+- API Gateway: 30s (hard limit)
+- Orchestrator: 5 minutes
+- AI Agents: 60s
+- External APIs: 25s
+
 ## 📞 Support and Escalation
 
 ### When to Escalate:
