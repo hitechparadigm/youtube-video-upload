@@ -4,6 +4,7 @@
  */
 
 import AWS from 'aws-sdk';
+import { getSharedTestConfig } from './test-utils.js';
 
 AWS.config.update({
   region: 'us-east-1',
@@ -17,10 +18,11 @@ async function testMediaCurator() {
   console.log('🎨 TESTING AGENT 3: Media Curator AI');
   console.log('='.repeat(60));
   
-  const projectId = `test-media-${Date.now()}`;
+  const config = getSharedTestConfig();
   
   try {
-    console.log(`🆔 Project ID: ${projectId}`);
+    console.log(`📋 Testing Topic: ${config.baseTopic}`);
+    console.log(`🆔 Project ID: ${config.projectId}`);
     console.log('🔥 Testing REAL Pexels/Pixabay API integration');
     console.log('');
     
@@ -32,7 +34,10 @@ async function testMediaCurator() {
         httpMethod: 'POST',
         path: '/media/curate-from-project',
         body: JSON.stringify({
-          projectId: projectId,
+          projectId: config.projectId,
+          baseTopic: config.baseTopic,
+          quality: 'high',
+          sceneCount: 6,
           source: 'agent-test'
         })
       })

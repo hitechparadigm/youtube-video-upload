@@ -4,6 +4,7 @@
  */
 
 import AWS from 'aws-sdk';
+import { getSharedTestConfig } from './test-utils.js';
 
 AWS.config.update({
   region: 'us-east-1',
@@ -17,12 +18,11 @@ async function testTopicManagement() {
   console.log('🎯 TESTING AGENT 1: Topic Management AI');
   console.log('='.repeat(60));
   
-  const testTopic = "Travel to Japan";
-  const projectId = `test-topic-${Date.now()}`;
+  const config = getSharedTestConfig();
   
   try {
-    console.log(`📋 Testing Topic: ${testTopic}`);
-    console.log(`🆔 Project ID: ${projectId}`);
+    console.log(`📋 Testing Topic: ${config.baseTopic}`);
+    console.log(`🆔 Project ID: ${config.projectId}`);
     console.log('');
     
     const startTime = Date.now();
@@ -33,8 +33,9 @@ async function testTopicManagement() {
         httpMethod: 'POST',
         path: '/topics/generate',
         body: JSON.stringify({
-          baseTopic: testTopic,
-          projectId: projectId,
+          baseTopic: config.baseTopic,
+          projectId: config.projectId,
+          targetAudience: config.targetAudience,
           source: 'agent-test'
         })
       })

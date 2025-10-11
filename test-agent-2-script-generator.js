@@ -4,6 +4,7 @@
  */
 
 import AWS from 'aws-sdk';
+import { getSharedTestConfig } from './test-utils.js';
 
 AWS.config.update({
   region: 'us-east-1',
@@ -17,12 +18,11 @@ async function testScriptGenerator() {
   console.log('📝 TESTING AGENT 2: Script Generator AI');
   console.log('='.repeat(60));
   
-  const testTopic = "Travel to Japan";
-  const projectId = `test-script-${Date.now()}`;
+  const config = getSharedTestConfig();
   
   try {
-    console.log(`📋 Testing Topic: ${testTopic}`);
-    console.log(`🆔 Project ID: ${projectId}`);
+    console.log(`📋 Testing Topic: ${config.baseTopic}`);
+    console.log(`🆔 Project ID: ${config.projectId}`);
     console.log('');
     
     const startTime = Date.now();
@@ -31,14 +31,15 @@ async function testScriptGenerator() {
       FunctionName: 'automated-video-pipeline-script-generator-v3',
       Payload: JSON.stringify({
         httpMethod: 'POST',
-        path: '/script/generate-from-topic',
+        path: '/scripts/generate',
         body: JSON.stringify({
-          baseTopic: testTopic,
-          projectId: projectId,
+          baseTopic: config.baseTopic,
+          projectId: config.projectId,
           source: 'agent-test',
           scriptOptions: {
-            style: 'engaging_educational',
-            targetAudience: 'travel_enthusiasts'
+            targetLength: config.videoDuration,
+            videoStyle: 'travel_guide',
+            targetAudience: config.targetAudience
           }
         })
       })
