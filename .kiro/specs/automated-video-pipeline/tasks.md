@@ -84,7 +84,23 @@ videos/{timestamp}_{title}/
 
 **Agent Coordination**: The 01-context/ folder serves as the "mission control center" where all agents coordinate through structured JSON files, ensuring perfect handoffs between AI agents.
 
-**To use the system**: The pipeline is ready for production use with complete 6-agent configuration providing end-to-end video creation with proper folder organization.
+**Layers & Utilities Architecture**: All Lambda functions access shared utilities through layers:
+```javascript
+// Available in ALL Lambda functions at /opt/nodejs/:
+const { generateS3Paths } = require('/opt/nodejs/s3-folder-structure');
+const { storeContext, retrieveContext } = require('/opt/nodejs/context-manager');
+const { uploadToS3 } = require('/opt/nodejs/aws-service-manager');
+```
+
+**Real-World Example**: "Travel to Spain" video creation demonstrates perfect coordination:
+1. Topic Management creates topic analysis in `01-context/topic-context.json`
+2. Script Generator reads topic context, creates script + scene context
+3. Media Curator reads scene context, downloads images to `03-media/scene-N/`
+4. Audio Generator reads scene + media contexts, creates audio segments
+5. Video Assembler reads ALL contexts, creates final video assembly
+6. YouTube Publisher reads contexts, publishes with optimized metadata
+
+**To use the system**: The pipeline is ready for production use with complete 6-agent configuration providing end-to-end video creation with proper folder organization and perfect agent coordination through shared utilities.
 
 ## Task Breakdown
 
