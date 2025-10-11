@@ -128,6 +128,7 @@ function parseApiGatewayEvent(event) {
       topicId: requestBody.topicId,
       topic: requestBody.topic || requestBody.baseTopic,
       baseTopic: requestBody.baseTopic || requestBody.topic,  // Support both topic and baseTopic
+      projectId: requestBody.projectId,  // PERMANENT FIX: Pass through projectId
       targetAudience: requestBody.targetAudience,
       duration: requestBody.duration,
       videoDuration: requestBody.duration,  // Map duration to videoDuration

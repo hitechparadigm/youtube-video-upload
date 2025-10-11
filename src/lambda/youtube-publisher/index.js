@@ -32,12 +32,9 @@ const handler = async (event, context) => {
     const videoId = `yt-simple-${Date.now()}`;
     const youtubeUrl = `https://www.youtube.com/watch?v=${videoId}`;
     
-    // Create proper folder structure using utility
+    // Create proper folder structure using simple paths
     try {
       const { uploadToS3 } = require('/opt/nodejs/aws-service-manager');
-      const { generateS3Paths } = require('/opt/nodejs/s3-folder-structure');
-      
-      const paths = generateS3Paths(projectId, 'youtube');
       
       // Create youtube-metadata.json
       const youtubeMetadata = {
@@ -48,13 +45,14 @@ const handler = async (event, context) => {
         projectId: projectId,
         status: 'published'
       };
+      const youtubeMetadataKey = `videos/${projectId}/06-metadata/youtube-metadata.json`;
       await uploadToS3(
         process.env.S3_BUCKET_NAME || process.env.S3_BUCKET,
-        paths.metadata.youtube,
+        youtubeMetadataKey,
         JSON.stringify(youtubeMetadata, null, 2),
         'application/json'
       );
-      console.log(`📁 Created YouTube metadata: ${paths.metadata.youtube}`);
+      console.log(`📁 Created YouTube metadata: ${youtubeMetadataKey}`);
       
       // Create project-summary.json
       const projectSummary = {
@@ -64,13 +62,14 @@ const handler = async (event, context) => {
         youtubeUrl: youtubeUrl,
         folderStructure: 'complete'
       };
+      const projectSummaryKey = `videos/${projectId}/06-metadata/project-summary.json`;
       await uploadToS3(
         process.env.S3_BUCKET_NAME || process.env.S3_BUCKET,
-        paths.metadata.project,
+        projectSummaryKey,
         JSON.stringify(projectSummary, null, 2),
         'application/json'
       );
-      console.log(`📁 Created project summary: ${paths.metadata.project}`);
+      console.log(`📁 Created project summary: ${projectSummaryKey}`);
       
     } catch (uploadError) {
       console.error('❌ Failed to create metadata files:', uploadError.message);

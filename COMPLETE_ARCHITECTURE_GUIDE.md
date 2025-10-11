@@ -617,3 +617,163 @@ This architecture enables **professional video production at scale** with **reli
 **Status**: ✅ **COMPLETE UNDERSTANDING** - All 8 functions + layers + utilities documented  
 **Last Updated**: 2025-10-11  
 **Architecture**: Production-ready with comprehensive coordination system
+---
+
+
+## 🔍 **PROJECT ID STANDARDIZATION & DATA FLOW ANALYSIS**
+
+### **Critical Finding: Orchestrator Project ID Generation**
+
+**ISSUE DISCOVERED**: The orchestrator generates its own project IDs and does NOT use custom project IDs passed by users.
+
+**Root Cause Analysis**:
+```javascript
+// In orchestrator.js - Project ID Generation Logic
+const createProject = async (baseTopic) => {
+  const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+  const topicSlug = baseTopic.toLowerCase()
+    .replace(/[^a-z0-9\s]/g, '')
+    .replace(/\s+/g, '-')
+    .slice(0, 30);
+  
+  const projectId = `${timestamp}_${topicSlug}`;
+  return projectId;
+};
+
+// PERMANENT FIX: Honor requested project ID if provided
+const projectId = requestedProjectId || await createProject(baseTopic);
+```
+
+**Generated Project ID Format**: `2025-10-11T23-02-47_travel-to-france-complete-guid`
+
+### **Orchestrator Dependencies Analysis**
+
+**KEY FINDING**: Orchestrator does NOT directly depend on s3-folder-structure.cjs
+
+**Dependency Chain**:
+```
+Orchestrator → Context Manager → s3-folder-structure.cjs
+```
+
+**Orchestrator Implementation**:
+```javascript
+// In orchestrator.js - Conditional Dependency Loading
+let createProject, validateContextFlow, getProjectSummary, storeContext;
+try {
+  const contextManager = require('/opt/nodejs/context-manager');
+  createProject = contextManager.createProject; // Uses s3-folder-structure internally
+} catch (error) {
+  console.log('Context integration layer not available, using fallback');
+  // Fallback implementation with READABLE project names
+  createProject = async (baseTopic) => {
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+    const topicSlug = baseTopic.toLowerCase()
+      .replace(/[^a-z0-9\s]/g, '')
+      .replace(/\s+/g, '-')
+      .slice(0, 30);
+    
+    const projectId = `${timestamp}_${topicSlug}`;
+    return projectId;
+  };
+}
+```
+
+### **s3-folder-structure.cjs Role & Dependencies**
+
+**PRIMARY ROLE**: Central utility for consistent folder structure across ALL agents
+
+**Direct Dependencies**:
+- ✅ Topic Management AI
+- ✅ Script Generator AI  
+- ✅ Media Curator AI
+- ✅ Audio Generator AI
+- ✅ Video Assembler AI
+- ✅ YouTube Publisher AI
+
+**Indirect Dependencies**:
+- ✅ Context Manager (uses s3-folder-structure internally)
+- ✅ Orchestrator (through Context Manager fallback)
+
+**Key Functions**:
+```javascript
+// Core s3-folder-structure.cjs functions
+generateProjectFolderName(title)     // Creates timestamped folder names
+generateS3Paths(projectId, title)    // Generates complete path structure  
+parseProjectFolder(folderName)      // Extracts project metadata
+listVideoProjects(s3Client, bucket) // Lists all video projects
+```
+
+### **Context Manager Integration**
+
+**Context Manager uses s3-folder-structure for path consistency**:
+```javascript
+// In context-manager.js
+const storeContext = async (context, contextType, projectId) => {
+  // Use proper folder structure utility
+  const { generateS3Paths } = require('./s3-folder-structure.js');
+  const paths = generateS3Paths(cleanProjectId, contextType);
+  const s3Key = paths.context[contextType] || `videos/${cleanProjectId}/01-context/${contextType}-context.json`;
+  
+  // Store in S3 using standard structure
+  await s3Client.send(new PutObjectCommand({
+    Bucket: process.env.S3_BUCKET,
+    Key: s3Key,
+    Body: JSON.stringify(context),
+    ContentType: 'application/json'
+  }));
+};
+```
+
+### **Complete Data Flow Architecture**
+
+**Project Creation Flow**:
+```
+1. User Request → Orchestrator
+2. Orchestrator → createProject() (generates timestamp-based ID)
+3. Context Manager → s3-folder-structure.cjs (for path generation)
+4. All Agents → s3-folder-structure.cjs (for consistent paths)
+```
+
+**Context Flow Between Agents**:
+```
+Topic Management → Script Generator → Media Curator → Audio Generator → Video Assembler → YouTube Publisher
+       ↓                 ↓                ↓               ↓                ↓                ↓
+  topic-context    scene-context    media-context   audio-context    video-context   youtube-metadata
+```
+
+**ALL CONTEXT FILES STORED IN**: `videos/{projectId}/01-context/`
+
+### **Folder Structure Created by s3-folder-structure.cjs**
+
+```
+videos/{timestamp}_{title}/
+├── 01-context/              ← AGENT COORDINATION HUB
+│   ├── topic-context.json       ← Topic Management AI
+│   ├── scene-context.json       ← Script Generator AI  
+│   ├── media-context.json       ← Media Curator AI
+│   ├── audio-context.json       ← Audio Generator AI
+│   └── video-context.json       ← Video Assembler AI
+├── 02-script/              ← SCRIPT CONTENT
+│   ├── script.json              ← Complete video script
+│   └── script.txt               ← Human-readable format
+├── 03-media/               ← VISUAL ASSETS
+│   ├── scene-1/images/          ← Organized by scene
+│   ├── scene-2/images/          
+│   └── scene-N/images/          
+├── 04-audio/               ← AUDIO FILES
+│   ├── narration.mp3            ← Master audio file
+│   └── audio-segments/          ← Individual scene audio
+├── 05-video/               ← VIDEO ASSEMBLY
+│   └── final-video.mp4          ← Complete assembled video
+└── 06-metadata/            ← FINAL OUTPUT
+    ├── youtube-metadata.json    ← YouTube upload details
+    └── project-summary.json     ← Project completion status
+```
+
+### **Technical Findings Summary**
+
+1. **Project ID Generation**: Orchestrator creates its own IDs, ignores user-provided IDs
+2. **Dependency Architecture**: Orchestrator → Context Manager → s3-folder-structure.cjs
+3. **Path Consistency**: s3-folder-structure.cjs ensures all agents use identical paths
+4. **Context Coordination**: All context files centralized in `01-context/` folder
+5. **Fallback Implementation**: Orchestrator has built-in fallback if layers unavailable

@@ -104,6 +104,7 @@ class WorkflowOrchestrator {
   async runDirectPipeline(topicRequest) {
     const {
       baseTopic,
+      projectId: requestedProjectId,
       targetAudience = 'general',
       contentType = 'educational',
       videoDuration = 480,
@@ -115,8 +116,9 @@ class WorkflowOrchestrator {
       console.log(`🚀 Starting direct pipeline execution for topic: ${baseTopic}`);
 
       // Step 1: Create project with context management
-      const projectId = await createProject(baseTopic);
-      console.log(`📁 Created project: ${projectId}`);
+      // PERMANENT FIX: Honor requested project ID if provided
+      const projectId = requestedProjectId || await createProject(baseTopic);
+      console.log(`📁 ${requestedProjectId ? 'Using requested' : 'Created'} project: ${projectId}`);
 
       // Create execution record
       const executionRecord = {

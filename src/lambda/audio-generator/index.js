@@ -264,19 +264,18 @@ async function generateAudioFromProject(requestBody, context) {
     await storeContext(audioContext, 'audio', projectId);
     console.log('💾 Stored audio context for Video Assembler AI');
 
-    // Create proper folder structure using utility
+    // Create proper folder structure using simple path
     try {
       const { uploadToS3 } = require('/opt/nodejs/aws-service-manager');
-      const { generateS3Paths } = require('/opt/nodejs/s3-folder-structure');
       
-      const paths = generateS3Paths(projectId, 'audio');
+      const audioContextKey = `videos/${projectId}/01-context/audio-context.json`;
       await uploadToS3(
         process.env.S3_BUCKET_NAME || process.env.S3_BUCKET,
-        paths.context.audio,
+        audioContextKey,
         JSON.stringify(audioContext, null, 2),
         'application/json'
       );
-      console.log(`📁 Created audio context: ${paths.context.audio}`);
+      console.log(`📁 Created audio context: ${audioContextKey}`);
     } catch (uploadError) {
       console.error('❌ Failed to create audio context file:', uploadError.message);
     }
@@ -301,7 +300,7 @@ async function generateAudioFromProject(requestBody, context) {
         generatedAt: new Date().toISOString()
       })
     };
-  }, 'generateAudioFromProject', { projectId });
+  }, 'generateAudioFromProject', { projectId: requestBody.projectId });
 }
 
 /**
@@ -396,10 +395,8 @@ async function generateSceneAudio(scene, voice, pacingConfig, projectId) {
 
     const response = await pollyClient.send(command);
     
-    // Generate proper S3 key using folder structure utility
-    const { generateS3Paths } = require('/opt/nodejs/s3-folder-structure');
-    const paths = generateS3Paths(projectId, scene.title || 'audio');
-    const audioKey = paths.audio.getSegmentPath(scene.sceneNumber);
+    // Generate proper S3 key using simple path structure
+    const audioKey = `videos/${projectId}/04-audio/scene-${scene.sceneNumber}-audio.mp3`;
     
     // Get the audio stream as buffer
     const audioBuffer = await response.AudioStream.transformToByteArray();

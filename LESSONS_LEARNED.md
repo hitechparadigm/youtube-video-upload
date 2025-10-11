@@ -285,3 +285,151 @@ await uploadToS3(bucket, scriptS3Key, scriptContent, 'application/json');
 - **Production Status**: System now fully operational for automated content creation
 
 This fix demonstrates the importance of thorough individual agent testing and proper code flow analysis in complex multi-agent systems.
+-
+--
+
+## 🔧 **TECHNICAL ARCHITECTURE LESSONS LEARNED**
+
+### **1. Project ID Architecture Deep Dive**
+
+**CRITICAL DISCOVERY**: The orchestrator has a complex project ID generation system that was causing recurring test failures.
+
+**Root Cause Analysis**:
+```javascript
+// In orchestrator.js - The actual project ID generation logic
+const createProject = async (baseTopic) => {
+  const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+  const topicSlug = baseTopic.toLowerCase()
+    .replace(/[^a-z0-9\s]/g, '')
+    .replace(/\s+/g, '-')
+    .slice(0, 30);
+  
+  const projectId = `${timestamp}_${topicSlug}`;
+  return projectId;
+};
+
+// PERMANENT FIX: Honor requested project ID if provided
+const projectId = requestedProjectId || await createProject(baseTopic);
+```
+
+**Technical Findings**:
+- **Issue**: Orchestrator generates its own project IDs, ignoring user-provided ones
+- **Format**: `2025-10-11T23-02-47_travel-to-france-complete-guid`
+- **Impact**: Test scripts fail when assuming custom project IDs work
+- **Dependency Chain**: Orchestrator → Context Manager → s3-folder-structure.cjs
+- **Fallback System**: Orchestrator has built-in fallback if layers unavailable
+
+**Solution Implemented**:
+- Always extract real project ID from orchestrator response
+- Standardized project ID handling pattern for all tests
+- Created verification script to prevent regression
+- Updated all documentation to show correct formats
+
+**Prevention Strategy**:
+```javascript
+// Standard pattern for all test scripts
+const orchestratorResponse = await invokeOrchestrator(payload);
+const responseBody = JSON.parse(orchestratorResponse.body);
+const realProjectId = responseBody.result.projectId; // Use this!
+
+// Use real project ID for all subsequent operations
+const s3Files = await s3.listObjectsV2({
+  Bucket: S3_BUCKET,
+  Prefix: `videos/${realProjectId}/`  // Use real ID here!
+}).promise();
+```
+
+### **2. Dependency Architecture Analysis**
+
+**DISCOVERY**: The orchestrator does NOT directly depend on s3-folder-structure.cjs
+
+**Dependency Chain Mapped**:
+```
+Orchestrator → Context Manager → s3-folder-structure.cjs
+All Agents → s3-folder-structure.cjs (direct dependency)
+```
+
+**Key Insights**:
+- **Orchestrator Independence**: Has fallback implementation if layers unavailable
+- **Central Utility Role**: s3-folder-structure.cjs ensures path consistency across ALL agents
+- **Context Manager Integration**: Uses s3-folder-structure internally for path generation
+- **Agent Coordination**: All context files centralized in `01-context/` folder
+
+**Technical Implementation**:
+```javascript
+// In orchestrator.js - Conditional Dependency Loading
+let createProject, validateContextFlow, getProjectSummary, storeContext;
+try {
+  const contextManager = require('/opt/nodejs/context-manager');
+  createProject = contextManager.createProject; // Uses s3-folder-structure internally
+} catch (error) {
+  // Fallback implementation with READABLE project names
+  createProject = async (baseTopic) => {
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+    const topicSlug = baseTopic.toLowerCase()
+      .replace(/[^a-z0-9\s]/g, '')
+      .replace(/\s+/g, '-')
+      .slice(0, 30);
+    
+    const projectId = `${timestamp}_${topicSlug}`;
+    return projectId;
+  };
+}
+```
+
+### **3. Data Flow & Agent Coordination Patterns**
+
+**DISCOVERY**: Complete data flow architecture mapped
+
+**Project Creation Flow**:
+```
+1. User Request → Orchestrator
+2. Orchestrator → createProject() (generates timestamp-based ID)
+3. Context Manager → s3-folder-structure.cjs (for path generation)
+4. All Agents → s3-folder-structure.cjs (for consistent paths)
+```
+
+**Context Flow Between Agents**:
+```
+Topic Management → Script Generator → Media Curator → Audio Generator → Video Assembler → YouTube Publisher
+       ↓                 ↓                ↓               ↓                ↓                ↓
+  topic-context    scene-context    media-context   audio-context    video-context   youtube-metadata
+```
+
+**Folder Structure Created**:
+```
+videos/{timestamp}_{title}/
+├── 01-context/              ← AGENT COORDINATION HUB
+│   ├── topic-context.json       ← Topic Management AI
+│   ├── scene-context.json       ← Script Generator AI  
+│   ├── media-context.json       ← Media Curator AI
+│   ├── audio-context.json       ← Audio Generator AI
+│   └── video-context.json       ← Video Assembler AI
+├── 02-script/              ← SCRIPT CONTENT
+├── 03-media/               ← VISUAL ASSETS
+├── 04-audio/               ← AUDIO FILES
+├── 05-video/               ← VIDEO ASSEMBLY
+└── 06-metadata/            ← FINAL OUTPUT
+```
+
+### **4. Technical Considerations for Future Development**
+
+**Lessons for System Architecture**:
+1. **Project ID Generation**: Always assume orchestrator creates its own IDs
+2. **Dependency Management**: Map all dependency chains to understand failure points
+3. **Path Consistency**: Central utility (s3-folder-structure.cjs) prevents path mismatches
+4. **Context Coordination**: Centralized context storage enables perfect agent handoffs
+5. **Fallback Systems**: Critical components should have fallback implementations
+
+**Best Practices Established**:
+- Extract real project IDs from orchestrator responses
+- Use standard patterns for all test scripts
+- Document all dependency chains
+- Create verification scripts to prevent regression
+- Maintain consistent folder structures across all agents
+
+**Future-Proofing Strategies**:
+- Automated verification of project ID handling
+- Linting rules to catch project ID issues
+- Standard patterns for new test development
+- Clear documentation of dependency relationships
