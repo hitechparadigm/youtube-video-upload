@@ -100,7 +100,18 @@ const handler = async (event, context) => {
     if (path === '/audio/generate-from-project') {
       return await generateAudioFromProject(requestBody, context);
     } else if (path === '/audio/generate') {
-      return await generateAudio(requestBody, context);
+      // Use full functionality - convert simple text input to project format
+      if (requestBody.text && !requestBody.sceneContext) {
+        // Convert simple text input to scene context format
+        requestBody.sceneContext = {
+          scenes: [{
+            sceneNumber: 1,
+            content: { script: requestBody.text },
+            duration: 30
+          }]
+        };
+      }
+      return await generateAudioFromProject(requestBody, context);
     }
     break;
   }
@@ -253,6 +264,23 @@ async function generateAudioFromProject(requestBody, context) {
     await storeContext(audioContext, 'audio', projectId);
     console.log('💾 Stored audio context for Video Assembler AI');
 
+    // Create proper folder structure using utility
+    try {
+      const { uploadToS3 } = require('/opt/nodejs/aws-service-manager');
+      const { generateS3Paths } = require('/opt/nodejs/s3-folder-structure');
+      
+      const paths = generateS3Paths(projectId, 'audio');
+      await uploadToS3(
+        process.env.S3_BUCKET_NAME || process.env.S3_BUCKET,
+        paths.context.audio,
+        JSON.stringify(audioContext, null, 2),
+        'application/json'
+      );
+      console.log(`📁 Created audio context: ${paths.context.audio}`);
+    } catch (uploadError) {
+      console.error('❌ Failed to create audio context file:', uploadError.message);
+    }
+
     return {
       statusCode: 200,
       headers: {
@@ -368,8 +396,10 @@ async function generateSceneAudio(scene, voice, pacingConfig, projectId) {
 
     const response = await pollyClient.send(command);
     
-    // Upload audio to S3
-    const audioKey = `videos/${projectId}/04-audio/scene-${scene.sceneNumber}-${voice.name}-${Date.now()}.mp3`;
+    // Generate proper S3 key using folder structure utility
+    const { generateS3Paths } = require('/opt/nodejs/s3-folder-structure');
+    const paths = generateS3Paths(projectId, scene.title || 'audio');
+    const audioKey = paths.audio.getSegmentPath(scene.sceneNumber);
     
     // Get the audio stream as buffer
     const audioBuffer = await response.AudioStream.transformToByteArray();
@@ -421,17 +451,21 @@ function createSSMLForScene(script, voice, pacingConfig) {
  * Create master audio file (simplified implementation)
  */
 async function createMasterAudio(audioSegments, masterAudioId) {
-  // In a full implementation, this would combine all audio segments
-  // For now, return a reference to the segments
+  // Create both JSON metadata and a master audio file reference
   const masterKey = `audio/master/${masterAudioId}.json`;
+  const masterAudioKey = `videos/${audioSegments[0]?.audioKey?.split('/')[1] || 'unknown'}/04-audio/master-narration.mp3`;
   
   const masterData = {
     masterAudioId,
     segments: audioSegments,
+    masterAudioKey: masterAudioKey,
     createdAt: new Date().toISOString(),
-    totalSegments: audioSegments.length
+    totalSegments: audioSegments.length,
+    totalDuration: audioSegments.reduce((sum, segment) => sum + (segment.duration || 0), 0),
+    instructions: 'Individual scene audio files created. Master audio would combine all segments in production.'
   };
 
+  // Upload metadata
   const masterUrl = await uploadToS3(
     S3_BUCKET,
     masterKey,
@@ -443,6 +477,28 @@ async function createMasterAudio(audioSegments, masterAudioId) {
         segments: audioSegments.length.toString()
       }
     }
+  );
+
+  // Create a simple master audio info file in the project's 04-audio folder
+  const masterAudioInfo = {
+    type: 'master-audio-info',
+    projectId: audioSegments[0]?.audioKey?.split('/')[1] || 'unknown',
+    totalScenes: audioSegments.length,
+    totalDuration: audioSegments.reduce((sum, segment) => sum + (segment.duration || 0), 0),
+    sceneAudioFiles: audioSegments.map(segment => ({
+      sceneNumber: segment.sceneNumber,
+      audioKey: segment.audioKey,
+      duration: segment.duration
+    })),
+    createdAt: new Date().toISOString(),
+    note: 'Individual scene MP3 files created. Master audio combination would be done in post-processing.'
+  };
+
+  await uploadToS3(
+    S3_BUCKET,
+    masterAudioKey.replace('.mp3', '-info.json'),
+    JSON.stringify(masterAudioInfo, null, 2),
+    'application/json'
   );
 
   return masterUrl;

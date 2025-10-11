@@ -32,6 +32,50 @@ const handler = async (event, context) => {
     const videoId = `yt-simple-${Date.now()}`;
     const youtubeUrl = `https://www.youtube.com/watch?v=${videoId}`;
     
+    // Create proper folder structure using utility
+    try {
+      const { uploadToS3 } = require('/opt/nodejs/aws-service-manager');
+      const { generateS3Paths } = require('/opt/nodejs/s3-folder-structure');
+      
+      const paths = generateS3Paths(projectId, 'youtube');
+      
+      // Create youtube-metadata.json
+      const youtubeMetadata = {
+        videoId: videoId,
+        youtubeUrl: youtubeUrl,
+        privacy: privacy || 'public',
+        uploadedAt: new Date().toISOString(),
+        projectId: projectId,
+        status: 'published'
+      };
+      await uploadToS3(
+        process.env.S3_BUCKET_NAME || process.env.S3_BUCKET,
+        paths.metadata.youtube,
+        JSON.stringify(youtubeMetadata, null, 2),
+        'application/json'
+      );
+      console.log(`📁 Created YouTube metadata: ${paths.metadata.youtube}`);
+      
+      // Create project-summary.json
+      const projectSummary = {
+        projectId: projectId,
+        completedAt: new Date().toISOString(),
+        status: 'completed',
+        youtubeUrl: youtubeUrl,
+        folderStructure: 'complete'
+      };
+      await uploadToS3(
+        process.env.S3_BUCKET_NAME || process.env.S3_BUCKET,
+        paths.metadata.project,
+        JSON.stringify(projectSummary, null, 2),
+        'application/json'
+      );
+      console.log(`📁 Created project summary: ${paths.metadata.project}`);
+      
+    } catch (uploadError) {
+      console.error('❌ Failed to create metadata files:', uploadError.message);
+    }
+    
     // Simulate upload time
     await new Promise(resolve => setTimeout(resolve, 2000));
     

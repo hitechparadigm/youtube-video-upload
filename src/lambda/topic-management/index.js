@@ -362,6 +362,23 @@ const generateEnhancedTopicContext = async (requestBody, _context) => {
     await storeContext(topicContext, 'topic', finalProjectId);
     console.log('💾 Stored topic context for AI coordination');
 
+    // Step 4.1: Create proper folder structure using utility
+    try {
+      const { uploadToS3 } = require('/opt/nodejs/aws-service-manager');
+      const { generateS3Paths } = require('/opt/nodejs/s3-folder-structure');
+      
+      const paths = generateS3Paths(finalProjectId, finalBaseTopic);
+      await uploadToS3(
+        process.env.S3_BUCKET_NAME || process.env.S3_BUCKET,
+        paths.context.topic,
+        JSON.stringify(topicContext, null, 2),
+        'application/json'
+      );
+      console.log(`📁 Created topic context: ${paths.context.topic}`);
+    } catch (uploadError) {
+      console.error('❌ Failed to create topic context file:', uploadError.message);
+    }
+
     // Step 5: Store the generated topic to prevent future repetition
     await storeGeneratedTopic(finalBaseTopic, topicContext);
 

@@ -94,21 +94,8 @@ const handler = async (event, context) => {
     if (path === '/media/curate-from-project') {
       return await curateMediaFromProject(requestBody, context);
     } else if (path === '/media/curate') {
-      // Temporary simple test version
-      return {
-        statusCode: 200,
-        headers: {
-          'Content-Type': 'application/json',
-          'Access-Control-Allow-Origin': '*'
-        },
-        body: JSON.stringify({
-          success: true,
-          message: 'Media Curate endpoint working - simplified test version',
-          projectId: requestBody.projectId,
-          receivedParams: Object.keys(requestBody),
-          timestamp: new Date().toISOString()
-        })
-      };
+      // Use full functionality - no more simplified test version
+      return await curateMediaFromProject(requestBody, context);
     } else if (path === '/media/search') {
       return await searchMedia(requestBody, context);
     }
@@ -153,12 +140,28 @@ async function curateMediaFromProject(requestBody, _context) {
       apiKeys = await getSecret(process.env.API_KEYS_SECRET_NAME || 'automated-video-pipeline/api-keys');
       console.log('✅ Retrieved API keys from Secrets Manager');
     } catch (error) {
-      console.warn('⚠️ Failed to retrieve API keys, using fallback mode:', error.message);
-      // Use fallback mode with placeholder keys for testing
-      apiKeys = {
-        'pexels-api-key': 'test-key',
-        'pixabay-api-key': 'test-key'
-      };
+      console.warn('⚠️ Failed to retrieve API keys from Secrets Manager, trying environment variables:', error.message);
+      
+      // Try environment variables as fallback
+      const pexelsKey = process.env.PEXELS_API_KEY;
+      const pixabayKey = process.env.PIXABAY_API_KEY;
+      
+      if (pexelsKey || pixabayKey) {
+        apiKeys = {
+          'pexels': pexelsKey || 'test-key',
+          'pixabay': pixabayKey || 'test-key'
+        };
+        console.log('✅ Using API keys from environment variables');
+        console.log(`   - Pexels: ${pexelsKey ? 'Available' : 'Not set'}`);
+        console.log(`   - Pixabay: ${pixabayKey ? 'Available' : 'Not set'}`);
+      } else {
+        console.warn('⚠️ No API keys found in environment variables, using fallback mode');
+        // Use fallback mode with placeholder keys for testing
+        apiKeys = {
+          'pexels': 'test-key',
+          'pixabay': 'test-key'
+        };
+      }
     }
 
     // Process each scene with industry-standard visual pacing
@@ -240,6 +243,23 @@ async function curateMediaFromProject(requestBody, _context) {
     await storeContext(mediaContext, 'media', projectId);
     console.log('💾 Stored media context for Video Assembler AI');
 
+    // Create proper folder structure using utility
+    try {
+      const { uploadToS3 } = require('/opt/nodejs/aws-service-manager');
+      const { generateS3Paths } = require('/opt/nodejs/s3-folder-structure');
+      
+      const paths = generateS3Paths(projectId, 'media');
+      await uploadToS3(
+        process.env.S3_BUCKET_NAME || process.env.S3_BUCKET,
+        paths.context.media,
+        JSON.stringify(mediaContext, null, 2),
+        'application/json'
+      );
+      console.log(`📁 Created media context: ${paths.context.media}`);
+    } catch (uploadError) {
+      console.error('❌ Failed to create media context file:', uploadError.message);
+    }
+
     return {
       statusCode: 200,
       headers: {
@@ -320,8 +340,9 @@ async function searchSceneMedia(scene, apiKeys, visualPacing, projectId) {
       let mediaAsset = null;
       
       // Search Pexels first (higher quality)
-      if (apiKeys['pexels-api-key'] && apiKeys['pexels-api-key'] !== 'test-key') {
-        const pexelsResults = await searchPexels(keyword, apiKeys['pexels-api-key'], 1);
+      const pexelsKey = apiKeys['pexels-api-key'] || apiKeys['pexels'];
+      if (pexelsKey && pexelsKey !== 'test-key') {
+        const pexelsResults = await searchPexels(keyword, pexelsKey, 1);
         if (pexelsResults.length > 0) {
           mediaAsset = {
             ...pexelsResults[0],
@@ -333,8 +354,9 @@ async function searchSceneMedia(scene, apiKeys, visualPacing, projectId) {
       }
       
       // Fallback to Pixabay if Pexels failed
-      if (!mediaAsset && apiKeys['pixabay-api-key'] && apiKeys['pixabay-api-key'] !== 'test-key') {
-        const pixabayResults = await searchPixabay(keyword, apiKeys['pixabay-api-key'], 1);
+      const pixabayKey = apiKeys['pixabay-api-key'] || apiKeys['pixabay'];
+      if (!mediaAsset && pixabayKey && pixabayKey !== 'test-key') {
+        const pixabayResults = await searchPixabay(keyword, pixabayKey, 1);
         if (pixabayResults.length > 0) {
           mediaAsset = {
             ...pixabayResults[0],
@@ -353,9 +375,11 @@ async function searchSceneMedia(scene, apiKeys, visualPacing, projectId) {
           // Download the actual image
           const imageBuffer = await downloadImageFromUrl(mediaAsset.url);
           
-          // Generate S3 key for the image
+          // Generate proper S3 key using folder structure utility
+          const { generateS3Paths } = require('/opt/nodejs/s3-folder-structure');
+          const paths = generateS3Paths(projectId, scene.title || 'media');
           const fileExtension = mediaAsset.url.includes('.jpg') ? 'jpg' : 'png';
-          const s3Key = `videos/${projectId}/03-media/scene-${scene.sceneNumber}-${i + 1}-${keyword.replace(/[^a-zA-Z0-9]/g, '-')}.${fileExtension}`;
+          const s3Key = paths.media.getImagePath(scene.sceneNumber, `${i + 1}-${keyword.replace(/[^a-zA-Z0-9]/g, '-')}`);
           
           // Upload to S3
           await uploadToS3(
@@ -375,7 +399,7 @@ async function searchSceneMedia(scene, apiKeys, visualPacing, projectId) {
           
           // ENHANCED: Add intelligent media assessment using computer vision
           try {
-            console.log(`🔍 Analyzing image quality and content with Amazon Rekognition...`);
+            console.log('🔍 Analyzing image quality and content with Amazon Rekognition...');
             const visionAssessment = await assessMediaWithComputerVision(s3Key, imageBuffer, scene, keyword);
             
             // Update asset with computer vision assessment
@@ -600,7 +624,7 @@ async function createIntelligentFallbackAsset(keyword, index, projectId, sceneNu
   // Select best strategy based on scene requirements
   const selectedStrategy = selectBestFallbackStrategy(fallbackStrategies, scene);
   
-  return {
+  const fallbackAsset = {
     id: `intelligent-fallback-${uuidv4()}`,
     type: 'image',
     url: selectedStrategy.url,
@@ -620,6 +644,38 @@ async function createIntelligentFallbackAsset(keyword, index, projectId, sceneNu
     note: selectedStrategy.note,
     intelligentFallback: true
   };
+
+  // ENHANCED: Download fallback images to S3 for real content
+  try {
+    console.log(`📥 Downloading fallback image: ${selectedStrategy.url}`);
+    
+    // Download the fallback image
+    const imageBuffer = await downloadImageFromUrl(selectedStrategy.url);
+    
+    // Upload to S3
+    await uploadToS3(
+      process.env.S3_BUCKET_NAME || process.env.S3_BUCKET,
+      fallbackAsset.s3Key,
+      imageBuffer,
+      'image/jpeg'
+    );
+    
+    // Update asset with S3 location
+    fallbackAsset.s3Url = `s3://${process.env.S3_BUCKET_NAME || process.env.S3_BUCKET}/${fallbackAsset.s3Key}`;
+    fallbackAsset.downloadedSize = imageBuffer.length;
+    fallbackAsset.realContent = true;
+    fallbackAsset.downloaded = true;
+    
+    console.log(`✅ Fallback image downloaded and stored: ${fallbackAsset.s3Key} (${imageBuffer.length} bytes)`);
+    
+  } catch (downloadError) {
+    console.error('❌ Failed to download fallback image:', downloadError.message);
+    fallbackAsset.downloadError = downloadError.message;
+    fallbackAsset.realContent = false;
+    fallbackAsset.downloaded = false;
+  }
+
+  return fallbackAsset;
 }
 
 /**

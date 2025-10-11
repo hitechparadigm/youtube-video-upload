@@ -18,9 +18,10 @@ const storeContext = async (context, contextType, projectId) => {
     // Clean project ID to prevent dash multiplication
     const cleanProjectId = projectId ? projectId.replace(/-{2,}/g, '-') : `${contextType}-${Date.now()}`;
     
-    // STANDARD STRUCTURE: Always use videos/{projectId}/01-context/{contextType}-context.json
-    // All contexts go in 01-context folder regardless of type for consistency
-    const s3Key = `videos/${cleanProjectId}/01-context/${contextType}-context.json`;
+    // Use proper folder structure utility
+    const { generateS3Paths } = require('./s3-folder-structure.js');
+    const paths = generateS3Paths(cleanProjectId, contextType);
+    const s3Key = paths.context[contextType] || `videos/${cleanProjectId}/01-context/${contextType}-context.json`;
     
     // Store in S3 using standard structure
     await s3Client.send(new PutObjectCommand({

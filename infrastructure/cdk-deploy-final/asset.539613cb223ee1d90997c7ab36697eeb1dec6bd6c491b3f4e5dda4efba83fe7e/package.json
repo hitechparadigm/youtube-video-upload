@@ -1,0 +1,16 @@
+{
+  "name": "topic-management-lambda",
+  "version": "1.0.0",
+  "description": "Topic Management Lambda Function",
+
+  "main": "handler.js",
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "dependencies": {
+    "uuid": "^9.0.0",
+    "@aws-sdk/client-dynamodb": "^3.0.0",
+    "@aws-sdk/lib-dynamodb": "^3.0.0",
+    "@aws-sdk/client-bedrock-runtime": "^3.0.0"
+  }
+}
