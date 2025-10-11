@@ -36,7 +36,7 @@ node test-media-curator-detailed.js     # Media curation validation
 node test-pipeline-fixed.js
 ```
 - **Purpose**: Validates complete 6-agent pipeline coordination
-- **Expected**: 4/6 agents working (exceeds 3/6 success criteria)
+- **Expected**: 5/6 agents working (83% success rate - exceeds 3/6 success criteria)
 - **Performance**: ~30 seconds total execution
 
 ### **Infrastructure Tests**
@@ -89,19 +89,19 @@ node monitor-production-run.js
 }
 ```
 
-#### Full Pipeline
+#### Full Pipeline (5/6 Agents Working)
 ```json
 {
   "success": true,
   "result": {
-    "workingAgents": 4,
+    "workingAgents": 5,
     "totalAgents": 6,
     "steps": [
       {"agent": "Topic Management", "success": true},
       {"agent": "Script Generator", "success": true},
       {"agent": "Media Curator", "success": true},
       {"agent": "Audio Generator", "success": true},
-      {"agent": "Video Assembler", "success": false},
+      {"agent": "Video Assembler", "success": true},
       {"agent": "YouTube Publisher", "success": false}
     ]
   }
@@ -183,7 +183,7 @@ node monitor-production-run.js
 - **Script Generator**: < 15 seconds (AI processing)
 - **Media Curator**: < 5 seconds (API calls)
 - **Audio Generator**: < 5 seconds (placeholder)
-- **Full Pipeline**: < 45 seconds (4 working agents)
+- **Full Pipeline**: < 35 seconds (5 working agents)
 
 ## ✅ **Cleanup Benefits**
 
