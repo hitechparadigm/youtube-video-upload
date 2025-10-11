@@ -245,49 +245,28 @@ async function generateEnhancedScript(requestBody, _context) {
     };
     
     // Store context for agent coordination
+    console.log('💾 About to store scene context...');
     await storeContext(sceneContext, 'scene', projectId);
     console.log('💾 Stored scene context for agent coordination');
+    console.log('📝 About to create script file...');
     
     // CRITICAL: Create actual script file in proper 02-script/ location
-    const { uploadToS3 } = require('/opt/nodejs/aws-service-manager');
-    const scriptS3Key = `videos/${projectId}/02-script/script.json`;
-    
-    await uploadToS3(
-      process.env.S3_BUCKET_NAME || process.env.S3_BUCKET,
-      scriptS3Key,
-      JSON.stringify(scriptContent, null, 2),
-      'application/json'
-    );
-    console.log(`📝 ✅ CREATED SCRIPT FILE: ${scriptS3Key}`);
-    
-    // Create proper folder structure using utility
+    console.log('📝 Creating script file in 02-script folder...');
     try {
       const { uploadToS3 } = require('/opt/nodejs/aws-service-manager');
-      const { generateS3Paths } = require('/opt/nodejs/s3-folder-structure');
+      const scriptS3Key = `videos/${projectId}/02-script/script.json`;
       
-      const paths = generateS3Paths(projectId, selectedSubtopic);
-      
-      // Create 02-script/script.json
       await uploadToS3(
-        process.env.S3_BUCKET_NAME || process.env.S3_BUCKET,
-        paths.script.json,
+        process.env.S3_BUCKET || process.env.S3_BUCKET_NAME,
+        scriptS3Key,
         JSON.stringify(scriptContent, null, 2),
         'application/json'
       );
-      console.log(`📝 Created script file: ${paths.script.json}`);
-      
-      // Create 01-context/scene-context.json
-      await uploadToS3(
-        process.env.S3_BUCKET_NAME || process.env.S3_BUCKET,
-        paths.context.scene,
-        JSON.stringify(sceneContext, null, 2),
-        'application/json'
-      );
-      console.log(`📝 Created scene context: ${paths.context.scene}`);
-      
-    } catch (uploadError) {
-      console.error('❌ Failed to create script files:', uploadError.message);
+      console.log(`📝 ✅ CREATED SCRIPT FILE: ${scriptS3Key}`);
+    } catch (scriptUploadError) {
+      console.error('❌ Failed to create script file:', scriptUploadError.message);
     }
+
 
     return {
       statusCode: 200,
