@@ -111,17 +111,17 @@ const handler = async (event, context) => {
         createdAt: new Date().toISOString()
       };
 
-      // Create proper folder structure using utility
-      const { generateS3Paths } = require('/opt/nodejs/s3-folder-structure');
-      const paths = generateS3Paths(projectId, 'video');
+      // Create files using direct S3 paths (avoiding s3-folder-structure dependency issues)
+      const videoManifestKey = `videos/${projectId}/05-video/processing-logs/processing-manifest.json`;
+      const videoInstructionsKey = `videos/${projectId}/05-video/processing-logs/ffmpeg-instructions.json`;
       
       // Upload video metadata to processing-logs
-      await uploadToS3(paths.video.manifest, JSON.stringify(videoMetadata, null, 2), 'application/json');
-      console.log(`✅ Video metadata uploaded: ${paths.video.manifest}`);
+      await uploadToS3(videoManifestKey, JSON.stringify(videoMetadata, null, 2), 'application/json');
+      console.log(`✅ Video metadata uploaded: ${videoManifestKey}`);
 
       // Upload assembly script to processing-logs
-      await uploadToS3(paths.video.instructions, JSON.stringify(assemblyScript, null, 2), 'application/json');
-      console.log(`✅ Assembly script uploaded: ${paths.video.instructions}`);
+      await uploadToS3(videoInstructionsKey, JSON.stringify(assemblyScript, null, 2), 'application/json');
+      console.log(`✅ Assembly script uploaded: ${videoInstructionsKey}`);
 
       // Create a simple video info file
       const videoInfo = {
@@ -136,10 +136,10 @@ const handler = async (event, context) => {
         createdAt: new Date().toISOString()
       };
 
-      // Create video context file
-      const paths = generateS3Paths(projectId, 'video');
-      await uploadToS3(paths.context.video, JSON.stringify(videoInfo, null, 2), 'application/json');
-      console.log(`✅ Video context uploaded: ${paths.context.video}`);
+      // Create video context file using direct path
+      const videoContextKey = `videos/${projectId}/01-context/video-context.json`;
+      await uploadToS3(videoContextKey, JSON.stringify(videoInfo, null, 2), 'application/json');
+      console.log(`✅ Video context uploaded: ${videoContextKey}`);
     
       return {
         statusCode: 200,

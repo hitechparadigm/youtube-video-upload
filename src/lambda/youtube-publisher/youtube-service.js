@@ -19,7 +19,7 @@ class YouTubeService {
         
     this.config = {
       bucket: process.env.S3_BUCKET_NAME || 'automated-video-pipeline-786673323159-us-east-1',
-      secretName: process.env.YOUTUBE_SECRET_NAME || 'automated-video-pipeline/youtube-credentials',
+      secretName: process.env.YOUTUBE_SECRET_NAME || 'youtube-automation/credentials',
       videosTable: process.env.VIDEOS_TABLE_NAME || 'automated-video-pipeline-production'
     };
 

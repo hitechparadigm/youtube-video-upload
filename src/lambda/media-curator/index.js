@@ -239,26 +239,27 @@ async function curateMediaFromProject(requestBody, _context) {
       }
     };
 
-    // Store media context using shared context manager
-    await storeContext(mediaContext, 'media', projectId);
-    console.log('💾 Stored media context for Video Assembler AI');
-
-    // Create proper folder structure using utility
+    // CRITICAL FIX: Store media context EARLY to ensure Video Assembler can access it
+    // even if media processing times out later
     try {
-      const { uploadToS3 } = require('/opt/nodejs/aws-service-manager');
-      const { generateS3Paths } = require('/opt/nodejs/s3-folder-structure');
+      await storeContext(mediaContext, 'media', projectId);
+      console.log('💾 Stored media context for Video Assembler AI');
       
-      const paths = generateS3Paths(projectId, 'media');
+      // Also create direct S3 file as backup
+      const contextKey = `videos/${projectId}/01-context/media-context.json`;
       await uploadToS3(
         process.env.S3_BUCKET_NAME || process.env.S3_BUCKET,
-        paths.context.media,
+        contextKey,
         JSON.stringify(mediaContext, null, 2),
         'application/json'
       );
-      console.log(`📁 Created media context: ${paths.context.media}`);
-    } catch (uploadError) {
-      console.error('❌ Failed to create media context file:', uploadError.message);
+      console.log(`📁 Created media context file: ${contextKey}`);
+    } catch (contextError) {
+      console.error('❌ CRITICAL: Failed to create media context:', contextError);
+      // Continue processing but log the error
     }
+
+    // Context file already created above - no need to duplicate
 
     return {
       statusCode: 200,

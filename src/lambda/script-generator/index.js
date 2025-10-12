@@ -59,39 +59,39 @@ const handler = async (event, context) => {
 
   // Route requests
   switch (httpMethod) {
-    case 'GET':
-      if (path === '/scripts/health' || path === '/health') {
-        return {
-          statusCode: 200,
-          headers: {
-            'Content-Type': 'application/json',
-            'Access-Control-Allow-Origin': '*'
-          },
-          body: JSON.stringify({
-            service: 'script-generator',
-            status: 'healthy',
-            timestamp: new Date().toISOString(),
-            version: '3.0.0-refactored',
-            enhancedFeatures: true,
-            rateLimitingProtection: true,
-            professionalVisualRequirements: true,
-            sharedUtilities: true
-          })
-        };
-      } else if (path === '/scripts') {
-        return await getScripts(queryStringParameters || {});
-      } else if (path.startsWith('/scripts/')) {
-        const scriptId = pathParameters?.scriptId || path.split('/').pop();
-        return await getScript(scriptId);
-      }
-      break;
+  case 'GET':
+    if (path === '/scripts/health' || path === '/health') {
+      return {
+        statusCode: 200,
+        headers: {
+          'Content-Type': 'application/json',
+          'Access-Control-Allow-Origin': '*'
+        },
+        body: JSON.stringify({
+          service: 'script-generator',
+          status: 'healthy',
+          timestamp: new Date().toISOString(),
+          version: '3.0.0-refactored',
+          enhancedFeatures: true,
+          rateLimitingProtection: true,
+          professionalVisualRequirements: true,
+          sharedUtilities: true
+        })
+      };
+    } else if (path === '/scripts') {
+      return await getScripts(queryStringParameters || {});
+    } else if (path.startsWith('/scripts/')) {
+      const scriptId = pathParameters?.scriptId || path.split('/').pop();
+      return await getScript(scriptId);
+    }
+    break;
 
-    case 'POST':
-      if (path === '/scripts/generate') {
-        // Single enhanced endpoint - handles both project-based and manual generation
-        return await generateEnhancedScript(requestBody, context);
-      }
-      break;
+  case 'POST':
+    if (path === '/scripts/generate') {
+      // Single enhanced endpoint - handles both project-based and manual generation
+      return await generateEnhancedScript(requestBody, context);
+    }
+    break;
   }
 
   throw new AppError('Endpoint not found', ERROR_TYPES.NOT_FOUND, 404);
@@ -244,20 +244,17 @@ async function generateEnhancedScript(requestBody, _context) {
       metadata: sceneContext.metadata
     };
     
-    // Store context for agent coordination
-    console.log('💾 About to store scene context...');
-    await storeContext(sceneContext, 'scene', projectId);
-    console.log('💾 Stored scene context for agent coordination');
-    console.log('📝 About to create script file...');
-    
-    // CRITICAL: Create actual script file in proper 02-script/ location
+    // CRITICAL: Create actual script file FIRST (before context storage)
     console.log('📝 Creating script file in 02-script folder...');
     try {
       const { uploadToS3 } = require('/opt/nodejs/aws-service-manager');
+      const bucketName = process.env.S3_BUCKET_NAME || process.env.S3_BUCKET || 'automated-video-pipeline-v2-786673323159-us-east-1';
       const scriptS3Key = `videos/${projectId}/02-script/script.json`;
       
+      console.log(`📝 Uploading script to: s3://${bucketName}/${scriptS3Key}`);
+      
       await uploadToS3(
-        process.env.S3_BUCKET || process.env.S3_BUCKET_NAME,
+        bucketName,
         scriptS3Key,
         JSON.stringify(scriptContent, null, 2),
         'application/json'
@@ -265,7 +262,15 @@ async function generateEnhancedScript(requestBody, _context) {
       console.log(`📝 ✅ CREATED SCRIPT FILE: ${scriptS3Key}`);
     } catch (scriptUploadError) {
       console.error('❌ Failed to create script file:', scriptUploadError.message);
+      console.error('❌ Script upload error details:', scriptUploadError);
+      // Don't throw the error to avoid breaking the pipeline, but log it clearly
+      console.error('❌ CRITICAL: Script file creation failed - this will cause downstream agents to fail');
     }
+    
+    // Store context for agent coordination (after script file creation)
+    console.log('💾 About to store scene context...');
+    await storeContext(sceneContext, 'scene', projectId);
+    console.log('💾 Stored scene context for agent coordination');
 
 
     return {

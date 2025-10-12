@@ -160,6 +160,39 @@ async function generateAudioFromProject(requestBody, context) {
     const selectedVoice = selectOptimalGenerativeVoice(voiceOptions);
     console.log(`🎭 Selected voice: ${selectedVoice.name} (${selectedVoice.type})`);
 
+    // CRITICAL FIX: Create basic audio context EARLY to ensure Video Assembler can access it
+    // even if audio processing fails later
+    const basicAudioContext = {
+      projectId: projectId,
+      status: 'processing',
+      voiceSelected: selectedVoice,
+      scenesPlanned: sceneContext.scenes?.length || 0,
+      audioFiles: [], // Will be populated during processing
+      metadata: {
+        generatedAt: new Date().toISOString(),
+        generatedBy: 'audio-generator-ai-refactored',
+        status: 'early-context-creation'
+      }
+    };
+
+    try {
+      await storeContext(basicAudioContext, 'audio', projectId);
+      console.log('💾 Stored basic audio context for Video Assembler AI');
+      
+      // Also create direct S3 file as backup
+      const contextKey = `videos/${projectId}/01-context/audio-context.json`;
+      await uploadToS3(
+        process.env.S3_BUCKET_NAME || process.env.S3_BUCKET,
+        contextKey,
+        JSON.stringify(basicAudioContext, null, 2),
+        'application/json'
+      );
+      console.log(`📁 Created audio context file: ${contextKey}`);
+    } catch (contextError) {
+      console.error('❌ CRITICAL: Failed to create audio context:', contextError);
+      // Continue processing but log the error
+    }
+
     // Generate audio for each scene with context-aware pacing
     const audioSegments = [];
     const timingMarks = [];
@@ -260,14 +293,12 @@ async function generateAudioFromProject(requestBody, context) {
       }
     };
 
-    // Store audio context using shared context manager
-    await storeContext(audioContext, 'audio', projectId);
-    console.log('💾 Stored audio context for Video Assembler AI');
-
-    // Create proper folder structure using simple path
+    // Update audio context with final results
     try {
-      const { uploadToS3 } = require('/opt/nodejs/aws-service-manager');
+      await storeContext(audioContext, 'audio', projectId);
+      console.log('💾 Updated audio context with final results');
       
+      // Update the S3 file with complete information
       const audioContextKey = `videos/${projectId}/01-context/audio-context.json`;
       await uploadToS3(
         process.env.S3_BUCKET_NAME || process.env.S3_BUCKET,
@@ -275,9 +306,10 @@ async function generateAudioFromProject(requestBody, context) {
         JSON.stringify(audioContext, null, 2),
         'application/json'
       );
-      console.log(`📁 Created audio context: ${audioContextKey}`);
+      console.log(`📁 Updated audio context file: ${audioContextKey}`);
     } catch (uploadError) {
-      console.error('❌ Failed to create audio context file:', uploadError.message);
+      console.error('❌ Failed to update audio context file:', uploadError.message);
+      // Context file already exists from early creation, so this is not critical
     }
 
     return {

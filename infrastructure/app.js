@@ -31,7 +31,7 @@ const videoPipelineStack = new VideoPipelineStack(app, 'VideoPipelineStack', {
   }
 });
 
-// Deploy scheduling and cost tracking stack
+// Deploy scheduling and cost tracking stack - RESTORED AFTER DEPENDENCY FIX
 const schedulingCostStack = new SchedulingCostStack(app, 'SchedulingCostStack', {
   env: {
     account,
