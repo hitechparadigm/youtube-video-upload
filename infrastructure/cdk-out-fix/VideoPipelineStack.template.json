@@ -393,14 +393,14 @@
     ],
     "Content": {
      "S3Bucket": "cdk-hnb659fds-assets-786673323159-us-east-1",
-     "S3Key": "6cbd6c36eff6225d00758983cec0028638fd58cd9b03ba8a393dd7d5ccbcc895.zip"
+     "S3Key": "1b965461e7e126d836de9a8821546ee9a6553292db02f5999a5baca1a12fea9b.zip"
     },
     "Description": "Shared configuration management layer",
     "LayerName": "automated-video-pipeline-config"
    },
    "Metadata": {
     "aws:cdk:path": "VideoPipelineStack/ConfigLayer/Resource",
-    "aws:asset:path": "asset.6cbd6c36eff6225d00758983cec0028638fd58cd9b03ba8a393dd7d5ccbcc895",
+    "aws:asset:path": "asset.1b965461e7e126d836de9a8821546ee9a6553292db02f5999a5baca1a12fea9b",
     "aws:asset:is-bundled": false,
     "aws:asset:property": "Content"
    }
@@ -413,7 +413,7 @@
     ],
     "Content": {
      "S3Bucket": "cdk-hnb659fds-assets-786673323159-us-east-1",
-     "S3Key": "e515202356296a95ade302a33d9e8c5526730fb19895948432531ee377a5705d.zip"
+     "S3Key": "2175ce892404dbd54d270b013f4ecd685a4ee317940826b218c9071c0f2ebe97.zip"
     },
     "Description": "Context integration layer for AI agent communication",
     "LayerName": "automated-video-pipeline-context"
@@ -422,7 +422,7 @@
    "DeletionPolicy": "Retain",
    "Metadata": {
     "aws:cdk:path": "VideoPipelineStack/ContextLayer/Resource",
-    "aws:asset:path": "asset.e515202356296a95ade302a33d9e8c5526730fb19895948432531ee377a5705d",
+    "aws:asset:path": "asset.2175ce892404dbd54d270b013f4ecd685a4ee317940826b218c9071c0f2ebe97",
     "aws:asset:is-bundled": false,
     "aws:asset:property": "Content"
    }
@@ -432,7 +432,7 @@
    "Properties": {
     "Code": {
      "S3Bucket": "cdk-hnb659fds-assets-786673323159-us-east-1",
-     "S3Key": "8011669e34605c358ebeffa380d653d272d783d9403378ae940e831781e0a7df.zip"
+     "S3Key": "79c0581161d780ddf5ed2b8207d86ba22512b06f0404db54e6d9bc7878919236.zip"
     },
     "Environment": {
      "Variables": {
@@ -454,8 +454,13 @@
       "NODE_ENV": "production"
      }
     },
-    "FunctionName": "automated-video-pipeline-topic-management-v2",
-    "Handler": "standalone.handler",
+    "FunctionName": "automated-video-pipeline-topic-management-v3",
+    "Handler": "handler.handler",
+    "Layers": [
+     {
+      "Ref": "ContextLayerBFE43D68"
+     }
+    ],
     "MemorySize": 512,
     "Role": {
      "Fn::GetAtt": [
@@ -482,7 +487,7 @@
       "Value": "automated-video-pipeline"
      }
     ],
-    "Timeout": 300
+    "Timeout": 60
    },
    "DependsOn": [
     "LambdaExecutionRoleDefaultPolicy6D69732F",
@@ -490,7 +495,7 @@
    ],
    "Metadata": {
     "aws:cdk:path": "VideoPipelineStack/TopicManagementFunction/Resource",
-    "aws:asset:path": "asset.8011669e34605c358ebeffa380d653d272d783d9403378ae940e831781e0a7df",
+    "aws:asset:path": "asset.79c0581161d780ddf5ed2b8207d86ba22512b06f0404db54e6d9bc7878919236",
     "aws:asset:is-bundled": false,
     "aws:asset:property": "Code"
    }
@@ -500,7 +505,7 @@
    "Properties": {
     "Code": {
      "S3Bucket": "cdk-hnb659fds-assets-786673323159-us-east-1",
-     "S3Key": "9bb2c3dbaabc6b356850833c2866a579cc5184187210f976cea5bc448ed87971.zip"
+     "S3Key": "c7c988806b682c48cf298079a86bcfde3211e5e5705d39d67baac2084aac5336.zip"
     },
     "Environment": {
      "Variables": {
@@ -521,8 +526,16 @@
       "NODE_ENV": "production"
      }
     },
-    "FunctionName": "automated-video-pipeline-script-generator-v2",
-    "Handler": "standalone.handler",
+    "FunctionName": "automated-video-pipeline-script-generator-v3",
+    "Handler": "handler.handler",
+    "Layers": [
+     {
+      "Ref": "ConfigLayer1A4B087F"
+     },
+     {
+      "Ref": "ContextLayerBFE43D68"
+     }
+    ],
     "MemorySize": 1024,
     "Role": {
      "Fn::GetAtt": [
@@ -549,7 +562,7 @@
       "Value": "automated-video-pipeline"
      }
     ],
-    "Timeout": 300
+    "Timeout": 60
    },
    "DependsOn": [
     "LambdaExecutionRoleDefaultPolicy6D69732F",
@@ -557,7 +570,7 @@
    ],
    "Metadata": {
     "aws:cdk:path": "VideoPipelineStack/ScriptGeneratorFunction/Resource",
-    "aws:asset:path": "asset.9bb2c3dbaabc6b356850833c2866a579cc5184187210f976cea5bc448ed87971",
+    "aws:asset:path": "asset.c7c988806b682c48cf298079a86bcfde3211e5e5705d39d67baac2084aac5336",
     "aws:asset:is-bundled": false,
     "aws:asset:property": "Code"
    }
@@ -567,7 +580,7 @@
    "Properties": {
     "Code": {
      "S3Bucket": "cdk-hnb659fds-assets-786673323159-us-east-1",
-     "S3Key": "d4897d62d040a5505d9e6514603bb94bf9c021b19e6a1c5e413e0aca855238e8.zip"
+     "S3Key": "2582093bddad9fc5ac2638a5de91092de555fb7ccf470185ab9d6abac1bf043e.zip"
     },
     "Environment": {
      "Variables": {
@@ -587,8 +600,13 @@
       "NODE_ENV": "production"
      }
     },
-    "FunctionName": "automated-video-pipeline-media-curator-v2",
-    "Handler": "standalone.handler",
+    "FunctionName": "automated-video-pipeline-media-curator-v3",
+    "Handler": "handler.handler",
+    "Layers": [
+     {
+      "Ref": "ContextLayerBFE43D68"
+     }
+    ],
     "MemorySize": 512,
     "Role": {
      "Fn::GetAtt": [
@@ -615,7 +633,7 @@
       "Value": "automated-video-pipeline"
      }
     ],
-    "Timeout": 600
+    "Timeout": 25
    },
    "DependsOn": [
     "LambdaExecutionRoleDefaultPolicy6D69732F",
@@ -623,7 +641,7 @@
    ],
    "Metadata": {
     "aws:cdk:path": "VideoPipelineStack/MediaCuratorFunction/Resource",
-    "aws:asset:path": "asset.d4897d62d040a5505d9e6514603bb94bf9c021b19e6a1c5e413e0aca855238e8",
+    "aws:asset:path": "asset.2582093bddad9fc5ac2638a5de91092de555fb7ccf470185ab9d6abac1bf043e",
     "aws:asset:is-bundled": false,
     "aws:asset:property": "Code"
    }
@@ -633,7 +651,7 @@
    "Properties": {
     "Code": {
      "S3Bucket": "cdk-hnb659fds-assets-786673323159-us-east-1",
-     "S3Key": "3c59e85825ebdb1e98fe2b9fdc0731aef93244b3d7e089c18a7a33e954d5ad12.zip"
+     "S3Key": "743b109b855a8801b3cdf6b494c47d936e024e85c3236f2351d5cddf796216e9.zip"
     },
     "Environment": {
      "Variables": {
@@ -652,8 +670,16 @@
       "NODE_ENV": "production"
      }
     },
-    "FunctionName": "automated-video-pipeline-audio-generator-v2",
-    "Handler": "standalone.handler",
+    "FunctionName": "automated-video-pipeline-audio-generator-v3",
+    "Handler": "handler.handler",
+    "Layers": [
+     {
+      "Ref": "ConfigLayer1A4B087F"
+     },
+     {
+      "Ref": "ContextLayerBFE43D68"
+     }
+    ],
     "MemorySize": 512,
     "Role": {
      "Fn::GetAtt": [
@@ -680,7 +706,7 @@
       "Value": "automated-video-pipeline"
      }
     ],
-    "Timeout": 300
+    "Timeout": 25
    },
    "DependsOn": [
     "LambdaExecutionRoleDefaultPolicy6D69732F",
@@ -688,7 +714,7 @@
    ],
    "Metadata": {
     "aws:cdk:path": "VideoPipelineStack/AudioGeneratorFunction/Resource",
-    "aws:asset:path": "asset.3c59e85825ebdb1e98fe2b9fdc0731aef93244b3d7e089c18a7a33e954d5ad12",
+    "aws:asset:path": "asset.743b109b855a8801b3cdf6b494c47d936e024e85c3236f2351d5cddf796216e9",
     "aws:asset:is-bundled": false,
     "aws:asset:property": "Code"
    }
@@ -698,7 +724,7 @@
    "Properties": {
     "Code": {
      "S3Bucket": "cdk-hnb659fds-assets-786673323159-us-east-1",
-     "S3Key": "6a20205da0d03f2852dd222409dc353743ed9abdbf34bbb7168826d1ebe5e5bc.zip"
+     "S3Key": "91e42bb275e3895f842f3d06dc8655337f9a66a8d1547e1bdc3b2078db4cd614.zip"
     },
     "Environment": {
      "Variables": {
@@ -722,8 +748,13 @@
       "NODE_ENV": "production"
      }
     },
-    "FunctionName": "automated-video-pipeline-video-assembler-v2",
-    "Handler": "standalone.handler",
+    "FunctionName": "automated-video-pipeline-video-assembler-v3",
+    "Handler": "handler.handler",
+    "Layers": [
+     {
+      "Ref": "ContextLayerBFE43D68"
+     }
+    ],
     "MemorySize": 1024,
     "Role": {
      "Fn::GetAtt": [
@@ -758,7 +789,7 @@
    ],
    "Metadata": {
     "aws:cdk:path": "VideoPipelineStack/VideoAssemblerFunction/Resource",
-    "aws:asset:path": "asset.6a20205da0d03f2852dd222409dc353743ed9abdbf34bbb7168826d1ebe5e5bc",
+    "aws:asset:path": "asset.91e42bb275e3895f842f3d06dc8655337f9a66a8d1547e1bdc3b2078db4cd614",
     "aws:asset:is-bundled": false,
     "aws:asset:property": "Code"
    }
@@ -768,7 +799,7 @@
    "Properties": {
     "Code": {
      "S3Bucket": "cdk-hnb659fds-assets-786673323159-us-east-1",
-     "S3Key": "14b7510182d667f8a6d7d72e0e94cb9804b71b636bdbffa42e021e6785a94fd2.zip"
+     "S3Key": "45390445fcf4443dfc257c671a2f951dbfd1ce65eec125375fabbeb44ed67c50.zip"
     },
     "Environment": {
      "Variables": {
@@ -791,8 +822,13 @@
       "NODE_ENV": "production"
      }
     },
-    "FunctionName": "automated-video-pipeline-youtube-publisher-v2",
-    "Handler": "standalone.handler",
+    "FunctionName": "automated-video-pipeline-youtube-publisher-v3",
+    "Handler": "handler.handler",
+    "Layers": [
+     {
+      "Ref": "ContextLayerBFE43D68"
+     }
+    ],
     "MemorySize": 1024,
     "Role": {
      "Fn::GetAtt": [
@@ -827,7 +863,7 @@
    ],
    "Metadata": {
     "aws:cdk:path": "VideoPipelineStack/YouTubePublisherFunction/Resource",
-    "aws:asset:path": "asset.14b7510182d667f8a6d7d72e0e94cb9804b71b636bdbffa42e021e6785a94fd2",
+    "aws:asset:path": "asset.45390445fcf4443dfc257c671a2f951dbfd1ce65eec125375fabbeb44ed67c50",
     "aws:asset:is-bundled": false,
     "aws:asset:property": "Code"
    }
@@ -837,7 +873,7 @@
    "Properties": {
     "Code": {
      "S3Bucket": "cdk-hnb659fds-assets-786673323159-us-east-1",
-     "S3Key": "bc53dea2f34c249d9cfaadb5c3adbdb3bbe40b3c23caf39e54e090bcded29180.zip"
+     "S3Key": "0c840213ba87b57f3602b4f4fd1769f32452f7dfa4632f1d1aeff7e3c78e5758.zip"
     },
     "Environment": {
      "Variables": {
@@ -856,7 +892,7 @@
       "NODE_ENV": "production"
      }
     },
-    "FunctionName": "automated-video-pipeline-workflow-orchestrator-v2",
+    "FunctionName": "automated-video-pipeline-workflow-orchestrator-v3",
     "Handler": "handler.handler",
     "Layers": [
      {
@@ -897,7 +933,7 @@
    ],
    "Metadata": {
     "aws:cdk:path": "VideoPipelineStack/WorkflowOrchestratorFunction/Resource",
-    "aws:asset:path": "asset.bc53dea2f34c249d9cfaadb5c3adbdb3bbe40b3c23caf39e54e090bcded29180",
+    "aws:asset:path": "asset.0c840213ba87b57f3602b4f4fd1769f32452f7dfa4632f1d1aeff7e3c78e5758",
     "aws:asset:is-bundled": false,
     "aws:asset:property": "Code"
    }
@@ -946,6 +982,119 @@
     "aws:cdk:path": "VideoPipelineStack/WorkflowOrchestratorFunction/AllowEventBridgeHighPriorityInvoke"
    }
   },
+  "JobsTable1970BC16": {
+   "Type": "AWS::DynamoDB::Table",
+   "Properties": {
+    "AttributeDefinitions": [
+     {
+      "AttributeName": "jobId",
+      "AttributeType": "S"
+     }
+    ],
+    "BillingMode": "PAY_PER_REQUEST",
+    "KeySchema": [
+     {
+      "AttributeName": "jobId",
+      "KeyType": "HASH"
+     }
+    ],
+    "TableName": "automated-video-pipeline-jobs-v2",
+    "Tags": [
+     {
+      "Key": "Environment",
+      "Value": "production"
+     },
+     {
+      "Key": "ManagedBy",
+      "Value": "github-actions"
+     },
+     {
+      "Key": "Owner",
+      "Value": "video-automation-team"
+     },
+     {
+      "Key": "Project",
+      "Value": "automated-video-pipeline"
+     }
+    ],
+    "TimeToLiveSpecification": {
+     "AttributeName": "ttl",
+     "Enabled": true
+    }
+   },
+   "UpdateReplacePolicy": "Delete",
+   "DeletionPolicy": "Delete",
+   "Metadata": {
+    "aws:cdk:path": "VideoPipelineStack/JobsTable/Resource"
+   }
+  },
+  "AsyncProcessorFunctionC004566A": {
+   "Type": "AWS::Lambda::Function",
+   "Properties": {
+    "Code": {
+     "S3Bucket": "cdk-hnb659fds-assets-786673323159-us-east-1",
+     "S3Key": "d9eac396c5fdb1a7fc0f147e2ce9a327c105af65945f516fe063acb1201c0bd3.zip"
+    },
+    "Environment": {
+     "Variables": {
+      "JOBS_TABLE_NAME": {
+       "Ref": "JobsTable1970BC16"
+      },
+      "S3_BUCKET": {
+       "Ref": "PrimaryBucket2E757879"
+      },
+      "CONTEXT_TABLE": {
+       "Ref": "ContextTableE95A339A"
+      },
+      "NODE_ENV": "production"
+     }
+    },
+    "FunctionName": "automated-video-pipeline-async-processor-v3",
+    "Handler": "index.handler",
+    "Layers": [
+     {
+      "Ref": "ContextLayerBFE43D68"
+     }
+    ],
+    "MemorySize": 1024,
+    "Role": {
+     "Fn::GetAtt": [
+      "LambdaExecutionRoleD5C26073",
+      "Arn"
+     ]
+    },
+    "Runtime": "nodejs20.x",
+    "Tags": [
+     {
+      "Key": "Environment",
+      "Value": "production"
+     },
+     {
+      "Key": "ManagedBy",
+      "Value": "github-actions"
+     },
+     {
+      "Key": "Owner",
+      "Value": "video-automation-team"
+     },
+     {
+      "Key": "Project",
+      "Value": "automated-video-pipeline"
+     }
+    ],
+    "Timeout": 900
+   },
+   "DependsOn": [
+    "LambdaExecutionRoleDefaultPolicy6D69732F",
+    "LambdaExecutionRoleD5C26073"
+   ],
+   "Metadata": {
+    "aws:cdk:path": "VideoPipelineStack/AsyncProcessorFunction/Resource",
+    "aws:asset:path": "asset.d9eac396c5fdb1a7fc0f147e2ce9a327c105af65945f516fe063acb1201c0bd3",
+    "aws:asset:is-bundled": false,
+    "aws:asset:property": "Code"
+   }
+  },
   "VideoProductionSchedule7336ADDB": {
    "Type": "AWS::Events::Rule",
    "Properties": {
@@ -980,7 +1129,7 @@
        ]
       },
       "Id": "Target0",
-      "Input": "{\"action\":\"start-scheduled\",\"source\":\"eventbridge-schedule\",\"baseTopic\":\"Auto-scheduled from Google Sheets\",\"scheduledBy\":\"eventbridge\",\"useGoogleSheets\":true,\"timestamp\":\"2025-10-10T00:03:51.018Z\"}"
+      "Input": "{\"action\":\"start-scheduled\",\"source\":\"eventbridge-schedule\",\"baseTopic\":\"Auto-scheduled from Google Sheets\",\"scheduledBy\":\"eventbridge\",\"useGoogleSheets\":true,\"timestamp\":\"2025-10-12T01:35:33.439Z\"}"
      }
     ]
    },
@@ -1044,7 +1193,7 @@
        ]
       },
       "Id": "Target0",
-      "Input": "{\"action\":\"start-scheduled\",\"source\":\"eventbridge-high-priority\",\"baseTopic\":\"High-priority auto-scheduled\",\"scheduledBy\":\"eventbridge-priority\",\"useGoogleSheets\":true,\"priorityOnly\":true,\"timestamp\":\"2025-10-10T00:03:51.026Z\"}"
+      "Input": "{\"action\":\"start-scheduled\",\"source\":\"eventbridge-high-priority\",\"baseTopic\":\"High-priority auto-scheduled\",\"scheduledBy\":\"eventbridge-priority\",\"useGoogleSheets\":true,\"priorityOnly\":true,\"timestamp\":\"2025-10-12T01:35:33.451Z\"}"
      }
     ]
    },
@@ -1102,7 +1251,7 @@
     "aws:cdk:path": "VideoPipelineStack/VideoPipelineAPI/Resource"
    }
   },
-  "VideoPipelineAPIDeploymentC06F0BD8ef975ab546441e263c06b9ac8f65c9b3": {
+  "VideoPipelineAPIDeploymentC06F0BD86603e2298db29bf1bea1925d3f334bf5": {
    "Type": "AWS::ApiGateway::Deployment",
    "Properties": {
     "Description": "API for Automated Video Pipeline",
@@ -1111,15 +1260,50 @@
     }
    },
    "DependsOn": [
+    "VideoPipelineAPIasynchealthGETC081EA02",
+    "VideoPipelineAPIasynchealthOPTIONS6E2F7ED2",
+    "VideoPipelineAPIasynchealth31C35BC1",
+    "VideoPipelineAPIasyncjobsjobIdGET17527B9D",
+    "VideoPipelineAPIasyncjobsjobIdOPTIONS8A3BC56A",
+    "VideoPipelineAPIasyncjobsjobId26920DF4",
+    "VideoPipelineAPIasyncjobsOPTIONS3CA0B306",
+    "VideoPipelineAPIasyncjobs4D5FBFCF",
+    "VideoPipelineAPIasyncOPTIONS891A03ED",
+    "VideoPipelineAPIasync0843A461",
+    "VideoPipelineAPIasyncstartpipelineOPTIONSE41FB67F",
+    "VideoPipelineAPIasyncstartpipelinePOSTE4B719D6",
+    "VideoPipelineAPIasyncstartpipelineB6E32D58",
+    "VideoPipelineAPIaudiogenerateOPTIONS4ABA5F45",
+    "VideoPipelineAPIaudiogeneratePOST5E955A60",
+    "VideoPipelineAPIaudiogenerateCB336422",
+    "VideoPipelineAPIaudiohealthGETFF35AD71",
+    "VideoPipelineAPIaudiohealthOPTIONS82DFDD91",
+    "VideoPipelineAPIaudiohealthF06F4CB6",
+    "VideoPipelineAPIaudioOPTIONS1A3C09ED",
+    "VideoPipelineAPIaudioEC12022E",
     "VideoPipelineAPImediacurateOPTIONS86FC4F7E",
     "VideoPipelineAPImediacuratePOSTE36DB332",
     "VideoPipelineAPImediacurateCF64791B",
+    "VideoPipelineAPImediahealthGET64CE3C49",
+    "VideoPipelineAPImediahealthOPTIONS9204A6CC",
+    "VideoPipelineAPImediahealthD56A9DE5",
     "VideoPipelineAPImediaOPTIONS8E5C0B35",
     "VideoPipelineAPImedia35396386",
-    "VideoPipelineAPImediasearchOPTIONS834783F5",
-    "VideoPipelineAPImediasearchPOST31739D32",
-    "VideoPipelineAPImediasearchB1B7B691",
     "VideoPipelineAPIOPTIONS051F5B63",
+    "VideoPipelineAPIscriptsgenerateenhancedOPTIONSA156B545",
+    "VideoPipelineAPIscriptsgenerateenhancedPOSTE54DF34B",
+    "VideoPipelineAPIscriptsgenerateenhanced526AC5F6",
+    "VideoPipelineAPIscriptsgeneratefromprojectOPTIONS2B5F6974",
+    "VideoPipelineAPIscriptsgeneratefromprojectPOST99BA92F1",
+    "VideoPipelineAPIscriptsgeneratefromproject7DEA07A1",
+    "VideoPipelineAPIscriptsgenerateOPTIONSB108639A",
+    "VideoPipelineAPIscriptsgeneratePOSTBD00B254",
+    "VideoPipelineAPIscriptsgenerate55432BFA",
+    "VideoPipelineAPIscriptshealthGET4B8CFAFD",
+    "VideoPipelineAPIscriptshealthOPTIONS45C44869",
+    "VideoPipelineAPIscriptshealth0F777A55",
+    "VideoPipelineAPIscriptsOPTIONS6606EBA7",
+    "VideoPipelineAPIscriptsA51F2181",
     "VideoPipelineAPItopicstopicIdDELETE93A7005B",
     "VideoPipelineAPItopicstopicIdGET36FA6D5F",
     "VideoPipelineAPItopicstopicIdOPTIONS2872CA4C",
@@ -1135,6 +1319,9 @@
     "VideoPipelineAPIvideoassembleOPTIONSAC256661",
     "VideoPipelineAPIvideoassemblePOSTE138099D",
     "VideoPipelineAPIvideoassemble41D0E80E",
+    "VideoPipelineAPIvideohealthGETBD0FE29F",
+    "VideoPipelineAPIvideohealthOPTIONS4E9AE617",
+    "VideoPipelineAPIvideohealthBB49ED4F",
     "VideoPipelineAPIvideoOPTIONS18D47EDD",
     "VideoPipelineAPIvideopublishOPTIONSA418EEFD",
     "VideoPipelineAPIvideopublishPOST5FA37B80",
@@ -1153,7 +1340,15 @@
     "VideoPipelineAPIworkflowstats8D21DFA1",
     "VideoPipelineAPIworkflowstatusGET5B5181D0",
     "VideoPipelineAPIworkflowstatusOPTIONS56C8F8AD",
-    "VideoPipelineAPIworkflowstatus28E8494B"
+    "VideoPipelineAPIworkflowstatus28E8494B",
+    "VideoPipelineAPIyoutubehealthGET2569CF57",
+    "VideoPipelineAPIyoutubehealthOPTIONS56FC1C14",
+    "VideoPipelineAPIyoutubehealthEA83912E",
+    "VideoPipelineAPIyoutubeOPTIONS82B741A1",
+    "VideoPipelineAPIyoutubepublishOPTIONS5FEE526D",
+    "VideoPipelineAPIyoutubepublishPOSTE12A2EAF",
+    "VideoPipelineAPIyoutubepublish0F35500D",
+    "VideoPipelineAPIyoutubeEEEBBA98"
    ],
    "Metadata": {
     "aws:cdk:path": "VideoPipelineStack/VideoPipelineAPI/Deployment/Resource",
@@ -1164,7 +1359,7 @@
    "Type": "AWS::ApiGateway::Stage",
    "Properties": {
     "DeploymentId": {
-     "Ref": "VideoPipelineAPIDeploymentC06F0BD8ef975ab546441e263c06b9ac8f65c9b3"
+     "Ref": "VideoPipelineAPIDeploymentC06F0BD86603e2298db29bf1bea1925d3f334bf5"
     },
     "RestApiId": {
      "Ref": "VideoPipelineAPIC7F4C465"
@@ -1992,6 +2187,2313 @@
     "aws:cdk:path": "VideoPipelineStack/VideoPipelineAPI/Default/topics/{topicId}/DELETE/Resource"
    }
   },
+  "VideoPipelineAPIscriptsA51F2181": {
+   "Type": "AWS::ApiGateway::Resource",
+   "Properties": {
+    "ParentId": {
+     "Fn::GetAtt": [
+      "VideoPipelineAPIC7F4C465",
+      "RootResourceId"
+     ]
+    },
+    "PathPart": "scripts",
+    "RestApiId": {
+     "Ref": "VideoPipelineAPIC7F4C465"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "VideoPipelineStack/VideoPipelineAPI/Default/scripts/Resource"
+   }
+  },
+  "VideoPipelineAPIscriptsOPTIONS6606EBA7": {
+   "Type": "AWS::ApiGateway::Method",
+   "Properties": {
+    "ApiKeyRequired": false,
+    "AuthorizationType": "NONE",
+    "HttpMethod": "OPTIONS",
+    "Integration": {
+     "IntegrationResponses": [
+      {
+       "ResponseParameters": {
+        "method.response.header.Access-Control-Allow-Headers": "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'",
+        "method.response.header.Access-Control-Allow-Origin": "'*'",
+        "method.response.header.Access-Control-Allow-Methods": "'OPTIONS,GET,PUT,POST,DELETE,PATCH,HEAD'"
+       },
+       "StatusCode": "204"
+      }
+     ],
+     "RequestTemplates": {
+      "application/json": "{ statusCode: 200 }"
+     },
+     "Type": "MOCK"
+    },
+    "MethodResponses": [
+     {
+      "ResponseParameters": {
+       "method.response.header.Access-Control-Allow-Headers": true,
+       "method.response.header.Access-Control-Allow-Origin": true,
+       "method.response.header.Access-Control-Allow-Methods": true
+      },
+      "StatusCode": "204"
+     }
+    ],
+    "ResourceId": {
+     "Ref": "VideoPipelineAPIscriptsA51F2181"
+    },
+    "RestApiId": {
+     "Ref": "VideoPipelineAPIC7F4C465"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "VideoPipelineStack/VideoPipelineAPI/Default/scripts/OPTIONS/Resource"
+   }
+  },
+  "VideoPipelineAPIscriptsgenerate55432BFA": {
+   "Type": "AWS::ApiGateway::Resource",
+   "Properties": {
+    "ParentId": {
+     "Ref": "VideoPipelineAPIscriptsA51F2181"
+    },
+    "PathPart": "generate",
+    "RestApiId": {
+     "Ref": "VideoPipelineAPIC7F4C465"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "VideoPipelineStack/VideoPipelineAPI/Default/scripts/generate/Resource"
+   }
+  },
+  "VideoPipelineAPIscriptsgenerateOPTIONSB108639A": {
+   "Type": "AWS::ApiGateway::Method",
+   "Properties": {
+    "ApiKeyRequired": false,
+    "AuthorizationType": "NONE",
+    "HttpMethod": "OPTIONS",
+    "Integration": {
+     "IntegrationResponses": [
+      {
+       "ResponseParameters": {
+        "method.response.header.Access-Control-Allow-Headers": "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'",
+        "method.response.header.Access-Control-Allow-Origin": "'*'",
+        "method.response.header.Access-Control-Allow-Methods": "'OPTIONS,GET,PUT,POST,DELETE,PATCH,HEAD'"
+       },
+       "StatusCode": "204"
+      }
+     ],
+     "RequestTemplates": {
+      "application/json": "{ statusCode: 200 }"
+     },
+     "Type": "MOCK"
+    },
+    "MethodResponses": [
+     {
+      "ResponseParameters": {
+       "method.response.header.Access-Control-Allow-Headers": true,
+       "method.response.header.Access-Control-Allow-Origin": true,
+       "method.response.header.Access-Control-Allow-Methods": true
+      },
+      "StatusCode": "204"
+     }
+    ],
+    "ResourceId": {
+     "Ref": "VideoPipelineAPIscriptsgenerate55432BFA"
+    },
+    "RestApiId": {
+     "Ref": "VideoPipelineAPIC7F4C465"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "VideoPipelineStack/VideoPipelineAPI/Default/scripts/generate/OPTIONS/Resource"
+   }
+  },
+  "VideoPipelineAPIscriptsgeneratePOSTApiPermissionVideoPipelineStackVideoPipelineAPI7A2C3071POSTscriptsgenerate66187650": {
+   "Type": "AWS::Lambda::Permission",
+   "Properties": {
+    "Action": "lambda:InvokeFunction",
+    "FunctionName": {
+     "Fn::GetAtt": [
+      "ScriptGeneratorFunction7EE3FEE4",
+      "Arn"
+     ]
+    },
+    "Principal": "apigateway.amazonaws.com",
+    "SourceArn": {
+     "Fn::Join": [
+      "",
+      [
+       "arn:aws:execute-api:us-east-1:786673323159:",
+       {
+        "Ref": "VideoPipelineAPIC7F4C465"
+       },
+       "/",
+       {
+        "Ref": "VideoPipelineAPIDeploymentStageprod938D37FF"
+       },
+       "/POST/scripts/generate"
+      ]
+     ]
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "VideoPipelineStack/VideoPipelineAPI/Default/scripts/generate/POST/ApiPermission.VideoPipelineStackVideoPipelineAPI7A2C3071.POST..scripts.generate"
+   }
+  },
+  "VideoPipelineAPIscriptsgeneratePOSTApiPermissionTestVideoPipelineStackVideoPipelineAPI7A2C3071POSTscriptsgenerate7904E992": {
+   "Type": "AWS::Lambda::Permission",
+   "Properties": {
+    "Action": "lambda:InvokeFunction",
+    "FunctionName": {
+     "Fn::GetAtt": [
+      "ScriptGeneratorFunction7EE3FEE4",
+      "Arn"
+     ]
+    },
+    "Principal": "apigateway.amazonaws.com",
+    "SourceArn": {
+     "Fn::Join": [
+      "",
+      [
+       "arn:aws:execute-api:us-east-1:786673323159:",
+       {
+        "Ref": "VideoPipelineAPIC7F4C465"
+       },
+       "/test-invoke-stage/POST/scripts/generate"
+      ]
+     ]
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "VideoPipelineStack/VideoPipelineAPI/Default/scripts/generate/POST/ApiPermission.Test.VideoPipelineStackVideoPipelineAPI7A2C3071.POST..scripts.generate"
+   }
+  },
+  "VideoPipelineAPIscriptsgeneratePOSTBD00B254": {
+   "Type": "AWS::ApiGateway::Method",
+   "Properties": {
+    "ApiKeyRequired": true,
+    "AuthorizationType": "NONE",
+    "HttpMethod": "POST",
+    "Integration": {
+     "IntegrationHttpMethod": "POST",
+     "Type": "AWS_PROXY",
+     "Uri": {
+      "Fn::Join": [
+       "",
+       [
+        "arn:aws:apigateway:us-east-1:lambda:path/2015-03-31/functions/",
+        {
+         "Fn::GetAtt": [
+          "ScriptGeneratorFunction7EE3FEE4",
+          "Arn"
+         ]
+        },
+        "/invocations"
+       ]
+      ]
+     }
+    },
+    "ResourceId": {
+     "Ref": "VideoPipelineAPIscriptsgenerate55432BFA"
+    },
+    "RestApiId": {
+     "Ref": "VideoPipelineAPIC7F4C465"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "VideoPipelineStack/VideoPipelineAPI/Default/scripts/generate/POST/Resource"
+   }
+  },
+  "VideoPipelineAPIscriptsgenerateenhanced526AC5F6": {
+   "Type": "AWS::ApiGateway::Resource",
+   "Properties": {
+    "ParentId": {
+     "Ref": "VideoPipelineAPIscriptsA51F2181"
+    },
+    "PathPart": "generate-enhanced",
+    "RestApiId": {
+     "Ref": "VideoPipelineAPIC7F4C465"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "VideoPipelineStack/VideoPipelineAPI/Default/scripts/generate-enhanced/Resource"
+   }
+  },
+  "VideoPipelineAPIscriptsgenerateenhancedOPTIONSA156B545": {
+   "Type": "AWS::ApiGateway::Method",
+   "Properties": {
+    "ApiKeyRequired": false,
+    "AuthorizationType": "NONE",
+    "HttpMethod": "OPTIONS",
+    "Integration": {
+     "IntegrationResponses": [
+      {
+       "ResponseParameters": {
+        "method.response.header.Access-Control-Allow-Headers": "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'",
+        "method.response.header.Access-Control-Allow-Origin": "'*'",
+        "method.response.header.Access-Control-Allow-Methods": "'OPTIONS,GET,PUT,POST,DELETE,PATCH,HEAD'"
+       },
+       "StatusCode": "204"
+      }
+     ],
+     "RequestTemplates": {
+      "application/json": "{ statusCode: 200 }"
+     },
+     "Type": "MOCK"
+    },
+    "MethodResponses": [
+     {
+      "ResponseParameters": {
+       "method.response.header.Access-Control-Allow-Headers": true,
+       "method.response.header.Access-Control-Allow-Origin": true,
+       "method.response.header.Access-Control-Allow-Methods": true
+      },
+      "StatusCode": "204"
+     }
+    ],
+    "ResourceId": {
+     "Ref": "VideoPipelineAPIscriptsgenerateenhanced526AC5F6"
+    },
+    "RestApiId": {
+     "Ref": "VideoPipelineAPIC7F4C465"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "VideoPipelineStack/VideoPipelineAPI/Default/scripts/generate-enhanced/OPTIONS/Resource"
+   }
+  },
+  "VideoPipelineAPIscriptsgenerateenhancedPOSTApiPermissionVideoPipelineStackVideoPipelineAPI7A2C3071POSTscriptsgenerateenhanced075228A5": {
+   "Type": "AWS::Lambda::Permission",
+   "Properties": {
+    "Action": "lambda:InvokeFunction",
+    "FunctionName": {
+     "Fn::GetAtt": [
+      "ScriptGeneratorFunction7EE3FEE4",
+      "Arn"
+     ]
+    },
+    "Principal": "apigateway.amazonaws.com",
+    "SourceArn": {
+     "Fn::Join": [
+      "",
+      [
+       "arn:aws:execute-api:us-east-1:786673323159:",
+       {
+        "Ref": "VideoPipelineAPIC7F4C465"
+       },
+       "/",
+       {
+        "Ref": "VideoPipelineAPIDeploymentStageprod938D37FF"
+       },
+       "/POST/scripts/generate-enhanced"
+      ]
+     ]
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "VideoPipelineStack/VideoPipelineAPI/Default/scripts/generate-enhanced/POST/ApiPermission.VideoPipelineStackVideoPipelineAPI7A2C3071.POST..scripts.generate-enhanced"
+   }
+  },
+  "VideoPipelineAPIscriptsgenerateenhancedPOSTApiPermissionTestVideoPipelineStackVideoPipelineAPI7A2C3071POSTscriptsgenerateenhanced562C4FC3": {
+   "Type": "AWS::Lambda::Permission",
+   "Properties": {
+    "Action": "lambda:InvokeFunction",
+    "FunctionName": {
+     "Fn::GetAtt": [
+      "ScriptGeneratorFunction7EE3FEE4",
+      "Arn"
+     ]
+    },
+    "Principal": "apigateway.amazonaws.com",
+    "SourceArn": {
+     "Fn::Join": [
+      "",
+      [
+       "arn:aws:execute-api:us-east-1:786673323159:",
+       {
+        "Ref": "VideoPipelineAPIC7F4C465"
+       },
+       "/test-invoke-stage/POST/scripts/generate-enhanced"
+      ]
+     ]
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "VideoPipelineStack/VideoPipelineAPI/Default/scripts/generate-enhanced/POST/ApiPermission.Test.VideoPipelineStackVideoPipelineAPI7A2C3071.POST..scripts.generate-enhanced"
+   }
+  },
+  "VideoPipelineAPIscriptsgenerateenhancedPOSTE54DF34B": {
+   "Type": "AWS::ApiGateway::Method",
+   "Properties": {
+    "ApiKeyRequired": true,
+    "AuthorizationType": "NONE",
+    "HttpMethod": "POST",
+    "Integration": {
+     "IntegrationHttpMethod": "POST",
+     "Type": "AWS_PROXY",
+     "Uri": {
+      "Fn::Join": [
+       "",
+       [
+        "arn:aws:apigateway:us-east-1:lambda:path/2015-03-31/functions/",
+        {
+         "Fn::GetAtt": [
+          "ScriptGeneratorFunction7EE3FEE4",
+          "Arn"
+         ]
+        },
+        "/invocations"
+       ]
+      ]
+     }
+    },
+    "ResourceId": {
+     "Ref": "VideoPipelineAPIscriptsgenerateenhanced526AC5F6"
+    },
+    "RestApiId": {
+     "Ref": "VideoPipelineAPIC7F4C465"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "VideoPipelineStack/VideoPipelineAPI/Default/scripts/generate-enhanced/POST/Resource"
+   }
+  },
+  "VideoPipelineAPIscriptsgeneratefromproject7DEA07A1": {
+   "Type": "AWS::ApiGateway::Resource",
+   "Properties": {
+    "ParentId": {
+     "Ref": "VideoPipelineAPIscriptsA51F2181"
+    },
+    "PathPart": "generate-from-project",
+    "RestApiId": {
+     "Ref": "VideoPipelineAPIC7F4C465"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "VideoPipelineStack/VideoPipelineAPI/Default/scripts/generate-from-project/Resource"
+   }
+  },
+  "VideoPipelineAPIscriptsgeneratefromprojectOPTIONS2B5F6974": {
+   "Type": "AWS::ApiGateway::Method",
+   "Properties": {
+    "ApiKeyRequired": false,
+    "AuthorizationType": "NONE",
+    "HttpMethod": "OPTIONS",
+    "Integration": {
+     "IntegrationResponses": [
+      {
+       "ResponseParameters": {
+        "method.response.header.Access-Control-Allow-Headers": "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'",
+        "method.response.header.Access-Control-Allow-Origin": "'*'",
+        "method.response.header.Access-Control-Allow-Methods": "'OPTIONS,GET,PUT,POST,DELETE,PATCH,HEAD'"
+       },
+       "StatusCode": "204"
+      }
+     ],
+     "RequestTemplates": {
+      "application/json": "{ statusCode: 200 }"
+     },
+     "Type": "MOCK"
+    },
+    "MethodResponses": [
+     {
+      "ResponseParameters": {
+       "method.response.header.Access-Control-Allow-Headers": true,
+       "method.response.header.Access-Control-Allow-Origin": true,
+       "method.response.header.Access-Control-Allow-Methods": true
+      },
+      "StatusCode": "204"
+     }
+    ],
+    "ResourceId": {
+     "Ref": "VideoPipelineAPIscriptsgeneratefromproject7DEA07A1"
+    },
+    "RestApiId": {
+     "Ref": "VideoPipelineAPIC7F4C465"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "VideoPipelineStack/VideoPipelineAPI/Default/scripts/generate-from-project/OPTIONS/Resource"
+   }
+  },
+  "VideoPipelineAPIscriptsgeneratefromprojectPOSTApiPermissionVideoPipelineStackVideoPipelineAPI7A2C3071POSTscriptsgeneratefromproject406C4C7B": {
+   "Type": "AWS::Lambda::Permission",
+   "Properties": {
+    "Action": "lambda:InvokeFunction",
+    "FunctionName": {
+     "Fn::GetAtt": [
+      "ScriptGeneratorFunction7EE3FEE4",
+      "Arn"
+     ]
+    },
+    "Principal": "apigateway.amazonaws.com",
+    "SourceArn": {
+     "Fn::Join": [
+      "",
+      [
+       "arn:aws:execute-api:us-east-1:786673323159:",
+       {
+        "Ref": "VideoPipelineAPIC7F4C465"
+       },
+       "/",
+       {
+        "Ref": "VideoPipelineAPIDeploymentStageprod938D37FF"
+       },
+       "/POST/scripts/generate-from-project"
+      ]
+     ]
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "VideoPipelineStack/VideoPipelineAPI/Default/scripts/generate-from-project/POST/ApiPermission.VideoPipelineStackVideoPipelineAPI7A2C3071.POST..scripts.generate-from-project"
+   }
+  },
+  "VideoPipelineAPIscriptsgeneratefromprojectPOSTApiPermissionTestVideoPipelineStackVideoPipelineAPI7A2C3071POSTscriptsgeneratefromprojectB51C8A57": {
+   "Type": "AWS::Lambda::Permission",
+   "Properties": {
+    "Action": "lambda:InvokeFunction",
+    "FunctionName": {
+     "Fn::GetAtt": [
+      "ScriptGeneratorFunction7EE3FEE4",
+      "Arn"
+     ]
+    },
+    "Principal": "apigateway.amazonaws.com",
+    "SourceArn": {
+     "Fn::Join": [
+      "",
+      [
+       "arn:aws:execute-api:us-east-1:786673323159:",
+       {
+        "Ref": "VideoPipelineAPIC7F4C465"
+       },
+       "/test-invoke-stage/POST/scripts/generate-from-project"
+      ]
+     ]
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "VideoPipelineStack/VideoPipelineAPI/Default/scripts/generate-from-project/POST/ApiPermission.Test.VideoPipelineStackVideoPipelineAPI7A2C3071.POST..scripts.generate-from-project"
+   }
+  },
+  "VideoPipelineAPIscriptsgeneratefromprojectPOST99BA92F1": {
+   "Type": "AWS::ApiGateway::Method",
+   "Properties": {
+    "ApiKeyRequired": true,
+    "AuthorizationType": "NONE",
+    "HttpMethod": "POST",
+    "Integration": {
+     "IntegrationHttpMethod": "POST",
+     "Type": "AWS_PROXY",
+     "Uri": {
+      "Fn::Join": [
+       "",
+       [
+        "arn:aws:apigateway:us-east-1:lambda:path/2015-03-31/functions/",
+        {
+         "Fn::GetAtt": [
+          "ScriptGeneratorFunction7EE3FEE4",
+          "Arn"
+         ]
+        },
+        "/invocations"
+       ]
+      ]
+     }
+    },
+    "ResourceId": {
+     "Ref": "VideoPipelineAPIscriptsgeneratefromproject7DEA07A1"
+    },
+    "RestApiId": {
+     "Ref": "VideoPipelineAPIC7F4C465"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "VideoPipelineStack/VideoPipelineAPI/Default/scripts/generate-from-project/POST/Resource"
+   }
+  },
+  "VideoPipelineAPIscriptshealth0F777A55": {
+   "Type": "AWS::ApiGateway::Resource",
+   "Properties": {
+    "ParentId": {
+     "Ref": "VideoPipelineAPIscriptsA51F2181"
+    },
+    "PathPart": "health",
+    "RestApiId": {
+     "Ref": "VideoPipelineAPIC7F4C465"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "VideoPipelineStack/VideoPipelineAPI/Default/scripts/health/Resource"
+   }
+  },
+  "VideoPipelineAPIscriptshealthOPTIONS45C44869": {
+   "Type": "AWS::ApiGateway::Method",
+   "Properties": {
+    "ApiKeyRequired": false,
+    "AuthorizationType": "NONE",
+    "HttpMethod": "OPTIONS",
+    "Integration": {
+     "IntegrationResponses": [
+      {
+       "ResponseParameters": {
+        "method.response.header.Access-Control-Allow-Headers": "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'",
+        "method.response.header.Access-Control-Allow-Origin": "'*'",
+        "method.response.header.Access-Control-Allow-Methods": "'OPTIONS,GET,PUT,POST,DELETE,PATCH,HEAD'"
+       },
+       "StatusCode": "204"
+      }
+     ],
+     "RequestTemplates": {
+      "application/json": "{ statusCode: 200 }"
+     },
+     "Type": "MOCK"
+    },
+    "MethodResponses": [
+     {
+      "ResponseParameters": {
+       "method.response.header.Access-Control-Allow-Headers": true,
+       "method.response.header.Access-Control-Allow-Origin": true,
+       "method.response.header.Access-Control-Allow-Methods": true
+      },
+      "StatusCode": "204"
+     }
+    ],
+    "ResourceId": {
+     "Ref": "VideoPipelineAPIscriptshealth0F777A55"
+    },
+    "RestApiId": {
+     "Ref": "VideoPipelineAPIC7F4C465"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "VideoPipelineStack/VideoPipelineAPI/Default/scripts/health/OPTIONS/Resource"
+   }
+  },
+  "VideoPipelineAPIscriptshealthGETApiPermissionVideoPipelineStackVideoPipelineAPI7A2C3071GETscriptshealth432D772A": {
+   "Type": "AWS::Lambda::Permission",
+   "Properties": {
+    "Action": "lambda:InvokeFunction",
+    "FunctionName": {
+     "Fn::GetAtt": [
+      "ScriptGeneratorFunction7EE3FEE4",
+      "Arn"
+     ]
+    },
+    "Principal": "apigateway.amazonaws.com",
+    "SourceArn": {
+     "Fn::Join": [
+      "",
+      [
+       "arn:aws:execute-api:us-east-1:786673323159:",
+       {
+        "Ref": "VideoPipelineAPIC7F4C465"
+       },
+       "/",
+       {
+        "Ref": "VideoPipelineAPIDeploymentStageprod938D37FF"
+       },
+       "/GET/scripts/health"
+      ]
+     ]
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "VideoPipelineStack/VideoPipelineAPI/Default/scripts/health/GET/ApiPermission.VideoPipelineStackVideoPipelineAPI7A2C3071.GET..scripts.health"
+   }
+  },
+  "VideoPipelineAPIscriptshealthGETApiPermissionTestVideoPipelineStackVideoPipelineAPI7A2C3071GETscriptshealth1F37F4FB": {
+   "Type": "AWS::Lambda::Permission",
+   "Properties": {
+    "Action": "lambda:InvokeFunction",
+    "FunctionName": {
+     "Fn::GetAtt": [
+      "ScriptGeneratorFunction7EE3FEE4",
+      "Arn"
+     ]
+    },
+    "Principal": "apigateway.amazonaws.com",
+    "SourceArn": {
+     "Fn::Join": [
+      "",
+      [
+       "arn:aws:execute-api:us-east-1:786673323159:",
+       {
+        "Ref": "VideoPipelineAPIC7F4C465"
+       },
+       "/test-invoke-stage/GET/scripts/health"
+      ]
+     ]
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "VideoPipelineStack/VideoPipelineAPI/Default/scripts/health/GET/ApiPermission.Test.VideoPipelineStackVideoPipelineAPI7A2C3071.GET..scripts.health"
+   }
+  },
+  "VideoPipelineAPIscriptshealthGET4B8CFAFD": {
+   "Type": "AWS::ApiGateway::Method",
+   "Properties": {
+    "ApiKeyRequired": true,
+    "AuthorizationType": "NONE",
+    "HttpMethod": "GET",
+    "Integration": {
+     "IntegrationHttpMethod": "POST",
+     "Type": "AWS_PROXY",
+     "Uri": {
+      "Fn::Join": [
+       "",
+       [
+        "arn:aws:apigateway:us-east-1:lambda:path/2015-03-31/functions/",
+        {
+         "Fn::GetAtt": [
+          "ScriptGeneratorFunction7EE3FEE4",
+          "Arn"
+         ]
+        },
+        "/invocations"
+       ]
+      ]
+     }
+    },
+    "ResourceId": {
+     "Ref": "VideoPipelineAPIscriptshealth0F777A55"
+    },
+    "RestApiId": {
+     "Ref": "VideoPipelineAPIC7F4C465"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "VideoPipelineStack/VideoPipelineAPI/Default/scripts/health/GET/Resource"
+   }
+  },
+  "VideoPipelineAPImedia35396386": {
+   "Type": "AWS::ApiGateway::Resource",
+   "Properties": {
+    "ParentId": {
+     "Fn::GetAtt": [
+      "VideoPipelineAPIC7F4C465",
+      "RootResourceId"
+     ]
+    },
+    "PathPart": "media",
+    "RestApiId": {
+     "Ref": "VideoPipelineAPIC7F4C465"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "VideoPipelineStack/VideoPipelineAPI/Default/media/Resource"
+   }
+  },
+  "VideoPipelineAPImediaOPTIONS8E5C0B35": {
+   "Type": "AWS::ApiGateway::Method",
+   "Properties": {
+    "ApiKeyRequired": false,
+    "AuthorizationType": "NONE",
+    "HttpMethod": "OPTIONS",
+    "Integration": {
+     "IntegrationResponses": [
+      {
+       "ResponseParameters": {
+        "method.response.header.Access-Control-Allow-Headers": "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'",
+        "method.response.header.Access-Control-Allow-Origin": "'*'",
+        "method.response.header.Access-Control-Allow-Methods": "'OPTIONS,GET,PUT,POST,DELETE,PATCH,HEAD'"
+       },
+       "StatusCode": "204"
+      }
+     ],
+     "RequestTemplates": {
+      "application/json": "{ statusCode: 200 }"
+     },
+     "Type": "MOCK"
+    },
+    "MethodResponses": [
+     {
+      "ResponseParameters": {
+       "method.response.header.Access-Control-Allow-Headers": true,
+       "method.response.header.Access-Control-Allow-Origin": true,
+       "method.response.header.Access-Control-Allow-Methods": true
+      },
+      "StatusCode": "204"
+     }
+    ],
+    "ResourceId": {
+     "Ref": "VideoPipelineAPImedia35396386"
+    },
+    "RestApiId": {
+     "Ref": "VideoPipelineAPIC7F4C465"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "VideoPipelineStack/VideoPipelineAPI/Default/media/OPTIONS/Resource"
+   }
+  },
+  "VideoPipelineAPImediacurateCF64791B": {
+   "Type": "AWS::ApiGateway::Resource",
+   "Properties": {
+    "ParentId": {
+     "Ref": "VideoPipelineAPImedia35396386"
+    },
+    "PathPart": "curate",
+    "RestApiId": {
+     "Ref": "VideoPipelineAPIC7F4C465"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "VideoPipelineStack/VideoPipelineAPI/Default/media/curate/Resource"
+   }
+  },
+  "VideoPipelineAPImediacurateOPTIONS86FC4F7E": {
+   "Type": "AWS::ApiGateway::Method",
+   "Properties": {
+    "ApiKeyRequired": false,
+    "AuthorizationType": "NONE",
+    "HttpMethod": "OPTIONS",
+    "Integration": {
+     "IntegrationResponses": [
+      {
+       "ResponseParameters": {
+        "method.response.header.Access-Control-Allow-Headers": "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'",
+        "method.response.header.Access-Control-Allow-Origin": "'*'",
+        "method.response.header.Access-Control-Allow-Methods": "'OPTIONS,GET,PUT,POST,DELETE,PATCH,HEAD'"
+       },
+       "StatusCode": "204"
+      }
+     ],
+     "RequestTemplates": {
+      "application/json": "{ statusCode: 200 }"
+     },
+     "Type": "MOCK"
+    },
+    "MethodResponses": [
+     {
+      "ResponseParameters": {
+       "method.response.header.Access-Control-Allow-Headers": true,
+       "method.response.header.Access-Control-Allow-Origin": true,
+       "method.response.header.Access-Control-Allow-Methods": true
+      },
+      "StatusCode": "204"
+     }
+    ],
+    "ResourceId": {
+     "Ref": "VideoPipelineAPImediacurateCF64791B"
+    },
+    "RestApiId": {
+     "Ref": "VideoPipelineAPIC7F4C465"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "VideoPipelineStack/VideoPipelineAPI/Default/media/curate/OPTIONS/Resource"
+   }
+  },
+  "VideoPipelineAPImediacuratePOSTApiPermissionVideoPipelineStackVideoPipelineAPI7A2C3071POSTmediacurateE138D04C": {
+   "Type": "AWS::Lambda::Permission",
+   "Properties": {
+    "Action": "lambda:InvokeFunction",
+    "FunctionName": {
+     "Fn::GetAtt": [
+      "MediaCuratorFunction9523771D",
+      "Arn"
+     ]
+    },
+    "Principal": "apigateway.amazonaws.com",
+    "SourceArn": {
+     "Fn::Join": [
+      "",
+      [
+       "arn:aws:execute-api:us-east-1:786673323159:",
+       {
+        "Ref": "VideoPipelineAPIC7F4C465"
+       },
+       "/",
+       {
+        "Ref": "VideoPipelineAPIDeploymentStageprod938D37FF"
+       },
+       "/POST/media/curate"
+      ]
+     ]
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "VideoPipelineStack/VideoPipelineAPI/Default/media/curate/POST/ApiPermission.VideoPipelineStackVideoPipelineAPI7A2C3071.POST..media.curate"
+   }
+  },
+  "VideoPipelineAPImediacuratePOSTApiPermissionTestVideoPipelineStackVideoPipelineAPI7A2C3071POSTmediacurate346B9586": {
+   "Type": "AWS::Lambda::Permission",
+   "Properties": {
+    "Action": "lambda:InvokeFunction",
+    "FunctionName": {
+     "Fn::GetAtt": [
+      "MediaCuratorFunction9523771D",
+      "Arn"
+     ]
+    },
+    "Principal": "apigateway.amazonaws.com",
+    "SourceArn": {
+     "Fn::Join": [
+      "",
+      [
+       "arn:aws:execute-api:us-east-1:786673323159:",
+       {
+        "Ref": "VideoPipelineAPIC7F4C465"
+       },
+       "/test-invoke-stage/POST/media/curate"
+      ]
+     ]
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "VideoPipelineStack/VideoPipelineAPI/Default/media/curate/POST/ApiPermission.Test.VideoPipelineStackVideoPipelineAPI7A2C3071.POST..media.curate"
+   }
+  },
+  "VideoPipelineAPImediacuratePOSTE36DB332": {
+   "Type": "AWS::ApiGateway::Method",
+   "Properties": {
+    "ApiKeyRequired": true,
+    "AuthorizationType": "NONE",
+    "HttpMethod": "POST",
+    "Integration": {
+     "IntegrationHttpMethod": "POST",
+     "Type": "AWS_PROXY",
+     "Uri": {
+      "Fn::Join": [
+       "",
+       [
+        "arn:aws:apigateway:us-east-1:lambda:path/2015-03-31/functions/",
+        {
+         "Fn::GetAtt": [
+          "MediaCuratorFunction9523771D",
+          "Arn"
+         ]
+        },
+        "/invocations"
+       ]
+      ]
+     }
+    },
+    "ResourceId": {
+     "Ref": "VideoPipelineAPImediacurateCF64791B"
+    },
+    "RestApiId": {
+     "Ref": "VideoPipelineAPIC7F4C465"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "VideoPipelineStack/VideoPipelineAPI/Default/media/curate/POST/Resource"
+   }
+  },
+  "VideoPipelineAPImediahealthD56A9DE5": {
+   "Type": "AWS::ApiGateway::Resource",
+   "Properties": {
+    "ParentId": {
+     "Ref": "VideoPipelineAPImedia35396386"
+    },
+    "PathPart": "health",
+    "RestApiId": {
+     "Ref": "VideoPipelineAPIC7F4C465"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "VideoPipelineStack/VideoPipelineAPI/Default/media/health/Resource"
+   }
+  },
+  "VideoPipelineAPImediahealthOPTIONS9204A6CC": {
+   "Type": "AWS::ApiGateway::Method",
+   "Properties": {
+    "ApiKeyRequired": false,
+    "AuthorizationType": "NONE",
+    "HttpMethod": "OPTIONS",
+    "Integration": {
+     "IntegrationResponses": [
+      {
+       "ResponseParameters": {
+        "method.response.header.Access-Control-Allow-Headers": "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'",
+        "method.response.header.Access-Control-Allow-Origin": "'*'",
+        "method.response.header.Access-Control-Allow-Methods": "'OPTIONS,GET,PUT,POST,DELETE,PATCH,HEAD'"
+       },
+       "StatusCode": "204"
+      }
+     ],
+     "RequestTemplates": {
+      "application/json": "{ statusCode: 200 }"
+     },
+     "Type": "MOCK"
+    },
+    "MethodResponses": [
+     {
+      "ResponseParameters": {
+       "method.response.header.Access-Control-Allow-Headers": true,
+       "method.response.header.Access-Control-Allow-Origin": true,
+       "method.response.header.Access-Control-Allow-Methods": true
+      },
+      "StatusCode": "204"
+     }
+    ],
+    "ResourceId": {
+     "Ref": "VideoPipelineAPImediahealthD56A9DE5"
+    },
+    "RestApiId": {
+     "Ref": "VideoPipelineAPIC7F4C465"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "VideoPipelineStack/VideoPipelineAPI/Default/media/health/OPTIONS/Resource"
+   }
+  },
+  "VideoPipelineAPImediahealthGETApiPermissionVideoPipelineStackVideoPipelineAPI7A2C3071GETmediahealth349EE328": {
+   "Type": "AWS::Lambda::Permission",
+   "Properties": {
+    "Action": "lambda:InvokeFunction",
+    "FunctionName": {
+     "Fn::GetAtt": [
+      "MediaCuratorFunction9523771D",
+      "Arn"
+     ]
+    },
+    "Principal": "apigateway.amazonaws.com",
+    "SourceArn": {
+     "Fn::Join": [
+      "",
+      [
+       "arn:aws:execute-api:us-east-1:786673323159:",
+       {
+        "Ref": "VideoPipelineAPIC7F4C465"
+       },
+       "/",
+       {
+        "Ref": "VideoPipelineAPIDeploymentStageprod938D37FF"
+       },
+       "/GET/media/health"
+      ]
+     ]
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "VideoPipelineStack/VideoPipelineAPI/Default/media/health/GET/ApiPermission.VideoPipelineStackVideoPipelineAPI7A2C3071.GET..media.health"
+   }
+  },
+  "VideoPipelineAPImediahealthGETApiPermissionTestVideoPipelineStackVideoPipelineAPI7A2C3071GETmediahealthDFE8B479": {
+   "Type": "AWS::Lambda::Permission",
+   "Properties": {
+    "Action": "lambda:InvokeFunction",
+    "FunctionName": {
+     "Fn::GetAtt": [
+      "MediaCuratorFunction9523771D",
+      "Arn"
+     ]
+    },
+    "Principal": "apigateway.amazonaws.com",
+    "SourceArn": {
+     "Fn::Join": [
+      "",
+      [
+       "arn:aws:execute-api:us-east-1:786673323159:",
+       {
+        "Ref": "VideoPipelineAPIC7F4C465"
+       },
+       "/test-invoke-stage/GET/media/health"
+      ]
+     ]
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "VideoPipelineStack/VideoPipelineAPI/Default/media/health/GET/ApiPermission.Test.VideoPipelineStackVideoPipelineAPI7A2C3071.GET..media.health"
+   }
+  },
+  "VideoPipelineAPImediahealthGET64CE3C49": {
+   "Type": "AWS::ApiGateway::Method",
+   "Properties": {
+    "ApiKeyRequired": true,
+    "AuthorizationType": "NONE",
+    "HttpMethod": "GET",
+    "Integration": {
+     "IntegrationHttpMethod": "POST",
+     "Type": "AWS_PROXY",
+     "Uri": {
+      "Fn::Join": [
+       "",
+       [
+        "arn:aws:apigateway:us-east-1:lambda:path/2015-03-31/functions/",
+        {
+         "Fn::GetAtt": [
+          "MediaCuratorFunction9523771D",
+          "Arn"
+         ]
+        },
+        "/invocations"
+       ]
+      ]
+     }
+    },
+    "ResourceId": {
+     "Ref": "VideoPipelineAPImediahealthD56A9DE5"
+    },
+    "RestApiId": {
+     "Ref": "VideoPipelineAPIC7F4C465"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "VideoPipelineStack/VideoPipelineAPI/Default/media/health/GET/Resource"
+   }
+  },
+  "VideoPipelineAPIaudioEC12022E": {
+   "Type": "AWS::ApiGateway::Resource",
+   "Properties": {
+    "ParentId": {
+     "Fn::GetAtt": [
+      "VideoPipelineAPIC7F4C465",
+      "RootResourceId"
+     ]
+    },
+    "PathPart": "audio",
+    "RestApiId": {
+     "Ref": "VideoPipelineAPIC7F4C465"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "VideoPipelineStack/VideoPipelineAPI/Default/audio/Resource"
+   }
+  },
+  "VideoPipelineAPIaudioOPTIONS1A3C09ED": {
+   "Type": "AWS::ApiGateway::Method",
+   "Properties": {
+    "ApiKeyRequired": false,
+    "AuthorizationType": "NONE",
+    "HttpMethod": "OPTIONS",
+    "Integration": {
+     "IntegrationResponses": [
+      {
+       "ResponseParameters": {
+        "method.response.header.Access-Control-Allow-Headers": "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'",
+        "method.response.header.Access-Control-Allow-Origin": "'*'",
+        "method.response.header.Access-Control-Allow-Methods": "'OPTIONS,GET,PUT,POST,DELETE,PATCH,HEAD'"
+       },
+       "StatusCode": "204"
+      }
+     ],
+     "RequestTemplates": {
+      "application/json": "{ statusCode: 200 }"
+     },
+     "Type": "MOCK"
+    },
+    "MethodResponses": [
+     {
+      "ResponseParameters": {
+       "method.response.header.Access-Control-Allow-Headers": true,
+       "method.response.header.Access-Control-Allow-Origin": true,
+       "method.response.header.Access-Control-Allow-Methods": true
+      },
+      "StatusCode": "204"
+     }
+    ],
+    "ResourceId": {
+     "Ref": "VideoPipelineAPIaudioEC12022E"
+    },
+    "RestApiId": {
+     "Ref": "VideoPipelineAPIC7F4C465"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "VideoPipelineStack/VideoPipelineAPI/Default/audio/OPTIONS/Resource"
+   }
+  },
+  "VideoPipelineAPIaudiogenerateCB336422": {
+   "Type": "AWS::ApiGateway::Resource",
+   "Properties": {
+    "ParentId": {
+     "Ref": "VideoPipelineAPIaudioEC12022E"
+    },
+    "PathPart": "generate",
+    "RestApiId": {
+     "Ref": "VideoPipelineAPIC7F4C465"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "VideoPipelineStack/VideoPipelineAPI/Default/audio/generate/Resource"
+   }
+  },
+  "VideoPipelineAPIaudiogenerateOPTIONS4ABA5F45": {
+   "Type": "AWS::ApiGateway::Method",
+   "Properties": {
+    "ApiKeyRequired": false,
+    "AuthorizationType": "NONE",
+    "HttpMethod": "OPTIONS",
+    "Integration": {
+     "IntegrationResponses": [
+      {
+       "ResponseParameters": {
+        "method.response.header.Access-Control-Allow-Headers": "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'",
+        "method.response.header.Access-Control-Allow-Origin": "'*'",
+        "method.response.header.Access-Control-Allow-Methods": "'OPTIONS,GET,PUT,POST,DELETE,PATCH,HEAD'"
+       },
+       "StatusCode": "204"
+      }
+     ],
+     "RequestTemplates": {
+      "application/json": "{ statusCode: 200 }"
+     },
+     "Type": "MOCK"
+    },
+    "MethodResponses": [
+     {
+      "ResponseParameters": {
+       "method.response.header.Access-Control-Allow-Headers": true,
+       "method.response.header.Access-Control-Allow-Origin": true,
+       "method.response.header.Access-Control-Allow-Methods": true
+      },
+      "StatusCode": "204"
+     }
+    ],
+    "ResourceId": {
+     "Ref": "VideoPipelineAPIaudiogenerateCB336422"
+    },
+    "RestApiId": {
+     "Ref": "VideoPipelineAPIC7F4C465"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "VideoPipelineStack/VideoPipelineAPI/Default/audio/generate/OPTIONS/Resource"
+   }
+  },
+  "VideoPipelineAPIaudiogeneratePOSTApiPermissionVideoPipelineStackVideoPipelineAPI7A2C3071POSTaudiogenerate599C3611": {
+   "Type": "AWS::Lambda::Permission",
+   "Properties": {
+    "Action": "lambda:InvokeFunction",
+    "FunctionName": {
+     "Fn::GetAtt": [
+      "AudioGeneratorFunction17C7247E",
+      "Arn"
+     ]
+    },
+    "Principal": "apigateway.amazonaws.com",
+    "SourceArn": {
+     "Fn::Join": [
+      "",
+      [
+       "arn:aws:execute-api:us-east-1:786673323159:",
+       {
+        "Ref": "VideoPipelineAPIC7F4C465"
+       },
+       "/",
+       {
+        "Ref": "VideoPipelineAPIDeploymentStageprod938D37FF"
+       },
+       "/POST/audio/generate"
+      ]
+     ]
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "VideoPipelineStack/VideoPipelineAPI/Default/audio/generate/POST/ApiPermission.VideoPipelineStackVideoPipelineAPI7A2C3071.POST..audio.generate"
+   }
+  },
+  "VideoPipelineAPIaudiogeneratePOSTApiPermissionTestVideoPipelineStackVideoPipelineAPI7A2C3071POSTaudiogenerate321BA611": {
+   "Type": "AWS::Lambda::Permission",
+   "Properties": {
+    "Action": "lambda:InvokeFunction",
+    "FunctionName": {
+     "Fn::GetAtt": [
+      "AudioGeneratorFunction17C7247E",
+      "Arn"
+     ]
+    },
+    "Principal": "apigateway.amazonaws.com",
+    "SourceArn": {
+     "Fn::Join": [
+      "",
+      [
+       "arn:aws:execute-api:us-east-1:786673323159:",
+       {
+        "Ref": "VideoPipelineAPIC7F4C465"
+       },
+       "/test-invoke-stage/POST/audio/generate"
+      ]
+     ]
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "VideoPipelineStack/VideoPipelineAPI/Default/audio/generate/POST/ApiPermission.Test.VideoPipelineStackVideoPipelineAPI7A2C3071.POST..audio.generate"
+   }
+  },
+  "VideoPipelineAPIaudiogeneratePOST5E955A60": {
+   "Type": "AWS::ApiGateway::Method",
+   "Properties": {
+    "ApiKeyRequired": true,
+    "AuthorizationType": "NONE",
+    "HttpMethod": "POST",
+    "Integration": {
+     "IntegrationHttpMethod": "POST",
+     "Type": "AWS_PROXY",
+     "Uri": {
+      "Fn::Join": [
+       "",
+       [
+        "arn:aws:apigateway:us-east-1:lambda:path/2015-03-31/functions/",
+        {
+         "Fn::GetAtt": [
+          "AudioGeneratorFunction17C7247E",
+          "Arn"
+         ]
+        },
+        "/invocations"
+       ]
+      ]
+     }
+    },
+    "ResourceId": {
+     "Ref": "VideoPipelineAPIaudiogenerateCB336422"
+    },
+    "RestApiId": {
+     "Ref": "VideoPipelineAPIC7F4C465"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "VideoPipelineStack/VideoPipelineAPI/Default/audio/generate/POST/Resource"
+   }
+  },
+  "VideoPipelineAPIaudiohealthF06F4CB6": {
+   "Type": "AWS::ApiGateway::Resource",
+   "Properties": {
+    "ParentId": {
+     "Ref": "VideoPipelineAPIaudioEC12022E"
+    },
+    "PathPart": "health",
+    "RestApiId": {
+     "Ref": "VideoPipelineAPIC7F4C465"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "VideoPipelineStack/VideoPipelineAPI/Default/audio/health/Resource"
+   }
+  },
+  "VideoPipelineAPIaudiohealthOPTIONS82DFDD91": {
+   "Type": "AWS::ApiGateway::Method",
+   "Properties": {
+    "ApiKeyRequired": false,
+    "AuthorizationType": "NONE",
+    "HttpMethod": "OPTIONS",
+    "Integration": {
+     "IntegrationResponses": [
+      {
+       "ResponseParameters": {
+        "method.response.header.Access-Control-Allow-Headers": "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'",
+        "method.response.header.Access-Control-Allow-Origin": "'*'",
+        "method.response.header.Access-Control-Allow-Methods": "'OPTIONS,GET,PUT,POST,DELETE,PATCH,HEAD'"
+       },
+       "StatusCode": "204"
+      }
+     ],
+     "RequestTemplates": {
+      "application/json": "{ statusCode: 200 }"
+     },
+     "Type": "MOCK"
+    },
+    "MethodResponses": [
+     {
+      "ResponseParameters": {
+       "method.response.header.Access-Control-Allow-Headers": true,
+       "method.response.header.Access-Control-Allow-Origin": true,
+       "method.response.header.Access-Control-Allow-Methods": true
+      },
+      "StatusCode": "204"
+     }
+    ],
+    "ResourceId": {
+     "Ref": "VideoPipelineAPIaudiohealthF06F4CB6"
+    },
+    "RestApiId": {
+     "Ref": "VideoPipelineAPIC7F4C465"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "VideoPipelineStack/VideoPipelineAPI/Default/audio/health/OPTIONS/Resource"
+   }
+  },
+  "VideoPipelineAPIaudiohealthGETApiPermissionVideoPipelineStackVideoPipelineAPI7A2C3071GETaudiohealth48FA5D01": {
+   "Type": "AWS::Lambda::Permission",
+   "Properties": {
+    "Action": "lambda:InvokeFunction",
+    "FunctionName": {
+     "Fn::GetAtt": [
+      "AudioGeneratorFunction17C7247E",
+      "Arn"
+     ]
+    },
+    "Principal": "apigateway.amazonaws.com",
+    "SourceArn": {
+     "Fn::Join": [
+      "",
+      [
+       "arn:aws:execute-api:us-east-1:786673323159:",
+       {
+        "Ref": "VideoPipelineAPIC7F4C465"
+       },
+       "/",
+       {
+        "Ref": "VideoPipelineAPIDeploymentStageprod938D37FF"
+       },
+       "/GET/audio/health"
+      ]
+     ]
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "VideoPipelineStack/VideoPipelineAPI/Default/audio/health/GET/ApiPermission.VideoPipelineStackVideoPipelineAPI7A2C3071.GET..audio.health"
+   }
+  },
+  "VideoPipelineAPIaudiohealthGETApiPermissionTestVideoPipelineStackVideoPipelineAPI7A2C3071GETaudiohealthF9E9284E": {
+   "Type": "AWS::Lambda::Permission",
+   "Properties": {
+    "Action": "lambda:InvokeFunction",
+    "FunctionName": {
+     "Fn::GetAtt": [
+      "AudioGeneratorFunction17C7247E",
+      "Arn"
+     ]
+    },
+    "Principal": "apigateway.amazonaws.com",
+    "SourceArn": {
+     "Fn::Join": [
+      "",
+      [
+       "arn:aws:execute-api:us-east-1:786673323159:",
+       {
+        "Ref": "VideoPipelineAPIC7F4C465"
+       },
+       "/test-invoke-stage/GET/audio/health"
+      ]
+     ]
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "VideoPipelineStack/VideoPipelineAPI/Default/audio/health/GET/ApiPermission.Test.VideoPipelineStackVideoPipelineAPI7A2C3071.GET..audio.health"
+   }
+  },
+  "VideoPipelineAPIaudiohealthGETFF35AD71": {
+   "Type": "AWS::ApiGateway::Method",
+   "Properties": {
+    "ApiKeyRequired": true,
+    "AuthorizationType": "NONE",
+    "HttpMethod": "GET",
+    "Integration": {
+     "IntegrationHttpMethod": "POST",
+     "Type": "AWS_PROXY",
+     "Uri": {
+      "Fn::Join": [
+       "",
+       [
+        "arn:aws:apigateway:us-east-1:lambda:path/2015-03-31/functions/",
+        {
+         "Fn::GetAtt": [
+          "AudioGeneratorFunction17C7247E",
+          "Arn"
+         ]
+        },
+        "/invocations"
+       ]
+      ]
+     }
+    },
+    "ResourceId": {
+     "Ref": "VideoPipelineAPIaudiohealthF06F4CB6"
+    },
+    "RestApiId": {
+     "Ref": "VideoPipelineAPIC7F4C465"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "VideoPipelineStack/VideoPipelineAPI/Default/audio/health/GET/Resource"
+   }
+  },
+  "VideoPipelineAPIvideo0162E1A2": {
+   "Type": "AWS::ApiGateway::Resource",
+   "Properties": {
+    "ParentId": {
+     "Fn::GetAtt": [
+      "VideoPipelineAPIC7F4C465",
+      "RootResourceId"
+     ]
+    },
+    "PathPart": "video",
+    "RestApiId": {
+     "Ref": "VideoPipelineAPIC7F4C465"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "VideoPipelineStack/VideoPipelineAPI/Default/video/Resource"
+   }
+  },
+  "VideoPipelineAPIvideoOPTIONS18D47EDD": {
+   "Type": "AWS::ApiGateway::Method",
+   "Properties": {
+    "ApiKeyRequired": false,
+    "AuthorizationType": "NONE",
+    "HttpMethod": "OPTIONS",
+    "Integration": {
+     "IntegrationResponses": [
+      {
+       "ResponseParameters": {
+        "method.response.header.Access-Control-Allow-Headers": "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'",
+        "method.response.header.Access-Control-Allow-Origin": "'*'",
+        "method.response.header.Access-Control-Allow-Methods": "'OPTIONS,GET,PUT,POST,DELETE,PATCH,HEAD'"
+       },
+       "StatusCode": "204"
+      }
+     ],
+     "RequestTemplates": {
+      "application/json": "{ statusCode: 200 }"
+     },
+     "Type": "MOCK"
+    },
+    "MethodResponses": [
+     {
+      "ResponseParameters": {
+       "method.response.header.Access-Control-Allow-Headers": true,
+       "method.response.header.Access-Control-Allow-Origin": true,
+       "method.response.header.Access-Control-Allow-Methods": true
+      },
+      "StatusCode": "204"
+     }
+    ],
+    "ResourceId": {
+     "Ref": "VideoPipelineAPIvideo0162E1A2"
+    },
+    "RestApiId": {
+     "Ref": "VideoPipelineAPIC7F4C465"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "VideoPipelineStack/VideoPipelineAPI/Default/video/OPTIONS/Resource"
+   }
+  },
+  "VideoPipelineAPIvideoassemble41D0E80E": {
+   "Type": "AWS::ApiGateway::Resource",
+   "Properties": {
+    "ParentId": {
+     "Ref": "VideoPipelineAPIvideo0162E1A2"
+    },
+    "PathPart": "assemble",
+    "RestApiId": {
+     "Ref": "VideoPipelineAPIC7F4C465"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "VideoPipelineStack/VideoPipelineAPI/Default/video/assemble/Resource"
+   }
+  },
+  "VideoPipelineAPIvideoassembleOPTIONSAC256661": {
+   "Type": "AWS::ApiGateway::Method",
+   "Properties": {
+    "ApiKeyRequired": false,
+    "AuthorizationType": "NONE",
+    "HttpMethod": "OPTIONS",
+    "Integration": {
+     "IntegrationResponses": [
+      {
+       "ResponseParameters": {
+        "method.response.header.Access-Control-Allow-Headers": "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'",
+        "method.response.header.Access-Control-Allow-Origin": "'*'",
+        "method.response.header.Access-Control-Allow-Methods": "'OPTIONS,GET,PUT,POST,DELETE,PATCH,HEAD'"
+       },
+       "StatusCode": "204"
+      }
+     ],
+     "RequestTemplates": {
+      "application/json": "{ statusCode: 200 }"
+     },
+     "Type": "MOCK"
+    },
+    "MethodResponses": [
+     {
+      "ResponseParameters": {
+       "method.response.header.Access-Control-Allow-Headers": true,
+       "method.response.header.Access-Control-Allow-Origin": true,
+       "method.response.header.Access-Control-Allow-Methods": true
+      },
+      "StatusCode": "204"
+     }
+    ],
+    "ResourceId": {
+     "Ref": "VideoPipelineAPIvideoassemble41D0E80E"
+    },
+    "RestApiId": {
+     "Ref": "VideoPipelineAPIC7F4C465"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "VideoPipelineStack/VideoPipelineAPI/Default/video/assemble/OPTIONS/Resource"
+   }
+  },
+  "VideoPipelineAPIvideoassemblePOSTApiPermissionVideoPipelineStackVideoPipelineAPI7A2C3071POSTvideoassemble58CD156D": {
+   "Type": "AWS::Lambda::Permission",
+   "Properties": {
+    "Action": "lambda:InvokeFunction",
+    "FunctionName": {
+     "Fn::GetAtt": [
+      "VideoAssemblerFunction398C3D15",
+      "Arn"
+     ]
+    },
+    "Principal": "apigateway.amazonaws.com",
+    "SourceArn": {
+     "Fn::Join": [
+      "",
+      [
+       "arn:aws:execute-api:us-east-1:786673323159:",
+       {
+        "Ref": "VideoPipelineAPIC7F4C465"
+       },
+       "/",
+       {
+        "Ref": "VideoPipelineAPIDeploymentStageprod938D37FF"
+       },
+       "/POST/video/assemble"
+      ]
+     ]
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "VideoPipelineStack/VideoPipelineAPI/Default/video/assemble/POST/ApiPermission.VideoPipelineStackVideoPipelineAPI7A2C3071.POST..video.assemble"
+   }
+  },
+  "VideoPipelineAPIvideoassemblePOSTApiPermissionTestVideoPipelineStackVideoPipelineAPI7A2C3071POSTvideoassemble5A7E54E7": {
+   "Type": "AWS::Lambda::Permission",
+   "Properties": {
+    "Action": "lambda:InvokeFunction",
+    "FunctionName": {
+     "Fn::GetAtt": [
+      "VideoAssemblerFunction398C3D15",
+      "Arn"
+     ]
+    },
+    "Principal": "apigateway.amazonaws.com",
+    "SourceArn": {
+     "Fn::Join": [
+      "",
+      [
+       "arn:aws:execute-api:us-east-1:786673323159:",
+       {
+        "Ref": "VideoPipelineAPIC7F4C465"
+       },
+       "/test-invoke-stage/POST/video/assemble"
+      ]
+     ]
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "VideoPipelineStack/VideoPipelineAPI/Default/video/assemble/POST/ApiPermission.Test.VideoPipelineStackVideoPipelineAPI7A2C3071.POST..video.assemble"
+   }
+  },
+  "VideoPipelineAPIvideoassemblePOSTE138099D": {
+   "Type": "AWS::ApiGateway::Method",
+   "Properties": {
+    "ApiKeyRequired": true,
+    "AuthorizationType": "NONE",
+    "HttpMethod": "POST",
+    "Integration": {
+     "IntegrationHttpMethod": "POST",
+     "Type": "AWS_PROXY",
+     "Uri": {
+      "Fn::Join": [
+       "",
+       [
+        "arn:aws:apigateway:us-east-1:lambda:path/2015-03-31/functions/",
+        {
+         "Fn::GetAtt": [
+          "VideoAssemblerFunction398C3D15",
+          "Arn"
+         ]
+        },
+        "/invocations"
+       ]
+      ]
+     }
+    },
+    "ResourceId": {
+     "Ref": "VideoPipelineAPIvideoassemble41D0E80E"
+    },
+    "RestApiId": {
+     "Ref": "VideoPipelineAPIC7F4C465"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "VideoPipelineStack/VideoPipelineAPI/Default/video/assemble/POST/Resource"
+   }
+  },
+  "VideoPipelineAPIvideohealthBB49ED4F": {
+   "Type": "AWS::ApiGateway::Resource",
+   "Properties": {
+    "ParentId": {
+     "Ref": "VideoPipelineAPIvideo0162E1A2"
+    },
+    "PathPart": "health",
+    "RestApiId": {
+     "Ref": "VideoPipelineAPIC7F4C465"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "VideoPipelineStack/VideoPipelineAPI/Default/video/health/Resource"
+   }
+  },
+  "VideoPipelineAPIvideohealthOPTIONS4E9AE617": {
+   "Type": "AWS::ApiGateway::Method",
+   "Properties": {
+    "ApiKeyRequired": false,
+    "AuthorizationType": "NONE",
+    "HttpMethod": "OPTIONS",
+    "Integration": {
+     "IntegrationResponses": [
+      {
+       "ResponseParameters": {
+        "method.response.header.Access-Control-Allow-Headers": "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'",
+        "method.response.header.Access-Control-Allow-Origin": "'*'",
+        "method.response.header.Access-Control-Allow-Methods": "'OPTIONS,GET,PUT,POST,DELETE,PATCH,HEAD'"
+       },
+       "StatusCode": "204"
+      }
+     ],
+     "RequestTemplates": {
+      "application/json": "{ statusCode: 200 }"
+     },
+     "Type": "MOCK"
+    },
+    "MethodResponses": [
+     {
+      "ResponseParameters": {
+       "method.response.header.Access-Control-Allow-Headers": true,
+       "method.response.header.Access-Control-Allow-Origin": true,
+       "method.response.header.Access-Control-Allow-Methods": true
+      },
+      "StatusCode": "204"
+     }
+    ],
+    "ResourceId": {
+     "Ref": "VideoPipelineAPIvideohealthBB49ED4F"
+    },
+    "RestApiId": {
+     "Ref": "VideoPipelineAPIC7F4C465"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "VideoPipelineStack/VideoPipelineAPI/Default/video/health/OPTIONS/Resource"
+   }
+  },
+  "VideoPipelineAPIvideohealthGETApiPermissionVideoPipelineStackVideoPipelineAPI7A2C3071GETvideohealthE98F46E6": {
+   "Type": "AWS::Lambda::Permission",
+   "Properties": {
+    "Action": "lambda:InvokeFunction",
+    "FunctionName": {
+     "Fn::GetAtt": [
+      "VideoAssemblerFunction398C3D15",
+      "Arn"
+     ]
+    },
+    "Principal": "apigateway.amazonaws.com",
+    "SourceArn": {
+     "Fn::Join": [
+      "",
+      [
+       "arn:aws:execute-api:us-east-1:786673323159:",
+       {
+        "Ref": "VideoPipelineAPIC7F4C465"
+       },
+       "/",
+       {
+        "Ref": "VideoPipelineAPIDeploymentStageprod938D37FF"
+       },
+       "/GET/video/health"
+      ]
+     ]
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "VideoPipelineStack/VideoPipelineAPI/Default/video/health/GET/ApiPermission.VideoPipelineStackVideoPipelineAPI7A2C3071.GET..video.health"
+   }
+  },
+  "VideoPipelineAPIvideohealthGETApiPermissionTestVideoPipelineStackVideoPipelineAPI7A2C3071GETvideohealth8ECB2189": {
+   "Type": "AWS::Lambda::Permission",
+   "Properties": {
+    "Action": "lambda:InvokeFunction",
+    "FunctionName": {
+     "Fn::GetAtt": [
+      "VideoAssemblerFunction398C3D15",
+      "Arn"
+     ]
+    },
+    "Principal": "apigateway.amazonaws.com",
+    "SourceArn": {
+     "Fn::Join": [
+      "",
+      [
+       "arn:aws:execute-api:us-east-1:786673323159:",
+       {
+        "Ref": "VideoPipelineAPIC7F4C465"
+       },
+       "/test-invoke-stage/GET/video/health"
+      ]
+     ]
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "VideoPipelineStack/VideoPipelineAPI/Default/video/health/GET/ApiPermission.Test.VideoPipelineStackVideoPipelineAPI7A2C3071.GET..video.health"
+   }
+  },
+  "VideoPipelineAPIvideohealthGETBD0FE29F": {
+   "Type": "AWS::ApiGateway::Method",
+   "Properties": {
+    "ApiKeyRequired": true,
+    "AuthorizationType": "NONE",
+    "HttpMethod": "GET",
+    "Integration": {
+     "IntegrationHttpMethod": "POST",
+     "Type": "AWS_PROXY",
+     "Uri": {
+      "Fn::Join": [
+       "",
+       [
+        "arn:aws:apigateway:us-east-1:lambda:path/2015-03-31/functions/",
+        {
+         "Fn::GetAtt": [
+          "VideoAssemblerFunction398C3D15",
+          "Arn"
+         ]
+        },
+        "/invocations"
+       ]
+      ]
+     }
+    },
+    "ResourceId": {
+     "Ref": "VideoPipelineAPIvideohealthBB49ED4F"
+    },
+    "RestApiId": {
+     "Ref": "VideoPipelineAPIC7F4C465"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "VideoPipelineStack/VideoPipelineAPI/Default/video/health/GET/Resource"
+   }
+  },
+  "VideoPipelineAPIvideopublishA7E982F4": {
+   "Type": "AWS::ApiGateway::Resource",
+   "Properties": {
+    "ParentId": {
+     "Ref": "VideoPipelineAPIvideo0162E1A2"
+    },
+    "PathPart": "publish",
+    "RestApiId": {
+     "Ref": "VideoPipelineAPIC7F4C465"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "VideoPipelineStack/VideoPipelineAPI/Default/video/publish/Resource"
+   }
+  },
+  "VideoPipelineAPIvideopublishOPTIONSA418EEFD": {
+   "Type": "AWS::ApiGateway::Method",
+   "Properties": {
+    "ApiKeyRequired": false,
+    "AuthorizationType": "NONE",
+    "HttpMethod": "OPTIONS",
+    "Integration": {
+     "IntegrationResponses": [
+      {
+       "ResponseParameters": {
+        "method.response.header.Access-Control-Allow-Headers": "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'",
+        "method.response.header.Access-Control-Allow-Origin": "'*'",
+        "method.response.header.Access-Control-Allow-Methods": "'OPTIONS,GET,PUT,POST,DELETE,PATCH,HEAD'"
+       },
+       "StatusCode": "204"
+      }
+     ],
+     "RequestTemplates": {
+      "application/json": "{ statusCode: 200 }"
+     },
+     "Type": "MOCK"
+    },
+    "MethodResponses": [
+     {
+      "ResponseParameters": {
+       "method.response.header.Access-Control-Allow-Headers": true,
+       "method.response.header.Access-Control-Allow-Origin": true,
+       "method.response.header.Access-Control-Allow-Methods": true
+      },
+      "StatusCode": "204"
+     }
+    ],
+    "ResourceId": {
+     "Ref": "VideoPipelineAPIvideopublishA7E982F4"
+    },
+    "RestApiId": {
+     "Ref": "VideoPipelineAPIC7F4C465"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "VideoPipelineStack/VideoPipelineAPI/Default/video/publish/OPTIONS/Resource"
+   }
+  },
+  "VideoPipelineAPIvideopublishPOSTApiPermissionVideoPipelineStackVideoPipelineAPI7A2C3071POSTvideopublishF8CDA179": {
+   "Type": "AWS::Lambda::Permission",
+   "Properties": {
+    "Action": "lambda:InvokeFunction",
+    "FunctionName": {
+     "Fn::GetAtt": [
+      "YouTubePublisherFunction16400ECB",
+      "Arn"
+     ]
+    },
+    "Principal": "apigateway.amazonaws.com",
+    "SourceArn": {
+     "Fn::Join": [
+      "",
+      [
+       "arn:aws:execute-api:us-east-1:786673323159:",
+       {
+        "Ref": "VideoPipelineAPIC7F4C465"
+       },
+       "/",
+       {
+        "Ref": "VideoPipelineAPIDeploymentStageprod938D37FF"
+       },
+       "/POST/video/publish"
+      ]
+     ]
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "VideoPipelineStack/VideoPipelineAPI/Default/video/publish/POST/ApiPermission.VideoPipelineStackVideoPipelineAPI7A2C3071.POST..video.publish"
+   }
+  },
+  "VideoPipelineAPIvideopublishPOSTApiPermissionTestVideoPipelineStackVideoPipelineAPI7A2C3071POSTvideopublish04614983": {
+   "Type": "AWS::Lambda::Permission",
+   "Properties": {
+    "Action": "lambda:InvokeFunction",
+    "FunctionName": {
+     "Fn::GetAtt": [
+      "YouTubePublisherFunction16400ECB",
+      "Arn"
+     ]
+    },
+    "Principal": "apigateway.amazonaws.com",
+    "SourceArn": {
+     "Fn::Join": [
+      "",
+      [
+       "arn:aws:execute-api:us-east-1:786673323159:",
+       {
+        "Ref": "VideoPipelineAPIC7F4C465"
+       },
+       "/test-invoke-stage/POST/video/publish"
+      ]
+     ]
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "VideoPipelineStack/VideoPipelineAPI/Default/video/publish/POST/ApiPermission.Test.VideoPipelineStackVideoPipelineAPI7A2C3071.POST..video.publish"
+   }
+  },
+  "VideoPipelineAPIvideopublishPOST5FA37B80": {
+   "Type": "AWS::ApiGateway::Method",
+   "Properties": {
+    "ApiKeyRequired": true,
+    "AuthorizationType": "NONE",
+    "HttpMethod": "POST",
+    "Integration": {
+     "IntegrationHttpMethod": "POST",
+     "Type": "AWS_PROXY",
+     "Uri": {
+      "Fn::Join": [
+       "",
+       [
+        "arn:aws:apigateway:us-east-1:lambda:path/2015-03-31/functions/",
+        {
+         "Fn::GetAtt": [
+          "YouTubePublisherFunction16400ECB",
+          "Arn"
+         ]
+        },
+        "/invocations"
+       ]
+      ]
+     }
+    },
+    "ResourceId": {
+     "Ref": "VideoPipelineAPIvideopublishA7E982F4"
+    },
+    "RestApiId": {
+     "Ref": "VideoPipelineAPIC7F4C465"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "VideoPipelineStack/VideoPipelineAPI/Default/video/publish/POST/Resource"
+   }
+  },
+  "VideoPipelineAPIyoutubeEEEBBA98": {
+   "Type": "AWS::ApiGateway::Resource",
+   "Properties": {
+    "ParentId": {
+     "Fn::GetAtt": [
+      "VideoPipelineAPIC7F4C465",
+      "RootResourceId"
+     ]
+    },
+    "PathPart": "youtube",
+    "RestApiId": {
+     "Ref": "VideoPipelineAPIC7F4C465"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "VideoPipelineStack/VideoPipelineAPI/Default/youtube/Resource"
+   }
+  },
+  "VideoPipelineAPIyoutubeOPTIONS82B741A1": {
+   "Type": "AWS::ApiGateway::Method",
+   "Properties": {
+    "ApiKeyRequired": false,
+    "AuthorizationType": "NONE",
+    "HttpMethod": "OPTIONS",
+    "Integration": {
+     "IntegrationResponses": [
+      {
+       "ResponseParameters": {
+        "method.response.header.Access-Control-Allow-Headers": "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'",
+        "method.response.header.Access-Control-Allow-Origin": "'*'",
+        "method.response.header.Access-Control-Allow-Methods": "'OPTIONS,GET,PUT,POST,DELETE,PATCH,HEAD'"
+       },
+       "StatusCode": "204"
+      }
+     ],
+     "RequestTemplates": {
+      "application/json": "{ statusCode: 200 }"
+     },
+     "Type": "MOCK"
+    },
+    "MethodResponses": [
+     {
+      "ResponseParameters": {
+       "method.response.header.Access-Control-Allow-Headers": true,
+       "method.response.header.Access-Control-Allow-Origin": true,
+       "method.response.header.Access-Control-Allow-Methods": true
+      },
+      "StatusCode": "204"
+     }
+    ],
+    "ResourceId": {
+     "Ref": "VideoPipelineAPIyoutubeEEEBBA98"
+    },
+    "RestApiId": {
+     "Ref": "VideoPipelineAPIC7F4C465"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "VideoPipelineStack/VideoPipelineAPI/Default/youtube/OPTIONS/Resource"
+   }
+  },
+  "VideoPipelineAPIyoutubepublish0F35500D": {
+   "Type": "AWS::ApiGateway::Resource",
+   "Properties": {
+    "ParentId": {
+     "Ref": "VideoPipelineAPIyoutubeEEEBBA98"
+    },
+    "PathPart": "publish",
+    "RestApiId": {
+     "Ref": "VideoPipelineAPIC7F4C465"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "VideoPipelineStack/VideoPipelineAPI/Default/youtube/publish/Resource"
+   }
+  },
+  "VideoPipelineAPIyoutubepublishOPTIONS5FEE526D": {
+   "Type": "AWS::ApiGateway::Method",
+   "Properties": {
+    "ApiKeyRequired": false,
+    "AuthorizationType": "NONE",
+    "HttpMethod": "OPTIONS",
+    "Integration": {
+     "IntegrationResponses": [
+      {
+       "ResponseParameters": {
+        "method.response.header.Access-Control-Allow-Headers": "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'",
+        "method.response.header.Access-Control-Allow-Origin": "'*'",
+        "method.response.header.Access-Control-Allow-Methods": "'OPTIONS,GET,PUT,POST,DELETE,PATCH,HEAD'"
+       },
+       "StatusCode": "204"
+      }
+     ],
+     "RequestTemplates": {
+      "application/json": "{ statusCode: 200 }"
+     },
+     "Type": "MOCK"
+    },
+    "MethodResponses": [
+     {
+      "ResponseParameters": {
+       "method.response.header.Access-Control-Allow-Headers": true,
+       "method.response.header.Access-Control-Allow-Origin": true,
+       "method.response.header.Access-Control-Allow-Methods": true
+      },
+      "StatusCode": "204"
+     }
+    ],
+    "ResourceId": {
+     "Ref": "VideoPipelineAPIyoutubepublish0F35500D"
+    },
+    "RestApiId": {
+     "Ref": "VideoPipelineAPIC7F4C465"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "VideoPipelineStack/VideoPipelineAPI/Default/youtube/publish/OPTIONS/Resource"
+   }
+  },
+  "VideoPipelineAPIyoutubepublishPOSTApiPermissionVideoPipelineStackVideoPipelineAPI7A2C3071POSTyoutubepublish523B44CA": {
+   "Type": "AWS::Lambda::Permission",
+   "Properties": {
+    "Action": "lambda:InvokeFunction",
+    "FunctionName": {
+     "Fn::GetAtt": [
+      "YouTubePublisherFunction16400ECB",
+      "Arn"
+     ]
+    },
+    "Principal": "apigateway.amazonaws.com",
+    "SourceArn": {
+     "Fn::Join": [
+      "",
+      [
+       "arn:aws:execute-api:us-east-1:786673323159:",
+       {
+        "Ref": "VideoPipelineAPIC7F4C465"
+       },
+       "/",
+       {
+        "Ref": "VideoPipelineAPIDeploymentStageprod938D37FF"
+       },
+       "/POST/youtube/publish"
+      ]
+     ]
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "VideoPipelineStack/VideoPipelineAPI/Default/youtube/publish/POST/ApiPermission.VideoPipelineStackVideoPipelineAPI7A2C3071.POST..youtube.publish"
+   }
+  },
+  "VideoPipelineAPIyoutubepublishPOSTApiPermissionTestVideoPipelineStackVideoPipelineAPI7A2C3071POSTyoutubepublish877E2837": {
+   "Type": "AWS::Lambda::Permission",
+   "Properties": {
+    "Action": "lambda:InvokeFunction",
+    "FunctionName": {
+     "Fn::GetAtt": [
+      "YouTubePublisherFunction16400ECB",
+      "Arn"
+     ]
+    },
+    "Principal": "apigateway.amazonaws.com",
+    "SourceArn": {
+     "Fn::Join": [
+      "",
+      [
+       "arn:aws:execute-api:us-east-1:786673323159:",
+       {
+        "Ref": "VideoPipelineAPIC7F4C465"
+       },
+       "/test-invoke-stage/POST/youtube/publish"
+      ]
+     ]
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "VideoPipelineStack/VideoPipelineAPI/Default/youtube/publish/POST/ApiPermission.Test.VideoPipelineStackVideoPipelineAPI7A2C3071.POST..youtube.publish"
+   }
+  },
+  "VideoPipelineAPIyoutubepublishPOSTE12A2EAF": {
+   "Type": "AWS::ApiGateway::Method",
+   "Properties": {
+    "ApiKeyRequired": true,
+    "AuthorizationType": "NONE",
+    "HttpMethod": "POST",
+    "Integration": {
+     "IntegrationHttpMethod": "POST",
+     "Type": "AWS_PROXY",
+     "Uri": {
+      "Fn::Join": [
+       "",
+       [
+        "arn:aws:apigateway:us-east-1:lambda:path/2015-03-31/functions/",
+        {
+         "Fn::GetAtt": [
+          "YouTubePublisherFunction16400ECB",
+          "Arn"
+         ]
+        },
+        "/invocations"
+       ]
+      ]
+     }
+    },
+    "ResourceId": {
+     "Ref": "VideoPipelineAPIyoutubepublish0F35500D"
+    },
+    "RestApiId": {
+     "Ref": "VideoPipelineAPIC7F4C465"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "VideoPipelineStack/VideoPipelineAPI/Default/youtube/publish/POST/Resource"
+   }
+  },
+  "VideoPipelineAPIyoutubehealthEA83912E": {
+   "Type": "AWS::ApiGateway::Resource",
+   "Properties": {
+    "ParentId": {
+     "Ref": "VideoPipelineAPIyoutubeEEEBBA98"
+    },
+    "PathPart": "health",
+    "RestApiId": {
+     "Ref": "VideoPipelineAPIC7F4C465"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "VideoPipelineStack/VideoPipelineAPI/Default/youtube/health/Resource"
+   }
+  },
+  "VideoPipelineAPIyoutubehealthOPTIONS56FC1C14": {
+   "Type": "AWS::ApiGateway::Method",
+   "Properties": {
+    "ApiKeyRequired": false,
+    "AuthorizationType": "NONE",
+    "HttpMethod": "OPTIONS",
+    "Integration": {
+     "IntegrationResponses": [
+      {
+       "ResponseParameters": {
+        "method.response.header.Access-Control-Allow-Headers": "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'",
+        "method.response.header.Access-Control-Allow-Origin": "'*'",
+        "method.response.header.Access-Control-Allow-Methods": "'OPTIONS,GET,PUT,POST,DELETE,PATCH,HEAD'"
+       },
+       "StatusCode": "204"
+      }
+     ],
+     "RequestTemplates": {
+      "application/json": "{ statusCode: 200 }"
+     },
+     "Type": "MOCK"
+    },
+    "MethodResponses": [
+     {
+      "ResponseParameters": {
+       "method.response.header.Access-Control-Allow-Headers": true,
+       "method.response.header.Access-Control-Allow-Origin": true,
+       "method.response.header.Access-Control-Allow-Methods": true
+      },
+      "StatusCode": "204"
+     }
+    ],
+    "ResourceId": {
+     "Ref": "VideoPipelineAPIyoutubehealthEA83912E"
+    },
+    "RestApiId": {
+     "Ref": "VideoPipelineAPIC7F4C465"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "VideoPipelineStack/VideoPipelineAPI/Default/youtube/health/OPTIONS/Resource"
+   }
+  },
+  "VideoPipelineAPIyoutubehealthGETApiPermissionVideoPipelineStackVideoPipelineAPI7A2C3071GETyoutubehealth523A2B33": {
+   "Type": "AWS::Lambda::Permission",
+   "Properties": {
+    "Action": "lambda:InvokeFunction",
+    "FunctionName": {
+     "Fn::GetAtt": [
+      "YouTubePublisherFunction16400ECB",
+      "Arn"
+     ]
+    },
+    "Principal": "apigateway.amazonaws.com",
+    "SourceArn": {
+     "Fn::Join": [
+      "",
+      [
+       "arn:aws:execute-api:us-east-1:786673323159:",
+       {
+        "Ref": "VideoPipelineAPIC7F4C465"
+       },
+       "/",
+       {
+        "Ref": "VideoPipelineAPIDeploymentStageprod938D37FF"
+       },
+       "/GET/youtube/health"
+      ]
+     ]
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "VideoPipelineStack/VideoPipelineAPI/Default/youtube/health/GET/ApiPermission.VideoPipelineStackVideoPipelineAPI7A2C3071.GET..youtube.health"
+   }
+  },
+  "VideoPipelineAPIyoutubehealthGETApiPermissionTestVideoPipelineStackVideoPipelineAPI7A2C3071GETyoutubehealth8EA49C78": {
+   "Type": "AWS::Lambda::Permission",
+   "Properties": {
+    "Action": "lambda:InvokeFunction",
+    "FunctionName": {
+     "Fn::GetAtt": [
+      "YouTubePublisherFunction16400ECB",
+      "Arn"
+     ]
+    },
+    "Principal": "apigateway.amazonaws.com",
+    "SourceArn": {
+     "Fn::Join": [
+      "",
+      [
+       "arn:aws:execute-api:us-east-1:786673323159:",
+       {
+        "Ref": "VideoPipelineAPIC7F4C465"
+       },
+       "/test-invoke-stage/GET/youtube/health"
+      ]
+     ]
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "VideoPipelineStack/VideoPipelineAPI/Default/youtube/health/GET/ApiPermission.Test.VideoPipelineStackVideoPipelineAPI7A2C3071.GET..youtube.health"
+   }
+  },
+  "VideoPipelineAPIyoutubehealthGET2569CF57": {
+   "Type": "AWS::ApiGateway::Method",
+   "Properties": {
+    "ApiKeyRequired": true,
+    "AuthorizationType": "NONE",
+    "HttpMethod": "GET",
+    "Integration": {
+     "IntegrationHttpMethod": "POST",
+     "Type": "AWS_PROXY",
+     "Uri": {
+      "Fn::Join": [
+       "",
+       [
+        "arn:aws:apigateway:us-east-1:lambda:path/2015-03-31/functions/",
+        {
+         "Fn::GetAtt": [
+          "YouTubePublisherFunction16400ECB",
+          "Arn"
+         ]
+        },
+        "/invocations"
+       ]
+      ]
+     }
+    },
+    "ResourceId": {
+     "Ref": "VideoPipelineAPIyoutubehealthEA83912E"
+    },
+    "RestApiId": {
+     "Ref": "VideoPipelineAPIC7F4C465"
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "VideoPipelineStack/VideoPipelineAPI/Default/youtube/health/GET/Resource"
+   }
+  },
   "VideoPipelineAPIworkflow192CC401": {
    "Type": "AWS::ApiGateway::Resource",
    "Properties": {
@@ -2669,7 +5171,7 @@
     "aws:cdk:path": "VideoPipelineStack/VideoPipelineAPI/Default/workflow/stats/GET/Resource"
    }
   },
-  "VideoPipelineAPImedia35396386": {
+  "VideoPipelineAPIasync0843A461": {
    "Type": "AWS::ApiGateway::Resource",
    "Properties": {
     "ParentId": {
@@ -2678,16 +5180,16 @@
       "RootResourceId"
      ]
     },
-    "PathPart": "media",
+    "PathPart": "async",
     "RestApiId": {
      "Ref": "VideoPipelineAPIC7F4C465"
     }
    },
    "Metadata": {
-    "aws:cdk:path": "VideoPipelineStack/VideoPipelineAPI/Default/media/Resource"
+    "aws:cdk:path": "VideoPipelineStack/VideoPipelineAPI/Default/async/Resource"
    }
   },
-  "VideoPipelineAPImediaOPTIONS8E5C0B35": {
+  "VideoPipelineAPIasyncOPTIONS891A03ED": {
    "Type": "AWS::ApiGateway::Method",
    "Properties": {
     "ApiKeyRequired": false,
@@ -2720,32 +5222,32 @@
      }
     ],
     "ResourceId": {
-     "Ref": "VideoPipelineAPImedia35396386"
+     "Ref": "VideoPipelineAPIasync0843A461"
     },
     "RestApiId": {
      "Ref": "VideoPipelineAPIC7F4C465"
     }
    },
    "Metadata": {
-    "aws:cdk:path": "VideoPipelineStack/VideoPipelineAPI/Default/media/OPTIONS/Resource"
+    "aws:cdk:path": "VideoPipelineStack/VideoPipelineAPI/Default/async/OPTIONS/Resource"
    }
   },
-  "VideoPipelineAPImediasearchB1B7B691": {
+  "VideoPipelineAPIasynchealth31C35BC1": {
    "Type": "AWS::ApiGateway::Resource",
    "Properties": {
     "ParentId": {
-     "Ref": "VideoPipelineAPImedia35396386"
+     "Ref": "VideoPipelineAPIasync0843A461"
     },
-    "PathPart": "search",
+    "PathPart": "health",
     "RestApiId": {
      "Ref": "VideoPipelineAPIC7F4C465"
     }
    },
    "Metadata": {
-    "aws:cdk:path": "VideoPipelineStack/VideoPipelineAPI/Default/media/search/Resource"
+    "aws:cdk:path": "VideoPipelineStack/VideoPipelineAPI/Default/async/health/Resource"
    }
   },
-  "VideoPipelineAPImediasearchOPTIONS834783F5": {
+  "VideoPipelineAPIasynchealthOPTIONS6E2F7ED2": {
    "Type": "AWS::ApiGateway::Method",
    "Properties": {
     "ApiKeyRequired": false,
@@ -2778,23 +5280,23 @@
      }
     ],
     "ResourceId": {
-     "Ref": "VideoPipelineAPImediasearchB1B7B691"
+     "Ref": "VideoPipelineAPIasynchealth31C35BC1"
     },
     "RestApiId": {
      "Ref": "VideoPipelineAPIC7F4C465"
     }
    },
    "Metadata": {
-    "aws:cdk:path": "VideoPipelineStack/VideoPipelineAPI/Default/media/search/OPTIONS/Resource"
+    "aws:cdk:path": "VideoPipelineStack/VideoPipelineAPI/Default/async/health/OPTIONS/Resource"
    }
   },
-  "VideoPipelineAPImediasearchPOSTApiPermissionVideoPipelineStackVideoPipelineAPI7A2C3071POSTmediasearchE08D3ABE": {
+  "VideoPipelineAPIasynchealthGETApiPermissionVideoPipelineStackVideoPipelineAPI7A2C3071GETasynchealth4F88AB67": {
    "Type": "AWS::Lambda::Permission",
    "Properties": {
     "Action": "lambda:InvokeFunction",
     "FunctionName": {
      "Fn::GetAtt": [
-      "MediaCuratorFunction9523771D",
+      "AsyncProcessorFunctionC004566A",
       "Arn"
      ]
     },
@@ -2811,22 +5313,22 @@
        {
         "Ref": "VideoPipelineAPIDeploymentStageprod938D37FF"
        },
-       "/POST/media/search"
+       "/GET/async/health"
       ]
      ]
     }
    },
    "Metadata": {
-    "aws:cdk:path": "VideoPipelineStack/VideoPipelineAPI/Default/media/search/POST/ApiPermission.VideoPipelineStackVideoPipelineAPI7A2C3071.POST..media.search"
+    "aws:cdk:path": "VideoPipelineStack/VideoPipelineAPI/Default/async/health/GET/ApiPermission.VideoPipelineStackVideoPipelineAPI7A2C3071.GET..async.health"
    }
   },
-  "VideoPipelineAPImediasearchPOSTApiPermissionTestVideoPipelineStackVideoPipelineAPI7A2C3071POSTmediasearch9DD80F0A": {
+  "VideoPipelineAPIasynchealthGETApiPermissionTestVideoPipelineStackVideoPipelineAPI7A2C3071GETasynchealthA0FCD74D": {
    "Type": "AWS::Lambda::Permission",
    "Properties": {
     "Action": "lambda:InvokeFunction",
     "FunctionName": {
      "Fn::GetAtt": [
-      "MediaCuratorFunction9523771D",
+      "AsyncProcessorFunctionC004566A",
       "Arn"
      ]
     },
@@ -2839,21 +5341,21 @@
        {
         "Ref": "VideoPipelineAPIC7F4C465"
        },
-       "/test-invoke-stage/POST/media/search"
+       "/test-invoke-stage/GET/async/health"
       ]
      ]
     }
    },
    "Metadata": {
-    "aws:cdk:path": "VideoPipelineStack/VideoPipelineAPI/Default/media/search/POST/ApiPermission.Test.VideoPipelineStackVideoPipelineAPI7A2C3071.POST..media.search"
+    "aws:cdk:path": "VideoPipelineStack/VideoPipelineAPI/Default/async/health/GET/ApiPermission.Test.VideoPipelineStackVideoPipelineAPI7A2C3071.GET..async.health"
    }
   },
-  "VideoPipelineAPImediasearchPOST31739D32": {
+  "VideoPipelineAPIasynchealthGETC081EA02": {
    "Type": "AWS::ApiGateway::Method",
    "Properties": {
     "ApiKeyRequired": true,
     "AuthorizationType": "NONE",
-    "HttpMethod": "POST",
+    "HttpMethod": "GET",
     "Integration": {
      "IntegrationHttpMethod": "POST",
      "Type": "AWS_PROXY",
@@ -2864,7 +5366,7 @@
         "arn:aws:apigateway:us-east-1:lambda:path/2015-03-31/functions/",
         {
          "Fn::GetAtt": [
-          "MediaCuratorFunction9523771D",
+          "AsyncProcessorFunctionC004566A",
           "Arn"
          ]
         },
@@ -2874,32 +5376,32 @@
      }
     },
     "ResourceId": {
-     "Ref": "VideoPipelineAPImediasearchB1B7B691"
+     "Ref": "VideoPipelineAPIasynchealth31C35BC1"
     },
     "RestApiId": {
      "Ref": "VideoPipelineAPIC7F4C465"
     }
    },
    "Metadata": {
-    "aws:cdk:path": "VideoPipelineStack/VideoPipelineAPI/Default/media/search/POST/Resource"
+    "aws:cdk:path": "VideoPipelineStack/VideoPipelineAPI/Default/async/health/GET/Resource"
    }
   },
-  "VideoPipelineAPImediacurateCF64791B": {
+  "VideoPipelineAPIasyncstartpipelineB6E32D58": {
    "Type": "AWS::ApiGateway::Resource",
    "Properties": {
     "ParentId": {
-     "Ref": "VideoPipelineAPImedia35396386"
+     "Ref": "VideoPipelineAPIasync0843A461"
     },
-    "PathPart": "curate",
+    "PathPart": "start-pipeline",
     "RestApiId": {
      "Ref": "VideoPipelineAPIC7F4C465"
     }
    },
    "Metadata": {
-    "aws:cdk:path": "VideoPipelineStack/VideoPipelineAPI/Default/media/curate/Resource"
+    "aws:cdk:path": "VideoPipelineStack/VideoPipelineAPI/Default/async/start-pipeline/Resource"
    }
   },
-  "VideoPipelineAPImediacurateOPTIONS86FC4F7E": {
+  "VideoPipelineAPIasyncstartpipelineOPTIONSE41FB67F": {
    "Type": "AWS::ApiGateway::Method",
    "Properties": {
     "ApiKeyRequired": false,
@@ -2932,23 +5434,23 @@
      }
     ],
     "ResourceId": {
-     "Ref": "VideoPipelineAPImediacurateCF64791B"
+     "Ref": "VideoPipelineAPIasyncstartpipelineB6E32D58"
     },
     "RestApiId": {
      "Ref": "VideoPipelineAPIC7F4C465"
     }
    },
    "Metadata": {
-    "aws:cdk:path": "VideoPipelineStack/VideoPipelineAPI/Default/media/curate/OPTIONS/Resource"
+    "aws:cdk:path": "VideoPipelineStack/VideoPipelineAPI/Default/async/start-pipeline/OPTIONS/Resource"
    }
   },
-  "VideoPipelineAPImediacuratePOSTApiPermissionVideoPipelineStackVideoPipelineAPI7A2C3071POSTmediacurateE138D04C": {
+  "VideoPipelineAPIasyncstartpipelinePOSTApiPermissionVideoPipelineStackVideoPipelineAPI7A2C3071POSTasyncstartpipelineFEB3961E": {
    "Type": "AWS::Lambda::Permission",
    "Properties": {
     "Action": "lambda:InvokeFunction",
     "FunctionName": {
      "Fn::GetAtt": [
-      "MediaCuratorFunction9523771D",
+      "AsyncProcessorFunctionC004566A",
       "Arn"
      ]
     },
@@ -2965,22 +5467,22 @@
        {
         "Ref": "VideoPipelineAPIDeploymentStageprod938D37FF"
        },
-       "/POST/media/curate"
+       "/POST/async/start-pipeline"
       ]
      ]
     }
    },
    "Metadata": {
-    "aws:cdk:path": "VideoPipelineStack/VideoPipelineAPI/Default/media/curate/POST/ApiPermission.VideoPipelineStackVideoPipelineAPI7A2C3071.POST..media.curate"
+    "aws:cdk:path": "VideoPipelineStack/VideoPipelineAPI/Default/async/start-pipeline/POST/ApiPermission.VideoPipelineStackVideoPipelineAPI7A2C3071.POST..async.start-pipeline"
    }
   },
-  "VideoPipelineAPImediacuratePOSTApiPermissionTestVideoPipelineStackVideoPipelineAPI7A2C3071POSTmediacurate346B9586": {
+  "VideoPipelineAPIasyncstartpipelinePOSTApiPermissionTestVideoPipelineStackVideoPipelineAPI7A2C3071POSTasyncstartpipeline8F62BB77": {
    "Type": "AWS::Lambda::Permission",
    "Properties": {
     "Action": "lambda:InvokeFunction",
     "FunctionName": {
      "Fn::GetAtt": [
-      "MediaCuratorFunction9523771D",
+      "AsyncProcessorFunctionC004566A",
       "Arn"
      ]
     },
@@ -2993,16 +5495,16 @@
        {
         "Ref": "VideoPipelineAPIC7F4C465"
        },
-       "/test-invoke-stage/POST/media/curate"
+       "/test-invoke-stage/POST/async/start-pipeline"
       ]
      ]
     }
    },
    "Metadata": {
-    "aws:cdk:path": "VideoPipelineStack/VideoPipelineAPI/Default/media/curate/POST/ApiPermission.Test.VideoPipelineStackVideoPipelineAPI7A2C3071.POST..media.curate"
+    "aws:cdk:path": "VideoPipelineStack/VideoPipelineAPI/Default/async/start-pipeline/POST/ApiPermission.Test.VideoPipelineStackVideoPipelineAPI7A2C3071.POST..async.start-pipeline"
    }
   },
-  "VideoPipelineAPImediacuratePOSTE36DB332": {
+  "VideoPipelineAPIasyncstartpipelinePOSTE4B719D6": {
    "Type": "AWS::ApiGateway::Method",
    "Properties": {
     "ApiKeyRequired": true,
@@ -3018,7 +5520,7 @@
         "arn:aws:apigateway:us-east-1:lambda:path/2015-03-31/functions/",
         {
          "Fn::GetAtt": [
-          "MediaCuratorFunction9523771D",
+          "AsyncProcessorFunctionC004566A",
           "Arn"
          ]
         },
@@ -3028,35 +5530,32 @@
      }
     },
     "ResourceId": {
-     "Ref": "VideoPipelineAPImediacurateCF64791B"
+     "Ref": "VideoPipelineAPIasyncstartpipelineB6E32D58"
     },
     "RestApiId": {
      "Ref": "VideoPipelineAPIC7F4C465"
     }
    },
    "Metadata": {
-    "aws:cdk:path": "VideoPipelineStack/VideoPipelineAPI/Default/media/curate/POST/Resource"
+    "aws:cdk:path": "VideoPipelineStack/VideoPipelineAPI/Default/async/start-pipeline/POST/Resource"
    }
   },
-  "VideoPipelineAPIvideo0162E1A2": {
+  "VideoPipelineAPIasyncjobs4D5FBFCF": {
    "Type": "AWS::ApiGateway::Resource",
    "Properties": {
     "ParentId": {
-     "Fn::GetAtt": [
-      "VideoPipelineAPIC7F4C465",
-      "RootResourceId"
-     ]
+     "Ref": "VideoPipelineAPIasync0843A461"
     },
-    "PathPart": "video",
+    "PathPart": "jobs",
     "RestApiId": {
      "Ref": "VideoPipelineAPIC7F4C465"
     }
    },
    "Metadata": {
-    "aws:cdk:path": "VideoPipelineStack/VideoPipelineAPI/Default/video/Resource"
+    "aws:cdk:path": "VideoPipelineStack/VideoPipelineAPI/Default/async/jobs/Resource"
    }
   },
-  "VideoPipelineAPIvideoOPTIONS18D47EDD": {
+  "VideoPipelineAPIasyncjobsOPTIONS3CA0B306": {
    "Type": "AWS::ApiGateway::Method",
    "Properties": {
     "ApiKeyRequired": false,
@@ -3089,32 +5588,32 @@
      }
     ],
     "ResourceId": {
-     "Ref": "VideoPipelineAPIvideo0162E1A2"
+     "Ref": "VideoPipelineAPIasyncjobs4D5FBFCF"
     },
     "RestApiId": {
      "Ref": "VideoPipelineAPIC7F4C465"
     }
    },
    "Metadata": {
-    "aws:cdk:path": "VideoPipelineStack/VideoPipelineAPI/Default/video/OPTIONS/Resource"
+    "aws:cdk:path": "VideoPipelineStack/VideoPipelineAPI/Default/async/jobs/OPTIONS/Resource"
    }
   },
-  "VideoPipelineAPIvideoassemble41D0E80E": {
+  "VideoPipelineAPIasyncjobsjobId26920DF4": {
    "Type": "AWS::ApiGateway::Resource",
    "Properties": {
     "ParentId": {
-     "Ref": "VideoPipelineAPIvideo0162E1A2"
+     "Ref": "VideoPipelineAPIasyncjobs4D5FBFCF"
     },
-    "PathPart": "assemble",
+    "PathPart": "{jobId}",
     "RestApiId": {
      "Ref": "VideoPipelineAPIC7F4C465"
     }
    },
    "Metadata": {
-    "aws:cdk:path": "VideoPipelineStack/VideoPipelineAPI/Default/video/assemble/Resource"
+    "aws:cdk:path": "VideoPipelineStack/VideoPipelineAPI/Default/async/jobs/{jobId}/Resource"
    }
   },
-  "VideoPipelineAPIvideoassembleOPTIONSAC256661": {
+  "VideoPipelineAPIasyncjobsjobIdOPTIONS8A3BC56A": {
    "Type": "AWS::ApiGateway::Method",
    "Properties": {
     "ApiKeyRequired": false,
@@ -3147,23 +5646,23 @@
      }
     ],
     "ResourceId": {
-     "Ref": "VideoPipelineAPIvideoassemble41D0E80E"
+     "Ref": "VideoPipelineAPIasyncjobsjobId26920DF4"
     },
     "RestApiId": {
      "Ref": "VideoPipelineAPIC7F4C465"
     }
    },
    "Metadata": {
-    "aws:cdk:path": "VideoPipelineStack/VideoPipelineAPI/Default/video/assemble/OPTIONS/Resource"
+    "aws:cdk:path": "VideoPipelineStack/VideoPipelineAPI/Default/async/jobs/{jobId}/OPTIONS/Resource"
    }
   },
-  "VideoPipelineAPIvideoassemblePOSTApiPermissionVideoPipelineStackVideoPipelineAPI7A2C3071POSTvideoassemble58CD156D": {
+  "VideoPipelineAPIasyncjobsjobIdGETApiPermissionVideoPipelineStackVideoPipelineAPI7A2C3071GETasyncjobsjobId80EF0921": {
    "Type": "AWS::Lambda::Permission",
    "Properties": {
     "Action": "lambda:InvokeFunction",
     "FunctionName": {
      "Fn::GetAtt": [
-      "VideoAssemblerFunction398C3D15",
+      "AsyncProcessorFunctionC004566A",
       "Arn"
      ]
     },
@@ -3180,22 +5679,22 @@
        {
         "Ref": "VideoPipelineAPIDeploymentStageprod938D37FF"
        },
-       "/POST/video/assemble"
+       "/GET/async/jobs/*"
       ]
      ]
     }
    },
    "Metadata": {
-    "aws:cdk:path": "VideoPipelineStack/VideoPipelineAPI/Default/video/assemble/POST/ApiPermission.VideoPipelineStackVideoPipelineAPI7A2C3071.POST..video.assemble"
+    "aws:cdk:path": "VideoPipelineStack/VideoPipelineAPI/Default/async/jobs/{jobId}/GET/ApiPermission.VideoPipelineStackVideoPipelineAPI7A2C3071.GET..async.jobs.{jobId}"
    }
   },
-  "VideoPipelineAPIvideoassemblePOSTApiPermissionTestVideoPipelineStackVideoPipelineAPI7A2C3071POSTvideoassemble5A7E54E7": {
+  "VideoPipelineAPIasyncjobsjobIdGETApiPermissionTestVideoPipelineStackVideoPipelineAPI7A2C3071GETasyncjobsjobIdC98619E2": {
    "Type": "AWS::Lambda::Permission",
    "Properties": {
     "Action": "lambda:InvokeFunction",
     "FunctionName": {
      "Fn::GetAtt": [
-      "VideoAssemblerFunction398C3D15",
+      "AsyncProcessorFunctionC004566A",
       "Arn"
      ]
     },
@@ -3208,21 +5707,21 @@
        {
         "Ref": "VideoPipelineAPIC7F4C465"
        },
-       "/test-invoke-stage/POST/video/assemble"
+       "/test-invoke-stage/GET/async/jobs/*"
       ]
      ]
     }
    },
    "Metadata": {
-    "aws:cdk:path": "VideoPipelineStack/VideoPipelineAPI/Default/video/assemble/POST/ApiPermission.Test.VideoPipelineStackVideoPipelineAPI7A2C3071.POST..video.assemble"
+    "aws:cdk:path": "VideoPipelineStack/VideoPipelineAPI/Default/async/jobs/{jobId}/GET/ApiPermission.Test.VideoPipelineStackVideoPipelineAPI7A2C3071.GET..async.jobs.{jobId}"
    }
   },
-  "VideoPipelineAPIvideoassemblePOSTE138099D": {
+  "VideoPipelineAPIasyncjobsjobIdGET17527B9D": {
    "Type": "AWS::ApiGateway::Method",
    "Properties": {
     "ApiKeyRequired": true,
     "AuthorizationType": "NONE",
-    "HttpMethod": "POST",
+    "HttpMethod": "GET",
     "Integration": {
      "IntegrationHttpMethod": "POST",
      "Type": "AWS_PROXY",
@@ -3233,7 +5732,7 @@
         "arn:aws:apigateway:us-east-1:lambda:path/2015-03-31/functions/",
         {
          "Fn::GetAtt": [
-          "VideoAssemblerFunction398C3D15",
+          "AsyncProcessorFunctionC004566A",
           "Arn"
          ]
         },
@@ -3243,168 +5742,14 @@
      }
     },
     "ResourceId": {
-     "Ref": "VideoPipelineAPIvideoassemble41D0E80E"
+     "Ref": "VideoPipelineAPIasyncjobsjobId26920DF4"
     },
     "RestApiId": {
      "Ref": "VideoPipelineAPIC7F4C465"
     }
    },
    "Metadata": {
-    "aws:cdk:path": "VideoPipelineStack/VideoPipelineAPI/Default/video/assemble/POST/Resource"
-   }
-  },
-  "VideoPipelineAPIvideopublishA7E982F4": {
-   "Type": "AWS::ApiGateway::Resource",
-   "Properties": {
-    "ParentId": {
-     "Ref": "VideoPipelineAPIvideo0162E1A2"
-    },
-    "PathPart": "publish",
-    "RestApiId": {
-     "Ref": "VideoPipelineAPIC7F4C465"
-    }
-   },
-   "Metadata": {
-    "aws:cdk:path": "VideoPipelineStack/VideoPipelineAPI/Default/video/publish/Resource"
-   }
-  },
-  "VideoPipelineAPIvideopublishOPTIONSA418EEFD": {
-   "Type": "AWS::ApiGateway::Method",
-   "Properties": {
-    "ApiKeyRequired": false,
-    "AuthorizationType": "NONE",
-    "HttpMethod": "OPTIONS",
-    "Integration": {
-     "IntegrationResponses": [
-      {
-       "ResponseParameters": {
-        "method.response.header.Access-Control-Allow-Headers": "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'",
-        "method.response.header.Access-Control-Allow-Origin": "'*'",
-        "method.response.header.Access-Control-Allow-Methods": "'OPTIONS,GET,PUT,POST,DELETE,PATCH,HEAD'"
-       },
-       "StatusCode": "204"
-      }
-     ],
-     "RequestTemplates": {
-      "application/json": "{ statusCode: 200 }"
-     },
-     "Type": "MOCK"
-    },
-    "MethodResponses": [
-     {
-      "ResponseParameters": {
-       "method.response.header.Access-Control-Allow-Headers": true,
-       "method.response.header.Access-Control-Allow-Origin": true,
-       "method.response.header.Access-Control-Allow-Methods": true
-      },
-      "StatusCode": "204"
-     }
-    ],
-    "ResourceId": {
-     "Ref": "VideoPipelineAPIvideopublishA7E982F4"
-    },
-    "RestApiId": {
-     "Ref": "VideoPipelineAPIC7F4C465"
-    }
-   },
-   "Metadata": {
-    "aws:cdk:path": "VideoPipelineStack/VideoPipelineAPI/Default/video/publish/OPTIONS/Resource"
-   }
-  },
-  "VideoPipelineAPIvideopublishPOSTApiPermissionVideoPipelineStackVideoPipelineAPI7A2C3071POSTvideopublishF8CDA179": {
-   "Type": "AWS::Lambda::Permission",
-   "Properties": {
-    "Action": "lambda:InvokeFunction",
-    "FunctionName": {
-     "Fn::GetAtt": [
-      "YouTubePublisherFunction16400ECB",
-      "Arn"
-     ]
-    },
-    "Principal": "apigateway.amazonaws.com",
-    "SourceArn": {
-     "Fn::Join": [
-      "",
-      [
-       "arn:aws:execute-api:us-east-1:786673323159:",
-       {
-        "Ref": "VideoPipelineAPIC7F4C465"
-       },
-       "/",
-       {
-        "Ref": "VideoPipelineAPIDeploymentStageprod938D37FF"
-       },
-       "/POST/video/publish"
-      ]
-     ]
-    }
-   },
-   "Metadata": {
-    "aws:cdk:path": "VideoPipelineStack/VideoPipelineAPI/Default/video/publish/POST/ApiPermission.VideoPipelineStackVideoPipelineAPI7A2C3071.POST..video.publish"
-   }
-  },
-  "VideoPipelineAPIvideopublishPOSTApiPermissionTestVideoPipelineStackVideoPipelineAPI7A2C3071POSTvideopublish04614983": {
-   "Type": "AWS::Lambda::Permission",
-   "Properties": {
-    "Action": "lambda:InvokeFunction",
-    "FunctionName": {
-     "Fn::GetAtt": [
-      "YouTubePublisherFunction16400ECB",
-      "Arn"
-     ]
-    },
-    "Principal": "apigateway.amazonaws.com",
-    "SourceArn": {
-     "Fn::Join": [
-      "",
-      [
-       "arn:aws:execute-api:us-east-1:786673323159:",
-       {
-        "Ref": "VideoPipelineAPIC7F4C465"
-       },
-       "/test-invoke-stage/POST/video/publish"
-      ]
-     ]
-    }
-   },
-   "Metadata": {
-    "aws:cdk:path": "VideoPipelineStack/VideoPipelineAPI/Default/video/publish/POST/ApiPermission.Test.VideoPipelineStackVideoPipelineAPI7A2C3071.POST..video.publish"
-   }
-  },
-  "VideoPipelineAPIvideopublishPOST5FA37B80": {
-   "Type": "AWS::ApiGateway::Method",
-   "Properties": {
-    "ApiKeyRequired": true,
-    "AuthorizationType": "NONE",
-    "HttpMethod": "POST",
-    "Integration": {
-     "IntegrationHttpMethod": "POST",
-     "Type": "AWS_PROXY",
-     "Uri": {
-      "Fn::Join": [
-       "",
-       [
-        "arn:aws:apigateway:us-east-1:lambda:path/2015-03-31/functions/",
-        {
-         "Fn::GetAtt": [
-          "YouTubePublisherFunction16400ECB",
-          "Arn"
-         ]
-        },
-        "/invocations"
-       ]
-      ]
-     }
-    },
-    "ResourceId": {
-     "Ref": "VideoPipelineAPIvideopublishA7E982F4"
-    },
-    "RestApiId": {
-     "Ref": "VideoPipelineAPIC7F4C465"
-    }
-   },
-   "Metadata": {
-    "aws:cdk:path": "VideoPipelineStack/VideoPipelineAPI/Default/video/publish/POST/Resource"
+    "aws:cdk:path": "VideoPipelineStack/VideoPipelineAPI/Default/async/jobs/{jobId}/GET/Resource"
    }
   },
   "VideoPipelineApiKey045E3C38": {
@@ -3666,6 +6011,33 @@
      "HighPriorityVideoScheduleD62CB409",
      "Arn"
     ]
+   }
+  },
+  "ExportsOutputFnGetAttWorkflowOrchestratorFunction392225F6Arn14258EF4": {
+   "Value": {
+    "Fn::GetAtt": [
+     "WorkflowOrchestratorFunction392225F6",
+     "Arn"
+    ]
+   },
+   "Export": {
+    "Name": "VideoPipelineStack:ExportsOutputFnGetAttWorkflowOrchestratorFunction392225F6Arn14258EF4"
+   }
+  },
+  "ExportsOutputRefTopicsTableB8A0263C8384981D": {
+   "Value": {
+    "Ref": "TopicsTableB8A0263C"
+   },
+   "Export": {
+    "Name": "VideoPipelineStack:ExportsOutputRefTopicsTableB8A0263C8384981D"
+   }
+  },
+  "ExportsOutputRefContextLayerBFE43D6898EF3E60": {
+   "Value": {
+    "Ref": "ContextLayerBFE43D68"
+   },
+   "Export": {
+    "Name": "VideoPipelineStack:ExportsOutputRefContextLayerBFE43D6898EF3E60"
    }
   }
  },

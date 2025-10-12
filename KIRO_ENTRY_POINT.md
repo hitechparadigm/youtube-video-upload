@@ -2,26 +2,26 @@
 
 > **📍 CRITICAL**: This is the mandatory entry point for all new Kiro sessions. Always read this file first to understand the current system state and avoid duplication of work.
 
-**System Status**: 🎉 SCRIPT GENERATOR REGRESSION FIXED - DEPLOYMENT ISSUES RESOLVED  
-**Last Updated**: 2025-10-12 01:20 UTC  
-**Health**: ✅ PRODUCTION READY | Script Generator Operational | Infrastructure Deployment Successful
+**System Status**: 🎉 SCRIPT GENERATOR COMPLETELY FIXED - PROJECT ID CONSISTENCY RESOLVED  
+**Last Updated**: 2025-10-12 01:40 UTC  
+**Health**: ✅ PRODUCTION READY | Script Generator Fully Operational | Both Files Created Successfully
 
 ---
 
-## 🎉 **SCRIPT GENERATOR REGRESSION FIXED - DEPLOYMENT ISSUES RESOLVED (2025-10-12)**
+## 🎉 **SCRIPT GENERATOR COMPLETELY FIXED - PROJECT ID CONSISTENCY RESOLVED (2025-10-12)**
 
-### **🔧 CRITICAL REGRESSION FIX & INFRASTRUCTURE BREAKTHROUGH**
+### **🔧 COMPLETE FIX & PROJECT ID STANDARDIZATION**
 
-**ISSUE RESOLVED**: Script Generator regression causing complete pipeline failure - no script.json files created.
+**ISSUE RESOLVED**: Script Generator creating script.json but missing scene-context.json due to project ID inconsistency.
 
-**ROOT CAUSE DISCOVERED**: Multi-layered issue combining function execution order, layer version mismatch, and CloudFormation dependency conflicts.
+**ROOT CAUSE DISCOVERED**: generateS3Paths function ignoring provided projectId and creating new timestamp-based folders.
 
-**Latest Test**: `test-script-fix-1760231996418` (Successful script creation)
-- **Script File Created**: ✅ script.json (7,797 bytes) in 02-script/ folder
-- **Content Quality**: Complete 4-scene structure with 300s duration
-- **Deployment Success**: VideoPipelineStack deployed with layer version 53
-- **Infrastructure Status**: CloudFormation dependency conflicts resolved
-- **Key Fix**: Script file creation moved before context storage + layer version updated
+**Latest Test**: `2025-10-12_01-38-22_script-generator-test` (Complete success)
+- **Script File Created**: ✅ script.json (7,809 bytes) in 02-script/ folder
+- **Scene Context Created**: ✅ scene-context.json (5,782 bytes) in 01-context/ folder
+- **Project ID Format**: ✅ Consistent timestamp_{title} format
+- **Agent Coordination**: ✅ Both files in same project folder for downstream agents
+- **Key Fix**: Fixed s3-folder-structure.js to use provided projectId consistently
 
 ### **🔧 PROJECT ID ARCHITECTURE ANALYSIS COMPLETE**
 

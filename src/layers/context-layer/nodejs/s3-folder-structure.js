@@ -58,7 +58,9 @@ function generateProjectFolderName(title) {
  * @returns {object} Object containing all S3 key paths
  */
 function generateS3Paths(projectId, title) {
-    const folderName = generateProjectFolderName(title);
+    // ALWAYS use the provided projectId if it exists - don't generate a new one
+    // The projectId should already be in the correct timestamp_{title} format
+    const folderName = projectId || generateProjectFolderName(title || 'untitled');
     const basePath = `videos/${folderName}`;
     
     return {

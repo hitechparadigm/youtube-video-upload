@@ -25,7 +25,7 @@
         "validateOnSynth": false,
         "assumeRoleArn": "arn:${AWS::Partition}:iam::786673323159:role/cdk-hnb659fds-deploy-role-786673323159-us-east-1",
         "cloudFormationExecutionRoleArn": "arn:${AWS::Partition}:iam::786673323159:role/cdk-hnb659fds-cfn-exec-role-786673323159-us-east-1",
-        "stackTemplateAssetObjectUrl": "s3://cdk-hnb659fds-assets-786673323159-us-east-1/01e80eafe043f9bf9f40e72a55edd22a4eb93eb8d8da93d294271ba52dbef1d3.json",
+        "stackTemplateAssetObjectUrl": "s3://cdk-hnb659fds-assets-786673323159-us-east-1/2e0d7b8da3238bf35c724867eec8554ac501de2d795e4f99dca172e2b935b502.json",
         "requiresBootstrapStackVersion": 6,
         "bootstrapStackVersionSsmParameter": "/cdk-bootstrap/hnb659fds/version",
         "additionalDependencies": [
@@ -214,6 +214,26 @@
             "data": "WorkflowOrchestratorFunctionAllowEventBridgeHighPriorityInvoke01AB2928"
           }
         ],
+        "/VideoPipelineStack/JobsTable": [
+          {
+            "type": "aws:cdk:hasPhysicalName",
+            "data": {
+              "Ref": "JobsTable1970BC16"
+            }
+          }
+        ],
+        "/VideoPipelineStack/JobsTable/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "JobsTable1970BC16"
+          }
+        ],
+        "/VideoPipelineStack/AsyncProcessorFunction/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "AsyncProcessorFunctionC004566A"
+          }
+        ],
         "/VideoPipelineStack/VideoProductionSchedule/Resource": [
           {
             "type": "aws:cdk:logicalId",
@@ -247,7 +267,7 @@
         "/VideoPipelineStack/VideoPipelineAPI/Deployment/Resource": [
           {
             "type": "aws:cdk:logicalId",
-            "data": "VideoPipelineAPIDeploymentC06F0BD8ef975ab546441e263c06b9ac8f65c9b3"
+            "data": "VideoPipelineAPIDeploymentC06F0BD86603e2298db29bf1bea1925d3f334bf5"
           }
         ],
         "/VideoPipelineStack/VideoPipelineAPI/DeploymentStage.prod/Resource": [
@@ -412,6 +432,456 @@
             "data": "VideoPipelineAPItopicstopicIdDELETE93A7005B"
           }
         ],
+        "/VideoPipelineStack/VideoPipelineAPI/Default/scripts/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "VideoPipelineAPIscriptsA51F2181"
+          }
+        ],
+        "/VideoPipelineStack/VideoPipelineAPI/Default/scripts/OPTIONS/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "VideoPipelineAPIscriptsOPTIONS6606EBA7"
+          }
+        ],
+        "/VideoPipelineStack/VideoPipelineAPI/Default/scripts/generate/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "VideoPipelineAPIscriptsgenerate55432BFA"
+          }
+        ],
+        "/VideoPipelineStack/VideoPipelineAPI/Default/scripts/generate/OPTIONS/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "VideoPipelineAPIscriptsgenerateOPTIONSB108639A"
+          }
+        ],
+        "/VideoPipelineStack/VideoPipelineAPI/Default/scripts/generate/POST/ApiPermission.VideoPipelineStackVideoPipelineAPI7A2C3071.POST..scripts.generate": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "VideoPipelineAPIscriptsgeneratePOSTApiPermissionVideoPipelineStackVideoPipelineAPI7A2C3071POSTscriptsgenerate66187650"
+          }
+        ],
+        "/VideoPipelineStack/VideoPipelineAPI/Default/scripts/generate/POST/ApiPermission.Test.VideoPipelineStackVideoPipelineAPI7A2C3071.POST..scripts.generate": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "VideoPipelineAPIscriptsgeneratePOSTApiPermissionTestVideoPipelineStackVideoPipelineAPI7A2C3071POSTscriptsgenerate7904E992"
+          }
+        ],
+        "/VideoPipelineStack/VideoPipelineAPI/Default/scripts/generate/POST/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "VideoPipelineAPIscriptsgeneratePOSTBD00B254"
+          }
+        ],
+        "/VideoPipelineStack/VideoPipelineAPI/Default/scripts/generate-enhanced/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "VideoPipelineAPIscriptsgenerateenhanced526AC5F6"
+          }
+        ],
+        "/VideoPipelineStack/VideoPipelineAPI/Default/scripts/generate-enhanced/OPTIONS/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "VideoPipelineAPIscriptsgenerateenhancedOPTIONSA156B545"
+          }
+        ],
+        "/VideoPipelineStack/VideoPipelineAPI/Default/scripts/generate-enhanced/POST/ApiPermission.VideoPipelineStackVideoPipelineAPI7A2C3071.POST..scripts.generate-enhanced": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "VideoPipelineAPIscriptsgenerateenhancedPOSTApiPermissionVideoPipelineStackVideoPipelineAPI7A2C3071POSTscriptsgenerateenhanced075228A5"
+          }
+        ],
+        "/VideoPipelineStack/VideoPipelineAPI/Default/scripts/generate-enhanced/POST/ApiPermission.Test.VideoPipelineStackVideoPipelineAPI7A2C3071.POST..scripts.generate-enhanced": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "VideoPipelineAPIscriptsgenerateenhancedPOSTApiPermissionTestVideoPipelineStackVideoPipelineAPI7A2C3071POSTscriptsgenerateenhanced562C4FC3"
+          }
+        ],
+        "/VideoPipelineStack/VideoPipelineAPI/Default/scripts/generate-enhanced/POST/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "VideoPipelineAPIscriptsgenerateenhancedPOSTE54DF34B"
+          }
+        ],
+        "/VideoPipelineStack/VideoPipelineAPI/Default/scripts/generate-from-project/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "VideoPipelineAPIscriptsgeneratefromproject7DEA07A1"
+          }
+        ],
+        "/VideoPipelineStack/VideoPipelineAPI/Default/scripts/generate-from-project/OPTIONS/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "VideoPipelineAPIscriptsgeneratefromprojectOPTIONS2B5F6974"
+          }
+        ],
+        "/VideoPipelineStack/VideoPipelineAPI/Default/scripts/generate-from-project/POST/ApiPermission.VideoPipelineStackVideoPipelineAPI7A2C3071.POST..scripts.generate-from-project": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "VideoPipelineAPIscriptsgeneratefromprojectPOSTApiPermissionVideoPipelineStackVideoPipelineAPI7A2C3071POSTscriptsgeneratefromproject406C4C7B"
+          }
+        ],
+        "/VideoPipelineStack/VideoPipelineAPI/Default/scripts/generate-from-project/POST/ApiPermission.Test.VideoPipelineStackVideoPipelineAPI7A2C3071.POST..scripts.generate-from-project": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "VideoPipelineAPIscriptsgeneratefromprojectPOSTApiPermissionTestVideoPipelineStackVideoPipelineAPI7A2C3071POSTscriptsgeneratefromprojectB51C8A57"
+          }
+        ],
+        "/VideoPipelineStack/VideoPipelineAPI/Default/scripts/generate-from-project/POST/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "VideoPipelineAPIscriptsgeneratefromprojectPOST99BA92F1"
+          }
+        ],
+        "/VideoPipelineStack/VideoPipelineAPI/Default/scripts/health/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "VideoPipelineAPIscriptshealth0F777A55"
+          }
+        ],
+        "/VideoPipelineStack/VideoPipelineAPI/Default/scripts/health/OPTIONS/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "VideoPipelineAPIscriptshealthOPTIONS45C44869"
+          }
+        ],
+        "/VideoPipelineStack/VideoPipelineAPI/Default/scripts/health/GET/ApiPermission.VideoPipelineStackVideoPipelineAPI7A2C3071.GET..scripts.health": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "VideoPipelineAPIscriptshealthGETApiPermissionVideoPipelineStackVideoPipelineAPI7A2C3071GETscriptshealth432D772A"
+          }
+        ],
+        "/VideoPipelineStack/VideoPipelineAPI/Default/scripts/health/GET/ApiPermission.Test.VideoPipelineStackVideoPipelineAPI7A2C3071.GET..scripts.health": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "VideoPipelineAPIscriptshealthGETApiPermissionTestVideoPipelineStackVideoPipelineAPI7A2C3071GETscriptshealth1F37F4FB"
+          }
+        ],
+        "/VideoPipelineStack/VideoPipelineAPI/Default/scripts/health/GET/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "VideoPipelineAPIscriptshealthGET4B8CFAFD"
+          }
+        ],
+        "/VideoPipelineStack/VideoPipelineAPI/Default/media/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "VideoPipelineAPImedia35396386"
+          }
+        ],
+        "/VideoPipelineStack/VideoPipelineAPI/Default/media/OPTIONS/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "VideoPipelineAPImediaOPTIONS8E5C0B35"
+          }
+        ],
+        "/VideoPipelineStack/VideoPipelineAPI/Default/media/curate/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "VideoPipelineAPImediacurateCF64791B"
+          }
+        ],
+        "/VideoPipelineStack/VideoPipelineAPI/Default/media/curate/OPTIONS/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "VideoPipelineAPImediacurateOPTIONS86FC4F7E"
+          }
+        ],
+        "/VideoPipelineStack/VideoPipelineAPI/Default/media/curate/POST/ApiPermission.VideoPipelineStackVideoPipelineAPI7A2C3071.POST..media.curate": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "VideoPipelineAPImediacuratePOSTApiPermissionVideoPipelineStackVideoPipelineAPI7A2C3071POSTmediacurateE138D04C"
+          }
+        ],
+        "/VideoPipelineStack/VideoPipelineAPI/Default/media/curate/POST/ApiPermission.Test.VideoPipelineStackVideoPipelineAPI7A2C3071.POST..media.curate": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "VideoPipelineAPImediacuratePOSTApiPermissionTestVideoPipelineStackVideoPipelineAPI7A2C3071POSTmediacurate346B9586"
+          }
+        ],
+        "/VideoPipelineStack/VideoPipelineAPI/Default/media/curate/POST/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "VideoPipelineAPImediacuratePOSTE36DB332"
+          }
+        ],
+        "/VideoPipelineStack/VideoPipelineAPI/Default/media/health/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "VideoPipelineAPImediahealthD56A9DE5"
+          }
+        ],
+        "/VideoPipelineStack/VideoPipelineAPI/Default/media/health/OPTIONS/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "VideoPipelineAPImediahealthOPTIONS9204A6CC"
+          }
+        ],
+        "/VideoPipelineStack/VideoPipelineAPI/Default/media/health/GET/ApiPermission.VideoPipelineStackVideoPipelineAPI7A2C3071.GET..media.health": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "VideoPipelineAPImediahealthGETApiPermissionVideoPipelineStackVideoPipelineAPI7A2C3071GETmediahealth349EE328"
+          }
+        ],
+        "/VideoPipelineStack/VideoPipelineAPI/Default/media/health/GET/ApiPermission.Test.VideoPipelineStackVideoPipelineAPI7A2C3071.GET..media.health": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "VideoPipelineAPImediahealthGETApiPermissionTestVideoPipelineStackVideoPipelineAPI7A2C3071GETmediahealthDFE8B479"
+          }
+        ],
+        "/VideoPipelineStack/VideoPipelineAPI/Default/media/health/GET/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "VideoPipelineAPImediahealthGET64CE3C49"
+          }
+        ],
+        "/VideoPipelineStack/VideoPipelineAPI/Default/audio/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "VideoPipelineAPIaudioEC12022E"
+          }
+        ],
+        "/VideoPipelineStack/VideoPipelineAPI/Default/audio/OPTIONS/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "VideoPipelineAPIaudioOPTIONS1A3C09ED"
+          }
+        ],
+        "/VideoPipelineStack/VideoPipelineAPI/Default/audio/generate/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "VideoPipelineAPIaudiogenerateCB336422"
+          }
+        ],
+        "/VideoPipelineStack/VideoPipelineAPI/Default/audio/generate/OPTIONS/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "VideoPipelineAPIaudiogenerateOPTIONS4ABA5F45"
+          }
+        ],
+        "/VideoPipelineStack/VideoPipelineAPI/Default/audio/generate/POST/ApiPermission.VideoPipelineStackVideoPipelineAPI7A2C3071.POST..audio.generate": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "VideoPipelineAPIaudiogeneratePOSTApiPermissionVideoPipelineStackVideoPipelineAPI7A2C3071POSTaudiogenerate599C3611"
+          }
+        ],
+        "/VideoPipelineStack/VideoPipelineAPI/Default/audio/generate/POST/ApiPermission.Test.VideoPipelineStackVideoPipelineAPI7A2C3071.POST..audio.generate": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "VideoPipelineAPIaudiogeneratePOSTApiPermissionTestVideoPipelineStackVideoPipelineAPI7A2C3071POSTaudiogenerate321BA611"
+          }
+        ],
+        "/VideoPipelineStack/VideoPipelineAPI/Default/audio/generate/POST/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "VideoPipelineAPIaudiogeneratePOST5E955A60"
+          }
+        ],
+        "/VideoPipelineStack/VideoPipelineAPI/Default/audio/health/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "VideoPipelineAPIaudiohealthF06F4CB6"
+          }
+        ],
+        "/VideoPipelineStack/VideoPipelineAPI/Default/audio/health/OPTIONS/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "VideoPipelineAPIaudiohealthOPTIONS82DFDD91"
+          }
+        ],
+        "/VideoPipelineStack/VideoPipelineAPI/Default/audio/health/GET/ApiPermission.VideoPipelineStackVideoPipelineAPI7A2C3071.GET..audio.health": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "VideoPipelineAPIaudiohealthGETApiPermissionVideoPipelineStackVideoPipelineAPI7A2C3071GETaudiohealth48FA5D01"
+          }
+        ],
+        "/VideoPipelineStack/VideoPipelineAPI/Default/audio/health/GET/ApiPermission.Test.VideoPipelineStackVideoPipelineAPI7A2C3071.GET..audio.health": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "VideoPipelineAPIaudiohealthGETApiPermissionTestVideoPipelineStackVideoPipelineAPI7A2C3071GETaudiohealthF9E9284E"
+          }
+        ],
+        "/VideoPipelineStack/VideoPipelineAPI/Default/audio/health/GET/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "VideoPipelineAPIaudiohealthGETFF35AD71"
+          }
+        ],
+        "/VideoPipelineStack/VideoPipelineAPI/Default/video/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "VideoPipelineAPIvideo0162E1A2"
+          }
+        ],
+        "/VideoPipelineStack/VideoPipelineAPI/Default/video/OPTIONS/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "VideoPipelineAPIvideoOPTIONS18D47EDD"
+          }
+        ],
+        "/VideoPipelineStack/VideoPipelineAPI/Default/video/assemble/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "VideoPipelineAPIvideoassemble41D0E80E"
+          }
+        ],
+        "/VideoPipelineStack/VideoPipelineAPI/Default/video/assemble/OPTIONS/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "VideoPipelineAPIvideoassembleOPTIONSAC256661"
+          }
+        ],
+        "/VideoPipelineStack/VideoPipelineAPI/Default/video/assemble/POST/ApiPermission.VideoPipelineStackVideoPipelineAPI7A2C3071.POST..video.assemble": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "VideoPipelineAPIvideoassemblePOSTApiPermissionVideoPipelineStackVideoPipelineAPI7A2C3071POSTvideoassemble58CD156D"
+          }
+        ],
+        "/VideoPipelineStack/VideoPipelineAPI/Default/video/assemble/POST/ApiPermission.Test.VideoPipelineStackVideoPipelineAPI7A2C3071.POST..video.assemble": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "VideoPipelineAPIvideoassemblePOSTApiPermissionTestVideoPipelineStackVideoPipelineAPI7A2C3071POSTvideoassemble5A7E54E7"
+          }
+        ],
+        "/VideoPipelineStack/VideoPipelineAPI/Default/video/assemble/POST/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "VideoPipelineAPIvideoassemblePOSTE138099D"
+          }
+        ],
+        "/VideoPipelineStack/VideoPipelineAPI/Default/video/health/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "VideoPipelineAPIvideohealthBB49ED4F"
+          }
+        ],
+        "/VideoPipelineStack/VideoPipelineAPI/Default/video/health/OPTIONS/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "VideoPipelineAPIvideohealthOPTIONS4E9AE617"
+          }
+        ],
+        "/VideoPipelineStack/VideoPipelineAPI/Default/video/health/GET/ApiPermission.VideoPipelineStackVideoPipelineAPI7A2C3071.GET..video.health": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "VideoPipelineAPIvideohealthGETApiPermissionVideoPipelineStackVideoPipelineAPI7A2C3071GETvideohealthE98F46E6"
+          }
+        ],
+        "/VideoPipelineStack/VideoPipelineAPI/Default/video/health/GET/ApiPermission.Test.VideoPipelineStackVideoPipelineAPI7A2C3071.GET..video.health": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "VideoPipelineAPIvideohealthGETApiPermissionTestVideoPipelineStackVideoPipelineAPI7A2C3071GETvideohealth8ECB2189"
+          }
+        ],
+        "/VideoPipelineStack/VideoPipelineAPI/Default/video/health/GET/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "VideoPipelineAPIvideohealthGETBD0FE29F"
+          }
+        ],
+        "/VideoPipelineStack/VideoPipelineAPI/Default/video/publish/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "VideoPipelineAPIvideopublishA7E982F4"
+          }
+        ],
+        "/VideoPipelineStack/VideoPipelineAPI/Default/video/publish/OPTIONS/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "VideoPipelineAPIvideopublishOPTIONSA418EEFD"
+          }
+        ],
+        "/VideoPipelineStack/VideoPipelineAPI/Default/video/publish/POST/ApiPermission.VideoPipelineStackVideoPipelineAPI7A2C3071.POST..video.publish": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "VideoPipelineAPIvideopublishPOSTApiPermissionVideoPipelineStackVideoPipelineAPI7A2C3071POSTvideopublishF8CDA179"
+          }
+        ],
+        "/VideoPipelineStack/VideoPipelineAPI/Default/video/publish/POST/ApiPermission.Test.VideoPipelineStackVideoPipelineAPI7A2C3071.POST..video.publish": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "VideoPipelineAPIvideopublishPOSTApiPermissionTestVideoPipelineStackVideoPipelineAPI7A2C3071POSTvideopublish04614983"
+          }
+        ],
+        "/VideoPipelineStack/VideoPipelineAPI/Default/video/publish/POST/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "VideoPipelineAPIvideopublishPOST5FA37B80"
+          }
+        ],
+        "/VideoPipelineStack/VideoPipelineAPI/Default/youtube/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "VideoPipelineAPIyoutubeEEEBBA98"
+          }
+        ],
+        "/VideoPipelineStack/VideoPipelineAPI/Default/youtube/OPTIONS/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "VideoPipelineAPIyoutubeOPTIONS82B741A1"
+          }
+        ],
+        "/VideoPipelineStack/VideoPipelineAPI/Default/youtube/publish/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "VideoPipelineAPIyoutubepublish0F35500D"
+          }
+        ],
+        "/VideoPipelineStack/VideoPipelineAPI/Default/youtube/publish/OPTIONS/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "VideoPipelineAPIyoutubepublishOPTIONS5FEE526D"
+          }
+        ],
+        "/VideoPipelineStack/VideoPipelineAPI/Default/youtube/publish/POST/ApiPermission.VideoPipelineStackVideoPipelineAPI7A2C3071.POST..youtube.publish": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "VideoPipelineAPIyoutubepublishPOSTApiPermissionVideoPipelineStackVideoPipelineAPI7A2C3071POSTyoutubepublish523B44CA"
+          }
+        ],
+        "/VideoPipelineStack/VideoPipelineAPI/Default/youtube/publish/POST/ApiPermission.Test.VideoPipelineStackVideoPipelineAPI7A2C3071.POST..youtube.publish": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "VideoPipelineAPIyoutubepublishPOSTApiPermissionTestVideoPipelineStackVideoPipelineAPI7A2C3071POSTyoutubepublish877E2837"
+          }
+        ],
+        "/VideoPipelineStack/VideoPipelineAPI/Default/youtube/publish/POST/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "VideoPipelineAPIyoutubepublishPOSTE12A2EAF"
+          }
+        ],
+        "/VideoPipelineStack/VideoPipelineAPI/Default/youtube/health/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "VideoPipelineAPIyoutubehealthEA83912E"
+          }
+        ],
+        "/VideoPipelineStack/VideoPipelineAPI/Default/youtube/health/OPTIONS/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "VideoPipelineAPIyoutubehealthOPTIONS56FC1C14"
+          }
+        ],
+        "/VideoPipelineStack/VideoPipelineAPI/Default/youtube/health/GET/ApiPermission.VideoPipelineStackVideoPipelineAPI7A2C3071.GET..youtube.health": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "VideoPipelineAPIyoutubehealthGETApiPermissionVideoPipelineStackVideoPipelineAPI7A2C3071GETyoutubehealth523A2B33"
+          }
+        ],
+        "/VideoPipelineStack/VideoPipelineAPI/Default/youtube/health/GET/ApiPermission.Test.VideoPipelineStackVideoPipelineAPI7A2C3071.GET..youtube.health": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "VideoPipelineAPIyoutubehealthGETApiPermissionTestVideoPipelineStackVideoPipelineAPI7A2C3071GETyoutubehealth8EA49C78"
+          }
+        ],
+        "/VideoPipelineStack/VideoPipelineAPI/Default/youtube/health/GET/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "VideoPipelineAPIyoutubehealthGET2569CF57"
+          }
+        ],
         "/VideoPipelineStack/VideoPipelineAPI/Default/workflow/Resource": [
           {
             "type": "aws:cdk:logicalId",
@@ -544,148 +1014,118 @@
             "data": "VideoPipelineAPIworkflowstatsGETD619E2C8"
           }
         ],
-        "/VideoPipelineStack/VideoPipelineAPI/Default/media/Resource": [
+        "/VideoPipelineStack/VideoPipelineAPI/Default/async/Resource": [
           {
             "type": "aws:cdk:logicalId",
-            "data": "VideoPipelineAPImedia35396386"
+            "data": "VideoPipelineAPIasync0843A461"
           }
         ],
-        "/VideoPipelineStack/VideoPipelineAPI/Default/media/OPTIONS/Resource": [
+        "/VideoPipelineStack/VideoPipelineAPI/Default/async/OPTIONS/Resource": [
           {
             "type": "aws:cdk:logicalId",
-            "data": "VideoPipelineAPImediaOPTIONS8E5C0B35"
+            "data": "VideoPipelineAPIasyncOPTIONS891A03ED"
           }
         ],
-        "/VideoPipelineStack/VideoPipelineAPI/Default/media/search/Resource": [
+        "/VideoPipelineStack/VideoPipelineAPI/Default/async/health/Resource": [
           {
             "type": "aws:cdk:logicalId",
-            "data": "VideoPipelineAPImediasearchB1B7B691"
+            "data": "VideoPipelineAPIasynchealth31C35BC1"
           }
         ],
-        "/VideoPipelineStack/VideoPipelineAPI/Default/media/search/OPTIONS/Resource": [
+        "/VideoPipelineStack/VideoPipelineAPI/Default/async/health/OPTIONS/Resource": [
           {
             "type": "aws:cdk:logicalId",
-            "data": "VideoPipelineAPImediasearchOPTIONS834783F5"
+            "data": "VideoPipelineAPIasynchealthOPTIONS6E2F7ED2"
           }
         ],
-        "/VideoPipelineStack/VideoPipelineAPI/Default/media/search/POST/ApiPermission.VideoPipelineStackVideoPipelineAPI7A2C3071.POST..media.search": [
+        "/VideoPipelineStack/VideoPipelineAPI/Default/async/health/GET/ApiPermission.VideoPipelineStackVideoPipelineAPI7A2C3071.GET..async.health": [
           {
             "type": "aws:cdk:logicalId",
-            "data": "VideoPipelineAPImediasearchPOSTApiPermissionVideoPipelineStackVideoPipelineAPI7A2C3071POSTmediasearchE08D3ABE"
+            "data": "VideoPipelineAPIasynchealthGETApiPermissionVideoPipelineStackVideoPipelineAPI7A2C3071GETasynchealth4F88AB67"
           }
         ],
-        "/VideoPipelineStack/VideoPipelineAPI/Default/media/search/POST/ApiPermission.Test.VideoPipelineStackVideoPipelineAPI7A2C3071.POST..media.search": [
+        "/VideoPipelineStack/VideoPipelineAPI/Default/async/health/GET/ApiPermission.Test.VideoPipelineStackVideoPipelineAPI7A2C3071.GET..async.health": [
           {
             "type": "aws:cdk:logicalId",
-            "data": "VideoPipelineAPImediasearchPOSTApiPermissionTestVideoPipelineStackVideoPipelineAPI7A2C3071POSTmediasearch9DD80F0A"
+            "data": "VideoPipelineAPIasynchealthGETApiPermissionTestVideoPipelineStackVideoPipelineAPI7A2C3071GETasynchealthA0FCD74D"
           }
         ],
-        "/VideoPipelineStack/VideoPipelineAPI/Default/media/search/POST/Resource": [
+        "/VideoPipelineStack/VideoPipelineAPI/Default/async/health/GET/Resource": [
           {
             "type": "aws:cdk:logicalId",
-            "data": "VideoPipelineAPImediasearchPOST31739D32"
+            "data": "VideoPipelineAPIasynchealthGETC081EA02"
           }
         ],
-        "/VideoPipelineStack/VideoPipelineAPI/Default/media/curate/Resource": [
+        "/VideoPipelineStack/VideoPipelineAPI/Default/async/start-pipeline/Resource": [
           {
             "type": "aws:cdk:logicalId",
-            "data": "VideoPipelineAPImediacurateCF64791B"
+            "data": "VideoPipelineAPIasyncstartpipelineB6E32D58"
           }
         ],
-        "/VideoPipelineStack/VideoPipelineAPI/Default/media/curate/OPTIONS/Resource": [
+        "/VideoPipelineStack/VideoPipelineAPI/Default/async/start-pipeline/OPTIONS/Resource": [
           {
             "type": "aws:cdk:logicalId",
-            "data": "VideoPipelineAPImediacurateOPTIONS86FC4F7E"
+            "data": "VideoPipelineAPIasyncstartpipelineOPTIONSE41FB67F"
           }
         ],
-        "/VideoPipelineStack/VideoPipelineAPI/Default/media/curate/POST/ApiPermission.VideoPipelineStackVideoPipelineAPI7A2C3071.POST..media.curate": [
+        "/VideoPipelineStack/VideoPipelineAPI/Default/async/start-pipeline/POST/ApiPermission.VideoPipelineStackVideoPipelineAPI7A2C3071.POST..async.start-pipeline": [
           {
             "type": "aws:cdk:logicalId",
-            "data": "VideoPipelineAPImediacuratePOSTApiPermissionVideoPipelineStackVideoPipelineAPI7A2C3071POSTmediacurateE138D04C"
+            "data": "VideoPipelineAPIasyncstartpipelinePOSTApiPermissionVideoPipelineStackVideoPipelineAPI7A2C3071POSTasyncstartpipelineFEB3961E"
           }
         ],
-        "/VideoPipelineStack/VideoPipelineAPI/Default/media/curate/POST/ApiPermission.Test.VideoPipelineStackVideoPipelineAPI7A2C3071.POST..media.curate": [
+        "/VideoPipelineStack/VideoPipelineAPI/Default/async/start-pipeline/POST/ApiPermission.Test.VideoPipelineStackVideoPipelineAPI7A2C3071.POST..async.start-pipeline": [
           {
             "type": "aws:cdk:logicalId",
-            "data": "VideoPipelineAPImediacuratePOSTApiPermissionTestVideoPipelineStackVideoPipelineAPI7A2C3071POSTmediacurate346B9586"
+            "data": "VideoPipelineAPIasyncstartpipelinePOSTApiPermissionTestVideoPipelineStackVideoPipelineAPI7A2C3071POSTasyncstartpipeline8F62BB77"
           }
         ],
-        "/VideoPipelineStack/VideoPipelineAPI/Default/media/curate/POST/Resource": [
+        "/VideoPipelineStack/VideoPipelineAPI/Default/async/start-pipeline/POST/Resource": [
           {
             "type": "aws:cdk:logicalId",
-            "data": "VideoPipelineAPImediacuratePOSTE36DB332"
+            "data": "VideoPipelineAPIasyncstartpipelinePOSTE4B719D6"
           }
         ],
-        "/VideoPipelineStack/VideoPipelineAPI/Default/video/Resource": [
+        "/VideoPipelineStack/VideoPipelineAPI/Default/async/jobs/Resource": [
           {
             "type": "aws:cdk:logicalId",
-            "data": "VideoPipelineAPIvideo0162E1A2"
+            "data": "VideoPipelineAPIasyncjobs4D5FBFCF"
           }
         ],
-        "/VideoPipelineStack/VideoPipelineAPI/Default/video/OPTIONS/Resource": [
+        "/VideoPipelineStack/VideoPipelineAPI/Default/async/jobs/OPTIONS/Resource": [
           {
             "type": "aws:cdk:logicalId",
-            "data": "VideoPipelineAPIvideoOPTIONS18D47EDD"
+            "data": "VideoPipelineAPIasyncjobsOPTIONS3CA0B306"
           }
         ],
-        "/VideoPipelineStack/VideoPipelineAPI/Default/video/assemble/Resource": [
+        "/VideoPipelineStack/VideoPipelineAPI/Default/async/jobs/{jobId}/Resource": [
           {
             "type": "aws:cdk:logicalId",
-            "data": "VideoPipelineAPIvideoassemble41D0E80E"
+            "data": "VideoPipelineAPIasyncjobsjobId26920DF4"
           }
         ],
-        "/VideoPipelineStack/VideoPipelineAPI/Default/video/assemble/OPTIONS/Resource": [
+        "/VideoPipelineStack/VideoPipelineAPI/Default/async/jobs/{jobId}/OPTIONS/Resource": [
           {
             "type": "aws:cdk:logicalId",
-            "data": "VideoPipelineAPIvideoassembleOPTIONSAC256661"
+            "data": "VideoPipelineAPIasyncjobsjobIdOPTIONS8A3BC56A"
           }
         ],
-        "/VideoPipelineStack/VideoPipelineAPI/Default/video/assemble/POST/ApiPermission.VideoPipelineStackVideoPipelineAPI7A2C3071.POST..video.assemble": [
+        "/VideoPipelineStack/VideoPipelineAPI/Default/async/jobs/{jobId}/GET/ApiPermission.VideoPipelineStackVideoPipelineAPI7A2C3071.GET..async.jobs.{jobId}": [
           {
             "type": "aws:cdk:logicalId",
-            "data": "VideoPipelineAPIvideoassemblePOSTApiPermissionVideoPipelineStackVideoPipelineAPI7A2C3071POSTvideoassemble58CD156D"
+            "data": "VideoPipelineAPIasyncjobsjobIdGETApiPermissionVideoPipelineStackVideoPipelineAPI7A2C3071GETasyncjobsjobId80EF0921"
           }
         ],
-        "/VideoPipelineStack/VideoPipelineAPI/Default/video/assemble/POST/ApiPermission.Test.VideoPipelineStackVideoPipelineAPI7A2C3071.POST..video.assemble": [
+        "/VideoPipelineStack/VideoPipelineAPI/Default/async/jobs/{jobId}/GET/ApiPermission.Test.VideoPipelineStackVideoPipelineAPI7A2C3071.GET..async.jobs.{jobId}": [
           {
             "type": "aws:cdk:logicalId",
-            "data": "VideoPipelineAPIvideoassemblePOSTApiPermissionTestVideoPipelineStackVideoPipelineAPI7A2C3071POSTvideoassemble5A7E54E7"
+            "data": "VideoPipelineAPIasyncjobsjobIdGETApiPermissionTestVideoPipelineStackVideoPipelineAPI7A2C3071GETasyncjobsjobIdC98619E2"
           }
         ],
-        "/VideoPipelineStack/VideoPipelineAPI/Default/video/assemble/POST/Resource": [
+        "/VideoPipelineStack/VideoPipelineAPI/Default/async/jobs/{jobId}/GET/Resource": [
           {
             "type": "aws:cdk:logicalId",
-            "data": "VideoPipelineAPIvideoassemblePOSTE138099D"
-          }
-        ],
-        "/VideoPipelineStack/VideoPipelineAPI/Default/video/publish/Resource": [
-          {
-            "type": "aws:cdk:logicalId",
-            "data": "VideoPipelineAPIvideopublishA7E982F4"
-          }
-        ],
-        "/VideoPipelineStack/VideoPipelineAPI/Default/video/publish/OPTIONS/Resource": [
-          {
-            "type": "aws:cdk:logicalId",
-            "data": "VideoPipelineAPIvideopublishOPTIONSA418EEFD"
-          }
-        ],
-        "/VideoPipelineStack/VideoPipelineAPI/Default/video/publish/POST/ApiPermission.VideoPipelineStackVideoPipelineAPI7A2C3071.POST..video.publish": [
-          {
-            "type": "aws:cdk:logicalId",
-            "data": "VideoPipelineAPIvideopublishPOSTApiPermissionVideoPipelineStackVideoPipelineAPI7A2C3071POSTvideopublishF8CDA179"
-          }
-        ],
-        "/VideoPipelineStack/VideoPipelineAPI/Default/video/publish/POST/ApiPermission.Test.VideoPipelineStackVideoPipelineAPI7A2C3071.POST..video.publish": [
-          {
-            "type": "aws:cdk:logicalId",
-            "data": "VideoPipelineAPIvideopublishPOSTApiPermissionTestVideoPipelineStackVideoPipelineAPI7A2C3071POSTvideopublish04614983"
-          }
-        ],
-        "/VideoPipelineStack/VideoPipelineAPI/Default/video/publish/POST/Resource": [
-          {
-            "type": "aws:cdk:logicalId",
-            "data": "VideoPipelineAPIvideopublishPOST5FA37B80"
+            "data": "VideoPipelineAPIasyncjobsjobIdGET17527B9D"
           }
         ],
         "/VideoPipelineStack/VideoPipelineApiKey/Resource": [
@@ -772,6 +1212,24 @@
             "data": "CDKMetadata"
           }
         ],
+        "/VideoPipelineStack/Exports/Output{\"Fn::GetAtt\":[\"WorkflowOrchestratorFunction392225F6\",\"Arn\"]}": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "ExportsOutputFnGetAttWorkflowOrchestratorFunction392225F6Arn14258EF4"
+          }
+        ],
+        "/VideoPipelineStack/Exports/Output{\"Ref\":\"TopicsTableB8A0263C\"}": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "ExportsOutputRefTopicsTableB8A0263C8384981D"
+          }
+        ],
+        "/VideoPipelineStack/Exports/Output{\"Ref\":\"ContextLayerBFE43D68\"}": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "ExportsOutputRefContextLayerBFE43D6898EF3E60"
+          }
+        ],
         "/VideoPipelineStack/BootstrapVersion": [
           {
             "type": "aws:cdk:logicalId",
@@ -786,6 +1244,213 @@
         ]
       },
       "displayName": "VideoPipelineStack"
+    },
+    "SchedulingCostStack.assets": {
+      "type": "cdk:asset-manifest",
+      "properties": {
+        "file": "SchedulingCostStack.assets.json",
+        "requiresBootstrapStackVersion": 6,
+        "bootstrapStackVersionSsmParameter": "/cdk-bootstrap/hnb659fds/version"
+      }
+    },
+    "SchedulingCostStack": {
+      "type": "aws:cloudformation:stack",
+      "environment": "aws://786673323159/us-east-1",
+      "properties": {
+        "templateFile": "SchedulingCostStack.template.json",
+        "terminationProtection": false,
+        "tags": {
+          "CostCenter": "content-creation",
+          "Environment": "production",
+          "ManagedBy": "github-actions",
+          "Owner": "video-automation-team",
+          "Project": "automated-video-pipeline"
+        },
+        "validateOnSynth": false,
+        "assumeRoleArn": "arn:${AWS::Partition}:iam::786673323159:role/cdk-hnb659fds-deploy-role-786673323159-us-east-1",
+        "cloudFormationExecutionRoleArn": "arn:${AWS::Partition}:iam::786673323159:role/cdk-hnb659fds-cfn-exec-role-786673323159-us-east-1",
+        "stackTemplateAssetObjectUrl": "s3://cdk-hnb659fds-assets-786673323159-us-east-1/7db00749ed49c92af4cc246d61fc4bd25bee9926e1fc76e7a5d9acc002f736be.json",
+        "requiresBootstrapStackVersion": 6,
+        "bootstrapStackVersionSsmParameter": "/cdk-bootstrap/hnb659fds/version",
+        "additionalDependencies": [
+          "SchedulingCostStack.assets"
+        ],
+        "lookupRole": {
+          "arn": "arn:${AWS::Partition}:iam::786673323159:role/cdk-hnb659fds-lookup-role-786673323159-us-east-1",
+          "requiresBootstrapStackVersion": 8,
+          "bootstrapStackVersionSsmParameter": "/cdk-bootstrap/hnb659fds/version"
+        }
+      },
+      "dependencies": [
+        "VideoPipelineStack",
+        "SchedulingCostStack.assets"
+      ],
+      "metadata": {
+        "/SchedulingCostStack": [
+          {
+            "type": "aws:cdk:stack-tags",
+            "data": [
+              {
+                "Key": "CostCenter",
+                "Value": "content-creation"
+              },
+              {
+                "Key": "Environment",
+                "Value": "production"
+              },
+              {
+                "Key": "ManagedBy",
+                "Value": "github-actions"
+              },
+              {
+                "Key": "Owner",
+                "Value": "video-automation-team"
+              },
+              {
+                "Key": "Project",
+                "Value": "automated-video-pipeline"
+              }
+            ]
+          }
+        ],
+        "/SchedulingCostStack/CostTrackingTable": [
+          {
+            "type": "aws:cdk:hasPhysicalName",
+            "data": {
+              "Ref": "CostTrackingTableAE126A5E"
+            }
+          }
+        ],
+        "/SchedulingCostStack/CostTrackingTable/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "CostTrackingTableAE126A5E"
+          }
+        ],
+        "/SchedulingCostStack/ScheduleMetadataTable": [
+          {
+            "type": "aws:cdk:hasPhysicalName",
+            "data": {
+              "Ref": "ScheduleMetadataTable59D83AC6"
+            }
+          }
+        ],
+        "/SchedulingCostStack/ScheduleMetadataTable/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "ScheduleMetadataTable59D83AC6"
+          }
+        ],
+        "/SchedulingCostStack/BudgetAlertTopic/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "BudgetAlertTopicF20DF526"
+          }
+        ],
+        "/SchedulingCostStack/BudgetAlertTopic/admin@example.com/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "BudgetAlertTopicadminexamplecom79599723"
+          }
+        ],
+        "/SchedulingCostStack/ScheduleAlertTopic/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "ScheduleAlertTopic49D7F450"
+          }
+        ],
+        "/SchedulingCostStack/EventBridgeScheduler/ServiceRole/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "EventBridgeSchedulerServiceRole9AA0C57A"
+          }
+        ],
+        "/SchedulingCostStack/EventBridgeScheduler/ServiceRole/DefaultPolicy/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "EventBridgeSchedulerServiceRoleDefaultPolicy2AF47854"
+          }
+        ],
+        "/SchedulingCostStack/EventBridgeScheduler/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "EventBridgeSchedulerD7961FBE"
+          }
+        ],
+        "/SchedulingCostStack/CostTracker/ServiceRole/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "CostTrackerServiceRole60A50DAB"
+          }
+        ],
+        "/SchedulingCostStack/CostTracker/ServiceRole/DefaultPolicy/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "CostTrackerServiceRoleDefaultPolicy7E8160A9"
+          }
+        ],
+        "/SchedulingCostStack/CostTracker/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "CostTracker717CD556"
+          }
+        ],
+        "/SchedulingCostStack/HighCostAlarm/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "HighCostAlarmD18CE0E9"
+          }
+        ],
+        "/SchedulingCostStack/ScheduleFailureAlarm/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "ScheduleFailureAlarm1355948B"
+          }
+        ],
+        "/SchedulingCostStack/DailyCostReportRule/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "DailyCostReportRuleBD990DD4"
+          }
+        ],
+        "/SchedulingCostStack/DailyCostReportRule/AllowEventRuleSchedulingCostStackCostTrackerA52DD531": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "DailyCostReportRuleAllowEventRuleSchedulingCostStackCostTrackerA52DD531E64A6C57"
+          }
+        ],
+        "/SchedulingCostStack/WeeklyOptimizationRule/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "WeeklyOptimizationRule95971927"
+          }
+        ],
+        "/SchedulingCostStack/WeeklyOptimizationRule/AllowEventRuleSchedulingCostStackEventBridgeSchedulerAA2F7DE4": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "WeeklyOptimizationRuleAllowEventRuleSchedulingCostStackEventBridgeSchedulerAA2F7DE410530BAF"
+          }
+        ],
+        "/SchedulingCostStack/CDKMetadata/Default": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "CDKMetadata"
+          }
+        ],
+        "/SchedulingCostStack/BootstrapVersion": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "BootstrapVersion"
+          }
+        ],
+        "/SchedulingCostStack/CheckBootstrapVersion": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "CheckBootstrapVersion"
+          }
+        ]
+      },
+      "displayName": "SchedulingCostStack"
     },
     "Tree": {
       "type": "cdk:tree",

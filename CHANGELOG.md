@@ -2,13 +2,35 @@
 
 All notable changes to the Automated Video Pipeline project will be documented in this file.
 
-## [3.3.0] - 2025-10-12 - SCRIPT GENERATOR REGRESSION FIX: DEPLOYMENT DEPENDENCY RESOLUTION
+## [3.3.1] - 2025-10-12 - COMPLETE SCRIPT GENERATOR FIX: PROJECT ID CONSISTENCY RESOLVED
 
-### 🎉 MAJOR BREAKTHROUGH: Script Generator Fixed & Deployment Issues Resolved
-- **Critical Bug Fixed**: Script Generator now creates script.json files in 02-script/ folder (7,797 bytes)
-- **Deployment Issue Resolved**: Fixed CloudFormation export dependency conflicts preventing deployments
-- **Function Execution Order**: Moved script file creation before context storage to prevent execution cutoff
-- **Layer Version Updated**: Successfully deployed layer version 53 with latest uploadToS3 function
+### 🎉 COMPLETE SUCCESS: Script Generator Fully Operational
+- **Both Issues Fixed**: Script Generator now creates BOTH script.json (7,809 bytes) AND scene-context.json (5,782 bytes)
+- **Project ID Consistency**: Fixed s3-folder-structure.js to use consistent timestamp_{title} format
+- **Agent Coordination Restored**: scene-context.json now created in correct location for downstream agents
+- **Layer Version Updated**: Successfully deployed layer version 56 with complete fixes
+
+### 🔧 FINAL ROOT CAUSE ANALYSIS
+- **Primary Issue**: generateS3Paths function ignoring provided projectId and creating new timestamps
+- **Secondary Issue**: Function execution order placing script creation after context storage
+- **Tertiary Issue**: CloudFormation dependency conflicts preventing deployments
+- **Project ID Format**: Inconsistent project ID handling between orchestrator and utility functions
+
+### 🛠️ COMPLETE SOLUTION IMPLEMENTED
+```javascript
+// BEFORE (Broken):
+const folderName = generateProjectFolderName(title); // Always generated new ID
+
+// AFTER (Fixed):
+const folderName = projectId || generateProjectFolderName(title || 'untitled'); // Uses provided ID
+```
+
+### 📊 FINAL RESULTS ACHIEVED
+- **Script File Creation**: ✅ script.json (7,809 bytes) in 02-script/ folder
+- **Scene Context Creation**: ✅ scene-context.json (5,782 bytes) in 01-context/ folder
+- **Project ID Format**: ✅ Consistent timestamp_{title} format (e.g., 2025-10-12_01-38-22_script-generator-test)
+- **Agent Coordination**: ✅ Both files use same project folder for perfect downstream integration
+- **Pipeline Status**: ✅ Script Generator fully operational for complete video pipeline
 
 ### 🔧 TECHNICAL ROOT CAUSE ANALYSIS
 - **Primary Issue**: Script file creation code placed after context storage, never executed

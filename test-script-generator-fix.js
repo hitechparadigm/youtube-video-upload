@@ -21,7 +21,13 @@ async function testScriptGeneratorFix() {
   console.log('🧪 TESTING SCRIPT GENERATOR FIX');
   console.log('==============================');
   
-  const testProjectId = `test-script-fix-${Date.now()}`;
+  // Use proper timestamp_{title} format like the orchestrator
+  const now = new Date();
+  const timestamp = now.toISOString()
+    .replace(/T/, '_')
+    .replace(/:/g, '-')
+    .replace(/\..+/, ''); // Remove milliseconds and timezone
+  const testProjectId = `${timestamp}_script-generator-test`;
   
   try {
     // Step 1: Create a simple topic context for testing
