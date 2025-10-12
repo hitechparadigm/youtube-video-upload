@@ -1,0 +1,12 @@
+{
+  "name": "automated-video-pipeline-context-layer",
+  "version": "1.0.0",
+  "description": "Shared utilities for AI agent context flow and AWS service management",
+  "main": "context-manager.js",
+  "dependencies": {
+    "@aws-sdk/client-dynamodb": "^3.0.0",
+    "@aws-sdk/client-s3": "^3.0.0",
+    "@aws-sdk/client-secrets-manager": "^3.0.0",
+    "@aws-sdk/util-dynamodb": "^3.0.0"
+  }
+}
