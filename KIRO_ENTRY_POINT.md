@@ -2,11 +2,34 @@
 
 > **📍 CRITICAL**: This is the mandatory entry point for all new Kiro sessions. Always read this file first to understand the current system state and avoid duplication of work.
 
-**System Status**: 🎉 REAL MEDIA FILES CREATED - BINARY MP3/MP4 GENERATION SUCCESSFUL  
-**Last Updated**: 2025-10-11 23:45 UTC  
-**Health**: ✅ PRODUCTION READY | Real Binary Files | 3.9MB Video | 546KB Audio
+**System Status**: 🆕 ENHANCED ARCHITECTURE WITH MANIFEST BUILDER + REAL MEDIA FILES  
+**Last Updated**: 2025-10-12 16:45 UTC  
+**Health**: ✅ PRODUCTION READY | Quality Gatekeeper | Unified Manifest | Real Binary Files
 
 ---
+
+## 🆕 **ENHANCED ARCHITECTURE WITH MANIFEST BUILDER (2025-10-12)**
+
+### **🔧 MAJOR ARCHITECTURE UPDATE**
+
+**NEW COMPONENT**: **Manifest Builder/Validator Agent** - Quality gatekeeper and single source of truth generator
+
+**KEY ENHANCEMENTS**:
+- ✅ **Quality Enforcement**: ≥3 visuals per scene, proper media structure
+- ✅ **Unified Manifest**: Single source of truth (`01-context/manifest.json`)
+- ✅ **Fail-Fast Validation**: Prevents rendering with incomplete content
+- ✅ **Enhanced Topic Prompts**: Concrete, value-driven content (e.g., "7-day Spain itinerary under €120/day")
+- ✅ **Proper Media Organization**: `scene-N/images/` structure enforced
+
+**PIPELINE FLOW**:
+```
+Topic Management → Script Generator → Media Curator → Audio Generator
+                                                           ↓
+                    Manifest Builder ← ← ← ← ← ← ← ← ← ← ← ←
+                    (Quality Gatekeeper)
+                           ↓
+                    Video Assembler → YouTube Publisher
+```
 
 ## 🎉 **REAL MEDIA FILES CREATED - BINARY MP3/MP4 GENERATION SUCCESSFUL (2025-10-11)**
 

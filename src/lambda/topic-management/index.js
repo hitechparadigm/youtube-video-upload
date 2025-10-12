@@ -77,45 +77,45 @@ const handler = async (event, context) => {
 
   // Route requests based on HTTP method and path
   switch (httpMethod) {
-    case 'GET':
-      if (event.path === '/topics/health' || event.path === '/health') {
-        return {
-          statusCode: 200,
-          headers: {
-            'Content-Type': 'application/json',
-            'Access-Control-Allow-Origin': '*'
-          },
-          body: JSON.stringify({
-            success: true,
-            result: {
-              service: 'topic-management',
-              status: 'healthy',
-              timestamp: new Date().toISOString(),
-              version: '3.0.0-refactored',
-              type: 'google-sheets-integration',
-              sharedUtilities: true
-            }
-          })
-        };
-      }
-      return pathParameters?.topicId
-        ? await getTopicById(pathParameters.topicId)
-        : await getTopics(queryStringParameters || {});
+  case 'GET':
+    if (event.path === '/topics/health' || event.path === '/health') {
+      return {
+        statusCode: 200,
+        headers: {
+          'Content-Type': 'application/json',
+          'Access-Control-Allow-Origin': '*'
+        },
+        body: JSON.stringify({
+          success: true,
+          result: {
+            service: 'topic-management',
+            status: 'healthy',
+            timestamp: new Date().toISOString(),
+            version: '3.0.0-refactored',
+            type: 'google-sheets-integration',
+            sharedUtilities: true
+          }
+        })
+      };
+    }
+    return pathParameters?.topicId
+      ? await getTopicById(pathParameters.topicId)
+      : await getTopics(queryStringParameters || {});
 
-    case 'POST':
-      // All topic creation is now enhanced by default
-      return await generateEnhancedTopicContext(requestBody, context);
+  case 'POST':
+    // All topic creation is now enhanced by default
+    return await generateEnhancedTopicContext(requestBody, context);
 
-    case 'PUT':
-      validateRequiredParams(pathParameters || {}, ['topicId'], 'topic update');
-      return await updateTopic(pathParameters.topicId, requestBody);
+  case 'PUT':
+    validateRequiredParams(pathParameters || {}, ['topicId'], 'topic update');
+    return await updateTopic(pathParameters.topicId, requestBody);
 
-    case 'DELETE':
-      validateRequiredParams(pathParameters || {}, ['topicId'], 'topic deletion');
-      return await deleteTopic(pathParameters.topicId);
+  case 'DELETE':
+    validateRequiredParams(pathParameters || {}, ['topicId'], 'topic deletion');
+    return await deleteTopic(pathParameters.topicId);
 
-    default:
-      throw new AppError('Method not allowed', ERROR_TYPES.VALIDATION, 405);
+  default:
+    throw new AppError('Method not allowed', ERROR_TYPES.VALIDATION, 405);
   }
 };
 
@@ -544,32 +544,42 @@ const storeGeneratedTopic = async (baseTopic, topicContext) => {
  */
 const generateTopicContextWithAI = async ({ baseTopic, targetAudience, contentType, videoDuration, videoStyle, recentSubtopics = [], attempt = 1 }) => {
 
-  // OPTIMIZED AI PROMPT: Fast, focused generation
-  const prompt = `Generate topic analysis for "${baseTopic}" (${targetAudience} audience, ${videoDuration}s video).
+  // ENHANCED AI PROMPT: Concrete, value-driven content generation
+  const prompt = `You are an expert travel content strategist creating a comprehensive guide for "${baseTopic}". 
 
-Return JSON with 5-7 subtopics, SEO keywords, content guidance, and video structure:
+CONTEXT: Create a detailed, actionable travel guide that provides real value to ${targetAudience}. Focus on concrete information, specific recommendations, and practical advice that viewers can immediately use.
+
+REQUIREMENTS:
+- Generate 6-8 specific subtopics with concrete value propositions
+- Include practical details like costs, timing, booking strategies, and insider tips
+- Focus on actionable content rather than generic descriptions
+- Provide scene-specific visual guidance for each subtopic
+- Create compelling hooks with specific promises (e.g., "7-day itinerary under €120/day")
+
+Return JSON with detailed subtopics, SEO keywords, content guidance, and video structure:
 {
   "mainTopic": "${baseTopic}",
   "expandedTopics": [
-    {"subtopic": "What is ${baseTopic}", "priority": "high", "trendScore": 90},
-    {"subtopic": "${baseTopic} for beginners", "priority": "high", "trendScore": 85},
-    {"subtopic": "Best ${baseTopic} tips", "priority": "high", "trendScore": 88},
-    {"subtopic": "Common ${baseTopic} mistakes", "priority": "medium", "trendScore": 80},
-    {"subtopic": "${baseTopic} tools and resources", "priority": "medium", "trendScore": 82}
+    {"subtopic": "Complete 7-day itinerary with exact routes and timing", "priority": "high", "trendScore": 95, "valueProposition": "Save 20+ hours of planning with ready-to-use daily schedules", "visualNeeds": ["route maps", "transportation hubs", "timing charts"]},
+    {"subtopic": "Transportation guide: trains, passes, and booking strategies", "priority": "high", "trendScore": 92, "valueProposition": "Save 30-50% on transport costs with insider booking tips", "visualNeeds": ["train stations", "ticket validation", "mobile apps"]},
+    {"subtopic": "Neighborhood selection and accommodation strategies", "priority": "high", "trendScore": 90, "valueProposition": "Stay in local favorites instead of tourist traps", "visualNeeds": ["neighborhood walks", "local cafes", "accommodation exteriors"]},
+    {"subtopic": "Food culture and budget dining strategies", "priority": "high", "trendScore": 88, "valueProposition": "Eat like a local for €25-40/day including restaurant meals", "visualNeeds": ["local markets", "restaurant interiors", "food close-ups"]},
+    {"subtopic": "Costs breakdown and booking stack", "priority": "medium", "trendScore": 85, "valueProposition": "Complete budget planning with exact daily costs", "visualNeeds": ["price overlays", "booking apps", "cost comparisons"]},
+    {"subtopic": "Cultural etiquette and safety tips", "priority": "medium", "trendScore": 82, "valueProposition": "Avoid common tourist mistakes and blend in with locals", "visualNeeds": ["cultural scenes", "local interactions", "safety demonstrations"]}
   ],
   "contentGuidance": {
-    "complexConcepts": ["${baseTopic} fundamentals", "Key principles", "Best practices"],
-    "quickWins": ["Quick tips", "Easy setup", "Fast results"],
-    "visualOpportunities": ["Charts", "Diagrams", "Examples", "Comparisons"],
-    "emotionalBeats": ["Success stories", "Common challenges", "Achievements"],
-    "callToActionSuggestions": ["Subscribe for tips", "Try techniques", "Share results"]
+    "concreteDetails": ["Exact costs with currency", "Specific timing and seasons", "Real neighborhood names", "Actual booking websites", "Precise travel routes"],
+    "actionableAdvice": ["Step-by-step booking process", "Money-saving strategies", "Time-saving tips", "Local insider knowledge", "Mistake prevention"],
+    "visualOpportunities": ["Interactive route maps", "Cost breakdown charts", "Booking app screenshots", "Neighborhood walkthroughs", "Transportation demos", "Food market tours"],
+    "engagementHooks": ["Specific budget promises", "Time-saving guarantees", "Insider secrets reveal", "Common mistake warnings", "Local vs tourist comparisons"],
+    "callToActionSuggestions": ["Download detailed itinerary", "Comment your travel dates for personalized tips", "Share your own travel experiences", "Subscribe for destination-specific guides"]
   },
   "seoContext": {
-    "primaryKeywords": ["${baseTopic}", "${baseTopic} guide", "${baseTopic} tips", "${baseTopic} 2025", "best ${baseTopic}", "${baseTopic} tutorial", "${baseTopic} strategy", "${baseTopic} tools"],
-    "longTailKeywords": ["best ${baseTopic} for beginners 2025", "how to use ${baseTopic} effectively", "${baseTopic} vs traditional methods", "free ${baseTopic} tools and resources", "${baseTopic} for small business owners", "advanced ${baseTopic} techniques guide", "${baseTopic} step by step tutorial", "${baseTopic} mistakes to avoid", "${baseTopic} success stories 2025", "${baseTopic} trends and predictions", "complete ${baseTopic} guide", "${baseTopic} tools comparison", "${baseTopic} best practices", "${baseTopic} for professionals", "${baseTopic} getting started guide"],
-    "trendingTerms": ["AI-powered ${baseTopic}", "${baseTopic} automation 2025", "digital ${baseTopic} transformation", "${baseTopic} productivity hacks", "${baseTopic} workflow optimization", "modern ${baseTopic} techniques", "${baseTopic} creator economy", "${baseTopic} tech trends", "${baseTopic} innovation", "${baseTopic} future trends"],
-    "semanticKeywords": ["${baseTopic} automation", "${baseTopic} workflow", "${baseTopic} productivity", "${baseTopic} solutions", "${baseTopic} techniques", "${baseTopic} methods", "${baseTopic} systems", "${baseTopic} processes"],
-    "questionKeywords": ["what is ${baseTopic}", "how to choose ${baseTopic}", "why use ${baseTopic}", "when to use ${baseTopic}", "which ${baseTopic} is best", "how does ${baseTopic} work", "what are ${baseTopic} benefits", "how to start ${baseTopic}"]
+    "primaryKeywords": ["${baseTopic.toLowerCase()}", "${baseTopic.toLowerCase()} guide", "${baseTopic.toLowerCase()} itinerary", "${baseTopic.toLowerCase()} budget", "${baseTopic.toLowerCase()} tips", "${baseTopic.toLowerCase()} 2025", "best places ${baseTopic.toLowerCase()}", "${baseTopic.toLowerCase()} travel guide"],
+    "longTailKeywords": ["${baseTopic.toLowerCase()} 7 day itinerary", "how much does ${baseTopic.toLowerCase()} cost", "${baseTopic.toLowerCase()} on a budget", "best time to visit ${baseTopic.toLowerCase()}", "${baseTopic.toLowerCase()} transportation guide", "where to stay ${baseTopic.toLowerCase()}", "${baseTopic.toLowerCase()} food guide", "${baseTopic.toLowerCase()} cultural tips", "${baseTopic.toLowerCase()} safety guide", "first time ${baseTopic.toLowerCase()}", "${baseTopic.toLowerCase()} travel mistakes", "${baseTopic.toLowerCase()} packing list", "${baseTopic.toLowerCase()} visa requirements", "${baseTopic.toLowerCase()} currency exchange", "${baseTopic.toLowerCase()} local customs"],
+    "trendingTerms": ["${baseTopic.toLowerCase()} post covid", "sustainable ${baseTopic.toLowerCase()}", "digital nomad ${baseTopic.toLowerCase()}", "${baseTopic.toLowerCase()} solo travel", "${baseTopic.toLowerCase()} family travel", "luxury ${baseTopic.toLowerCase()}", "backpacking ${baseTopic.toLowerCase()}", "${baseTopic.toLowerCase()} hidden gems", "${baseTopic.toLowerCase()} instagram spots", "${baseTopic.toLowerCase()} local experiences"],
+    "semanticKeywords": ["${baseTopic.toLowerCase()} vacation", "${baseTopic.toLowerCase()} holiday", "${baseTopic.toLowerCase()} tourism", "${baseTopic.toLowerCase()} destinations", "${baseTopic.toLowerCase()} attractions", "${baseTopic.toLowerCase()} culture", "${baseTopic.toLowerCase()} cuisine", "${baseTopic.toLowerCase()} accommodation"],
+    "questionKeywords": ["how to plan ${baseTopic.toLowerCase()}", "what to see ${baseTopic.toLowerCase()}", "where to go ${baseTopic.toLowerCase()}", "when to visit ${baseTopic.toLowerCase()}", "how long ${baseTopic.toLowerCase()}", "is ${baseTopic.toLowerCase()} safe", "what to eat ${baseTopic.toLowerCase()}", "how to get around ${baseTopic.toLowerCase()}"]
   },
   "videoStructure": {
     "recommendedScenes": ${Math.max(3, Math.min(8, Math.ceil(videoDuration / 80)))},

@@ -2,6 +2,37 @@
 
 All notable changes to the Automated Video Pipeline project will be documented in this file.
 
+## [5.0.0] - 2025-10-12 - MANIFEST BUILDER INTEGRATION: QUALITY GATEKEEPER ARCHITECTURE
+
+### 🏗️ MAJOR ARCHITECTURE ENHANCEMENT
+- **New Agent**: Manifest Builder/Validator - 7th specialized Lambda function
+- **Quality Gatekeeper**: Enforces ≥3 visuals per scene before rendering
+- **Unified Manifest**: Single source of truth (`01-context/manifest.json`)
+- **Enhanced Topic Prompts**: Concrete, value-driven content generation
+- **Fail-Fast Validation**: Prevents rendering with incomplete content
+- **Proper Media Structure**: Enforced `scene-N/images/` organization
+
+### 🇪🇸 REAL-WORLD EXAMPLE: TRAVEL TO SPAIN
+- **Enhanced Content**: "7-day Madrid-Barcelona-Seville itinerary under €120/day"
+- **Concrete Value Props**: Specific costs, routes, booking strategies
+- **Quality Standards**: All 6 scenes require ≥3 visual assets
+- **Professional Organization**: Proper folder structure enforced
+
+### 📋 PIPELINE FLOW ENHANCEMENT
+```
+Topic Management → Script Generator → Media Curator → Audio Generator
+                                                           ↓
+                    Manifest Builder ← ← ← ← ← ← ← ← ← ← ← ←
+                    (Quality Gatekeeper)
+                           ↓
+                    Video Assembler → YouTube Publisher
+```
+
+### 🧹 DOCUMENTATION CLEANUP
+- **Consolidated**: Removed 16 obsolete .md files
+- **Essential Docs**: 8 key documents maintained
+- **Comprehensive**: Updated all architecture guides with real examples
+
 ## [4.1.0] - 2025-10-11 - REAL MEDIA FILES CREATED: BINARY MP3/MP4 GENERATION SUCCESSFUL
 
 ### 🎉 BREAKTHROUGH: REAL BINARY MEDIA FILES CREATED

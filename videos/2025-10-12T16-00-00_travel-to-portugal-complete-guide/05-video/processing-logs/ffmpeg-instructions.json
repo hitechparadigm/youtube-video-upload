@@ -1,0 +1,70 @@
+{
+  "type": "video-assembly-script",
+  "videoId": "video-2025-10-11T23-02-47_travel-to-france-complete-guid-1760227073596",
+  "projectId": "2025-10-11T23-02-47_travel-to-france-complete-guid",
+  "instructions": [
+    {
+      "step": 1,
+      "action": "load_media",
+      "description": "Load all scene images from S3",
+      "s3Path": "videos/2025-10-11T23-02-47_travel-to-france-complete-guid/03-media/",
+      "expectedFiles": 9
+    },
+    {
+      "step": 2,
+      "action": "load_audio",
+      "description": "Load scene audio files from S3",
+      "s3Path": "videos/2025-10-11T23-02-47_travel-to-france-complete-guid/04-audio/",
+      "expectedFiles": 3
+    },
+    {
+      "step": 3,
+      "action": "create_timeline",
+      "description": "Create video timeline with scene transitions",
+      "scenes": [
+        {
+          "sceneNumber": 1,
+          "duration": 60,
+          "mediaFiles": [
+            "scene-1-1.jpg",
+            "scene-1-2.jpg"
+          ],
+          "audioFile": "scene-1-audio.mp3",
+          "transition": "fade-in"
+        },
+        {
+          "sceneNumber": 2,
+          "duration": 60,
+          "mediaFiles": [
+            "scene-2-1.jpg",
+            "scene-2-2.jpg"
+          ],
+          "audioFile": "scene-2-audio.mp3",
+          "transition": "crossfade"
+        },
+        {
+          "sceneNumber": 3,
+          "duration": 60,
+          "mediaFiles": [
+            "scene-3-1.jpg",
+            "scene-3-2.jpg"
+          ],
+          "audioFile": "scene-3-audio.mp3",
+          "transition": "crossfade"
+        }
+      ]
+    },
+    {
+      "step": 4,
+      "action": "render_video",
+      "description": "Render final video file",
+      "outputPath": "videos/2025-10-11T23-02-47_travel-to-france-complete-guid/05-video/video-2025-10-11T23-02-47_travel-to-france-complete-guid-1760227073596.mp4",
+      "settings": {
+        "resolution": "1920x1080",
+        "frameRate": 30,
+        "bitrate": "5000k"
+      }
+    }
+  ],
+  "createdAt": "2025-10-11T23:57:53.596Z"
+}

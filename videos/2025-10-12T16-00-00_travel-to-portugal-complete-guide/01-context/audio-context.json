@@ -1,0 +1,48 @@
+{
+  "projectId": "2025-10-11T23-02-47_travel-to-france-complete-guid",
+  "status": "completed",
+  "totalScenes": 6,
+  "audioFiles": [
+    {
+      "fileName": "scene-1-audio.mp3",
+      "s3Key": "videos/2025-10-11T23-02-47_travel-to-france-complete-guid/04-audio/scene-1-audio.mp3",
+      "size": 53490,
+      "sceneNumber": 1
+    },
+    {
+      "fileName": "scene-2-audio.mp3",
+      "s3Key": "videos/2025-10-11T23-02-47_travel-to-france-complete-guid/04-audio/scene-2-audio.mp3",
+      "size": 100667,
+      "sceneNumber": 2
+    },
+    {
+      "fileName": "scene-3-audio.mp3",
+      "s3Key": "videos/2025-10-11T23-02-47_travel-to-france-complete-guid/04-audio/scene-3-audio.mp3",
+      "size": 99414,
+      "sceneNumber": 3
+    },
+    {
+      "fileName": "scene-4-audio.mp3",
+      "s3Key": "videos/2025-10-11T23-02-47_travel-to-france-complete-guid/04-audio/scene-4-audio.mp3",
+      "size": 97846,
+      "sceneNumber": 4
+    },
+    {
+      "fileName": "scene-5-audio.mp3",
+      "s3Key": "videos/2025-10-11T23-02-47_travel-to-france-complete-guid/04-audio/scene-5-audio.mp3",
+      "size": 100354,
+      "sceneNumber": 5
+    },
+    {
+      "fileName": "scene-6-audio.mp3",
+      "s3Key": "videos/2025-10-11T23-02-47_travel-to-france-complete-guid/04-audio/scene-6-audio.mp3",
+      "size": 133895,
+      "sceneNumber": 6
+    }
+  ],
+  "metadata": {
+    "generatedAt": "2025-10-11T23:51:05.392Z",
+    "generatedBy": "manual-context-creation",
+    "actualFileStructure": true
+  }
+}

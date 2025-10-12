@@ -639,7 +639,7 @@ async function createIntelligentFallbackAsset(keyword, index, projectId, sceneNu
     professionalAppearance: selectedStrategy.quality,
     fallback: true,
     realContent: selectedStrategy.name !== 'placeholder-professional',
-    s3Key: `videos/${projectId}/03-media/scene-${sceneNumber}-${index + 1}-${fallbackKeyword.replace(/[^a-zA-Z0-9]/g, '-')}-intelligent.jpg`,
+    s3Key: `videos/${projectId}/03-media/scene-${sceneNumber}/images/${index + 1}-${fallbackKeyword.replace(/[^a-zA-Z0-9]/g, '-')}-intelligent.jpg`,
     fallbackStrategy: selectedStrategy.name,
     alternativeKeyword: fallbackKeyword,
     note: selectedStrategy.note,

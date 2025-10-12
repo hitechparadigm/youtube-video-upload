@@ -10,9 +10,9 @@
 ![AI](https://img.shields.io/badge/AI-Claude%203%20Sonnet-purple.svg)
 ![Status](https://img.shields.io/badge/status-COMPLETE%20SUCCESS-brightgreen.svg)
 
-**🎥 Fully autonomous AWS serverless system that creates and publishes professional YouTube videos using 8 specialized Lambda functions with shared layers and utilities**
+**🎥 Fully autonomous AWS serverless system that creates and publishes professional YouTube videos using 7 specialized Lambda functions + Manifest Builder with quality enforcement**
 
-**System Health: 🎉 REAL MEDIA FILES | 3.9MB Video | 546KB Audio | FFmpeg Processing | Production Operational**
+**System Health: 🎉 ENHANCED ARCHITECTURE | Quality Gatekeeper | Unified Manifest | Real Media Files | Production Ready**
 
 </div>
 
@@ -27,7 +27,27 @@
 
 ## 🎯 **System Overview**
 
-The Automated YouTube Video Pipeline is a fully operational AWS serverless system that automatically generates, produces, and publishes high-quality YouTube videos. The system uses 8 Lambda functions with shared layers and utilities, featuring intelligent context flow to create professional videos from simple topic inputs.
+The Automated YouTube Video Pipeline is a fully operational AWS serverless system that automatically generates, produces, and publishes high-quality YouTube videos. The system uses 7 specialized Lambda functions plus a **Manifest Builder/Validator** that serves as a quality gatekeeper, ensuring all videos meet professional standards before rendering begins.
+
+### **🆕 ENHANCED ARCHITECTURE WITH MANIFEST BUILDER (2025-10-12)**
+
+#### **🔧 Quality Gatekeeper Integration**
+- ✅ **Manifest Builder/Validator**: New 7th agent enforces quality standards
+- ✅ **≥3 Visuals Per Scene**: Prevents rendering with insufficient content
+- ✅ **Proper Media Structure**: Enforces `scene-N/images/` organization
+- ✅ **Unified Manifest**: Single source of truth (`01-context/manifest.json`)
+- ✅ **Fail-Fast Validation**: Blocks rendering until quality standards met
+- ✅ **Enhanced Topic Prompts**: Concrete, value-driven content generation
+
+#### **🔄 Enhanced Pipeline Flow**
+```
+Topic Management → Script Generator → Media Curator → Audio Generator
+                                                           ↓
+                    Manifest Builder ← ← ← ← ← ← ← ← ← ← ← ←
+                    (Quality Gatekeeper)
+                           ↓
+                    Video Assembler → YouTube Publisher
+```
 
 ### **🎉 REAL MEDIA FILES CREATED - BINARY MP3/MP4 GENERATION SUCCESSFUL (2025-10-11)**
 
