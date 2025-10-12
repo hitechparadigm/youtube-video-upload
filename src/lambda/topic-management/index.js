@@ -544,58 +544,175 @@ const storeGeneratedTopic = async (baseTopic, topicContext) => {
  */
 const generateTopicContextWithAI = async ({ baseTopic, targetAudience, contentType, videoDuration, videoStyle, recentSubtopics = [], attempt = 1 }) => {
 
-  // ENHANCED AI PROMPT: Concrete, value-driven content generation
-  const prompt = `You are an expert travel content strategist creating a comprehensive guide for "${baseTopic}". 
+  // UNIVERSAL ENGAGEMENT-OPTIMIZED BEDROCK PROMPT
+  const prompt = `You are Topic Management AI in a multi-agent YouTube video pipeline. Your job: create the project foundation for a single video topic that downstream agents (Script Generator, Media Curator, Audio Generator, Video Assembler, Manifest Builder, YouTube Publisher) will consume to create professional videos.
 
-CONTEXT: Create a detailed, actionable travel guide that provides real value to ${targetAudience}. Focus on concrete information, specific recommendations, and practical advice that viewers can immediately use.
+## Input Variables
+- Topic: ${baseTopic}
+- Target Audience: ${targetAudience}
+- Video Duration: ${videoDuration} seconds
+- Content Goals: educate, entertain, convert
+- Content Angle: practical guide
 
-REQUIREMENTS:
-- Generate 6-8 specific subtopics with concrete value propositions
-- Include practical details like costs, timing, booking strategies, and insider tips
-- Focus on actionable content rather than generic descriptions
-- Provide scene-specific visual guidance for each subtopic
-- Create compelling hooks with specific promises (e.g., "7-day itinerary under €120/day")
+## Requirements
+- Generate concrete, actionable content with specific details
+- Use numbers, costs, timeframes, and measurable outcomes
+- Avoid generic descriptions - focus on unique value propositions
+- Create scene-specific visual guidance for Media Curator
+- Optimize for YouTube engagement and retention
+- Output ONLY valid JSON - no additional text
 
-Return JSON with detailed subtopics, SEO keywords, content guidance, and video structure:
+## Output Schema (emit exactly one JSON object)
 {
-  "mainTopic": "${baseTopic}",
-  "expandedTopics": [
-    {"subtopic": "Complete 7-day itinerary with exact routes and timing", "priority": "high", "trendScore": 95, "valueProposition": "Save 20+ hours of planning with ready-to-use daily schedules", "visualNeeds": ["route maps", "transportation hubs", "timing charts"]},
-    {"subtopic": "Transportation guide: trains, passes, and booking strategies", "priority": "high", "trendScore": 92, "valueProposition": "Save 30-50% on transport costs with insider booking tips", "visualNeeds": ["train stations", "ticket validation", "mobile apps"]},
-    {"subtopic": "Neighborhood selection and accommodation strategies", "priority": "high", "trendScore": 90, "valueProposition": "Stay in local favorites instead of tourist traps", "visualNeeds": ["neighborhood walks", "local cafes", "accommodation exteriors"]},
-    {"subtopic": "Food culture and budget dining strategies", "priority": "high", "trendScore": 88, "valueProposition": "Eat like a local for €25-40/day including restaurant meals", "visualNeeds": ["local markets", "restaurant interiors", "food close-ups"]},
-    {"subtopic": "Costs breakdown and booking stack", "priority": "medium", "trendScore": 85, "valueProposition": "Complete budget planning with exact daily costs", "visualNeeds": ["price overlays", "booking apps", "cost comparisons"]},
-    {"subtopic": "Cultural etiquette and safety tips", "priority": "medium", "trendScore": 82, "valueProposition": "Avoid common tourist mistakes and blend in with locals", "visualNeeds": ["cultural scenes", "local interactions", "safety demonstrations"]}
+  "topic": "${baseTopic}",
+  "slug": "${baseTopic.toLowerCase().replace(/[^a-z0-9\\s]/g, '').replace(/\\s+/g, '-').slice(0, 30)}",
+  "title": "compelling YouTube title (≤70 chars)",
+  "videoGoals": [
+    "specific, measurable goal 1",
+    "specific, measurable goal 2",
+    "specific, measurable goal 3"
   ],
-  "contentGuidance": {
-    "concreteDetails": ["Exact costs with currency", "Specific timing and seasons", "Real neighborhood names", "Actual booking websites", "Precise travel routes"],
-    "actionableAdvice": ["Step-by-step booking process", "Money-saving strategies", "Time-saving tips", "Local insider knowledge", "Mistake prevention"],
-    "visualOpportunities": ["Interactive route maps", "Cost breakdown charts", "Booking app screenshots", "Neighborhood walkthroughs", "Transportation demos", "Food market tours"],
-    "engagementHooks": ["Specific budget promises", "Time-saving guarantees", "Insider secrets reveal", "Common mistake warnings", "Local vs tourist comparisons"],
-    "callToActionSuggestions": ["Download detailed itinerary", "Comment your travel dates for personalized tips", "Share your own travel experiences", "Subscribe for destination-specific guides"]
+  "targetViewer": {
+    "persona": "${targetAudience}",
+    "painPoints": [
+      "specific problem 1",
+      "specific problem 2", 
+      "specific problem 3"
+    ],
+    "level": "beginner"
+  },
+  "positioning": {
+    "uniquePromise": "what this video delivers that others don't (quantify)",
+    "hookVariants": [
+      "Hook option 1 (first 15 seconds)",
+      "Hook option 2 (first 15 seconds)",
+      "Hook option 3 (first 15 seconds)"
+    ]
+  },
+  "contentPlan": {
+    "durationMin": ${Math.round(videoDuration / 60)},
+    "outline": [
+      {
+        "id": 1,
+        "label": "Hook",
+        "keyPoints": ["specific promise", "concrete number/outcome"],
+        "timeHintSec": 15,
+        "visualNeeds": ["specific visual requirement 1", "specific visual requirement 2"]
+      },
+      {
+        "id": 2, 
+        "label": "Problem/Context",
+        "keyPoints": ["specific problem", "why it matters now"],
+        "timeHintSec": 30,
+        "visualNeeds": ["problem illustration", "context visual"]
+      },
+      {
+        "id": 3,
+        "label": "Solution 1",
+        "keyPoints": ["concrete step", "specific example"],
+        "timeHintSec": 60,
+        "visualNeeds": ["step demonstration", "before/after comparison"]
+      },
+      {
+        "id": 4,
+        "label": "Solution 2", 
+        "keyPoints": ["concrete step", "specific example"],
+        "timeHintSec": 60,
+        "visualNeeds": ["step demonstration", "real example"]
+      },
+      {
+        "id": 5,
+        "label": "Solution 3",
+        "keyPoints": ["concrete step", "specific example"], 
+        "timeHintSec": 60,
+        "visualNeeds": ["step demonstration", "case study"]
+      },
+      {
+        "id": 6,
+        "label": "Common Mistakes",
+        "keyPoints": ["mistake 1", "mistake 2", "mistake 3"],
+        "timeHintSec": 45,
+        "visualNeeds": ["mistake examples", "warning graphics"]
+      },
+      {
+        "id": 7,
+        "label": "Results/Proof",
+        "keyPoints": ["specific outcome", "measurable result"],
+        "timeHintSec": 30,
+        "visualNeeds": ["results chart", "success story"]
+      },
+      {
+        "id": 8,
+        "label": "Call to Action",
+        "keyPoints": ["next step", "resource offer"],
+        "timeHintSec": 20,
+        "visualNeeds": ["CTA graphic", "resource preview"]
+      }
+    ],
+    "patternInterrupts": [
+      {"atSec": 20, "type": "question", "text": "But here's what most people get wrong..."},
+      {"atSec": 90, "type": "stat", "text": "Studies show 73% of people make this mistake"},
+      {"atSec": 180, "type": "preview", "text": "Coming up: the #1 mistake that costs thousands"}
+    ]
   },
   "seoContext": {
-    "primaryKeywords": ["${baseTopic.toLowerCase()}", "${baseTopic.toLowerCase()} guide", "${baseTopic.toLowerCase()} itinerary", "${baseTopic.toLowerCase()} budget", "${baseTopic.toLowerCase()} tips", "${baseTopic.toLowerCase()} 2025", "best places ${baseTopic.toLowerCase()}", "${baseTopic.toLowerCase()} travel guide"],
-    "longTailKeywords": ["${baseTopic.toLowerCase()} 7 day itinerary", "how much does ${baseTopic.toLowerCase()} cost", "${baseTopic.toLowerCase()} on a budget", "best time to visit ${baseTopic.toLowerCase()}", "${baseTopic.toLowerCase()} transportation guide", "where to stay ${baseTopic.toLowerCase()}", "${baseTopic.toLowerCase()} food guide", "${baseTopic.toLowerCase()} cultural tips", "${baseTopic.toLowerCase()} safety guide", "first time ${baseTopic.toLowerCase()}", "${baseTopic.toLowerCase()} travel mistakes", "${baseTopic.toLowerCase()} packing list", "${baseTopic.toLowerCase()} visa requirements", "${baseTopic.toLowerCase()} currency exchange", "${baseTopic.toLowerCase()} local customs"],
-    "trendingTerms": ["${baseTopic.toLowerCase()} post covid", "sustainable ${baseTopic.toLowerCase()}", "digital nomad ${baseTopic.toLowerCase()}", "${baseTopic.toLowerCase()} solo travel", "${baseTopic.toLowerCase()} family travel", "luxury ${baseTopic.toLowerCase()}", "backpacking ${baseTopic.toLowerCase()}", "${baseTopic.toLowerCase()} hidden gems", "${baseTopic.toLowerCase()} instagram spots", "${baseTopic.toLowerCase()} local experiences"],
-    "semanticKeywords": ["${baseTopic.toLowerCase()} vacation", "${baseTopic.toLowerCase()} holiday", "${baseTopic.toLowerCase()} tourism", "${baseTopic.toLowerCase()} destinations", "${baseTopic.toLowerCase()} attractions", "${baseTopic.toLowerCase()} culture", "${baseTopic.toLowerCase()} cuisine", "${baseTopic.toLowerCase()} accommodation"],
-    "questionKeywords": ["how to plan ${baseTopic.toLowerCase()}", "what to see ${baseTopic.toLowerCase()}", "where to go ${baseTopic.toLowerCase()}", "when to visit ${baseTopic.toLowerCase()}", "how long ${baseTopic.toLowerCase()}", "is ${baseTopic.toLowerCase()} safe", "what to eat ${baseTopic.toLowerCase()}", "how to get around ${baseTopic.toLowerCase()}"]
+    "primaryKeywords": [
+      "${baseTopic.toLowerCase()}",
+      "${baseTopic.toLowerCase()} guide", 
+      "${baseTopic.toLowerCase()} tips"
+    ],
+    "longTailKeywords": [
+      "how to ${baseTopic.toLowerCase()}",
+      "best ${baseTopic.toLowerCase()} methods",
+      "${baseTopic.toLowerCase()} for beginners"
+    ],
+    "titleVariants": [
+      "Title option A (different from main title)",
+      "Title option B (different from main title)"
+    ],
+    "description": "2-3 sentence description with keywords and clear value proposition"
   },
-  "videoStructure": {
-    "recommendedScenes": ${Math.max(3, Math.min(8, Math.ceil(videoDuration / 80)))},
-    "hookDuration": 15,
-    "mainContentDuration": ${Math.floor(videoDuration * 0.75)},
-    "conclusionDuration": ${videoDuration - 15 - Math.floor(videoDuration * 0.75)},
-    "totalDuration": ${videoDuration},
-    "contentComplexity": "moderate",
-    "attentionSpanConsiderations": "Use engagement hooks every 45-60 seconds for ${targetAudience} audience",
-    "pacingRecommendations": "Mix quick actionable tips with detailed explanations"
+  "mediaBrief": {
+    "style": "professional",
+    "mustHaveVisuals": [
+      {"sceneId": 1, "visual": "specific visual for hook", "searchTerms": ["term1", "term2"]},
+      {"sceneId": 3, "visual": "specific visual for solution 1", "searchTerms": ["term1", "term2"]},
+      {"sceneId": 6, "visual": "specific visual for mistakes", "searchTerms": ["term1", "term2"]}
+    ],
+    "stockSearchQueries": [
+      "${baseTopic.toLowerCase()} demonstration",
+      "${baseTopic.toLowerCase()} examples",
+      "${baseTopic.toLowerCase()} results"
+    ]
   },
-  "metadata": {
-    "generatedAt": "${new Date().toISOString()}",
-    "model": "claude-3-sonnet-validation-compliant",
-    "confidence": 0.92,
-    "validationVersion": "1.0.0"
+  "audioBrief": {
+    "tone": "conversational",
+    "paceWPM": 145,
+    "emphasis": [
+      {"text": "key phrase to emphasize", "sceneId": 3},
+      {"text": "important number", "sceneId": 7}
+    ]
+  },
+  "qualityStandards": {
+    "minVisualsPerScene": 3,
+    "requiredScenes": 6,
+    "engagementHooks": ["hook at 0s", "hook at 90s", "hook at 180s"],
+    "retentionTargets": {
+      "30sec": 80,
+      "50percent": 60,
+      "completion": 40
+    }
+  },
+  "handoff": {
+    "nextAgent": "Script Generator",
+    "contextFiles": [
+      "01-context/topic-context.json"
+    ],
+    "validationRules": [
+      "All scenes must have visualNeeds specified",
+      "Total duration must equal sum of timeHintSec ±10%",
+      "At least 3 pattern interrupts required"
+    ]
   }
 }`;
 

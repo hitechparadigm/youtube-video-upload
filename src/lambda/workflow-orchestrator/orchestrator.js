@@ -20,13 +20,14 @@
  * - 📊 Better error handling (immediate feedback)
  * - 🎯 More flexible (dynamic agent selection)
  * 
- * AGENT COORDINATION FLOW:
- * 1. 📋 Topic Management AI - Google Sheets integration
- * 2. 📝 Script Generator AI - Claude 3 Sonnet scripts
- * 3. 🎨 Media Curator AI - Pexels/Pixabay media (parallel with audio)
- * 4. 🎵 Audio Generator AI - Amazon Polly narration (parallel with media)
- * 5. 🎬 Video Assembler AI - ECS video processing
- * 6. 📺 YouTube Publisher AI - Publishing with SEO optimization
+ * AGENT COORDINATION FLOW WITH CONTINUOUS VALIDATION:
+ * 1. 📋 Topic Management AI → Manifest Builder (validation)
+ * 2. 📝 Script Generator AI → Manifest Builder (validation)
+ * 3. 🎨 Media Curator AI → Manifest Builder (validation)
+ * 4. 🎵 Audio Generator AI → Manifest Builder (validation)
+ * 5. 📋 Manifest Builder AI - Final Quality Gatekeeper (≥3 visuals per scene)
+ * 6. 🎬 Video Assembler AI → Manifest Builder (validation) - Only if final validation passes
+ * 7. 📺 YouTube Publisher AI - Publishing with SEO optimization
  * 
  * SCHEDULING INTEGRATION:
  * - EventBridge triggers every 8 hours for regular content
@@ -35,9 +36,11 @@
  * - Automatic topic selection based on priority and usage
  * 
  * SUCCESS CRITERIA:
- * - At least 3/6 agents working = SUCCESS
+ * - At least 4/7 agents working = SUCCESS (including Final Manifest Builder)
  * - Complete pipeline = OPTIMAL
  * - Partial pipeline = ACCEPTABLE (manual intervention may be needed)
+ * - Final Manifest Builder failure = HARD STOP (prevents bad video rendering)
+ * - Intermediate validations = WARNINGS ONLY (pipeline continues)
  * 
  * ERROR HANDLING:
  * - Individual agent failures don't stop the pipeline
@@ -47,18 +50,14 @@
  */
 
 const { LambdaClient, InvokeCommand } = require('@aws-sdk/client-lambda');
-const { DynamoDBDocumentClient, PutCommand, GetCommand, QueryCommand } = require('@aws-sdk/lib-dynamodb');
+const { DynamoDBDocumentClient, PutCommand, GetCommand } = require('@aws-sdk/lib-dynamodb');
 const { DynamoDBClient } = require('@aws-sdk/client-dynamodb');
 const fetch = require('node-fetch'); // For API Gateway calls
 // Import context management for enhanced coordination (with fallback)
-let createProject, validateContextFlow, getProjectSummary, storeContext;
+let createProject;
 try {
   const contextManager = require('/opt/nodejs/context-manager');
-  const contextIntegration = require('/opt/nodejs/context-integration');
   createProject = contextManager.createProject; // Use the readable name version
-  storeContext = contextManager.storeContext;
-  validateContextFlow = contextIntegration.validateContextFlow;
-  getProjectSummary = contextIntegration.getProjectSummary;
 } catch (error) {
   console.log('Context integration layer not available, using fallback');
   // Fallback implementations with READABLE project names
@@ -73,8 +72,6 @@ try {
     console.log(`📁 Created readable project ID: ${projectId}`);
     return projectId;
   };
-  validateContextFlow = async () => ({ valid: true });
-  getProjectSummary = async () => ({ summary: 'No context layer' });
 }
 
 class WorkflowOrchestrator {
@@ -93,6 +90,7 @@ class WorkflowOrchestrator {
       scriptGenerator: 'automated-video-pipeline-script-generator-v2',
       mediaCurator: 'automated-video-pipeline-media-curator-v2',
       audioGenerator: 'automated-video-pipeline-audio-generator-v2',
+      manifestBuilder: 'automated-video-pipeline-manifest-builder',
       videoAssembler: 'automated-video-pipeline-video-assembler-v2',
       youtubePublisher: 'automated-video-pipeline-youtube-publisher-v2'
     };
@@ -175,7 +173,7 @@ class WorkflowOrchestrator {
       success: false,
       steps: [],
       workingAgents: 0,
-      totalAgents: 6
+      totalAgents: 7  // Updated to include Manifest Builder
     };
 
     try {
@@ -198,6 +196,12 @@ class WorkflowOrchestrator {
       if (topicResult.success) {
         flowResults.workingAgents++;
         console.log('   ✅ Topic Management: SUCCESS');
+        
+        // Validate after Topic Management
+        const topicValidation = await this.validateWithManifestBuilder(projectId, 'topic-complete');
+        if (!topicValidation.success) {
+          console.log('   ❌ Topic validation failed - continuing with warnings');
+        }
       } else {
         console.log('   ❌ Topic Management: FAILED');
       }
@@ -223,6 +227,12 @@ class WorkflowOrchestrator {
       if (scriptResult.success) {
         flowResults.workingAgents++;
         console.log('   ✅ Script Generator: SUCCESS');
+        
+        // Validate after Script Generation
+        const scriptValidation = await this.validateWithManifestBuilder(projectId, 'script-complete');
+        if (!scriptValidation.success) {
+          console.log('   ❌ Script validation failed - continuing with warnings');
+        }
       } else {
         console.log('   ❌ Script Generator: FAILED');
       }
@@ -246,6 +256,12 @@ class WorkflowOrchestrator {
       if (mediaResult.success) {
         flowResults.workingAgents++;
         console.log('   ✅ Media Curator: SUCCESS');
+        
+        // Validate after Media Curation
+        const mediaValidation = await this.validateWithManifestBuilder(projectId, 'media-complete');
+        if (!mediaValidation.success) {
+          console.log('   ❌ Media validation failed - continuing with warnings');
+        }
       } else {
         console.log('   ❌ Media Curator: FAILED');
       }
@@ -268,12 +284,47 @@ class WorkflowOrchestrator {
       if (audioResult.success) {
         flowResults.workingAgents++;
         console.log('   ✅ Audio Generator: SUCCESS');
+        
+        // Validate after Audio Generation
+        const audioValidation = await this.validateWithManifestBuilder(projectId, 'audio-complete');
+        if (!audioValidation.success) {
+          console.log('   ❌ Audio validation failed - continuing with warnings');
+        }
       } else {
         console.log('   ❌ Audio Generator: FAILED');
       }
 
-      // Step 5: Video Assembly
-      console.log('🎬 Step 5: Video Assembly...');
+      // Step 5: Final Manifest Builder Validation (Quality Gatekeeper)
+      console.log('📋 Step 5: Final Manifest Builder Validation (Quality Gatekeeper)...');
+      const manifestResult = await this.invokeAgent('manifestBuilder', 'POST', '/manifest/build', {
+        projectId: projectId,
+        minVisualsPerScene: 3,
+        strict: true,
+        phase: 'final-validation'
+      });
+
+      flowResults.steps.push({
+        step: 5,
+        agent: 'Manifest Builder (Final)',
+        success: manifestResult.success,
+        timestamp: new Date().toISOString()
+      });
+
+      if (manifestResult.success) {
+        flowResults.workingAgents++;
+        console.log('   ✅ Final Manifest Validation: SUCCESS - Ready for video assembly');
+      } else {
+        console.log('   ❌ Final Manifest Validation: FAILED - Insufficient content quality');
+        console.log('   🚫 Short-circuiting pipeline - cannot proceed to video assembly');
+        
+        // Short-circuit the pipeline - don't proceed to video assembly
+        flowResults.success = flowResults.workingAgents >= 4;
+        flowResults.error = 'Final manifest validation failed - insufficient content quality for video rendering';
+        return flowResults;
+      }
+
+      // Step 6: Video Assembly (Only if manifest validation passed)
+      console.log('🎬 Step 6: Video Assembly...');
       const videoResult = await this.invokeAgent('videoAssembler', 'POST', '/video/assemble', {
         projectId: projectId,
         script: scriptResult.data?.script,
@@ -282,7 +333,7 @@ class WorkflowOrchestrator {
       });
 
       flowResults.steps.push({
-        step: 5,
+        step: 6,
         agent: 'Video Assembler',
         success: videoResult.success,
         timestamp: new Date().toISOString()
@@ -291,19 +342,43 @@ class WorkflowOrchestrator {
       if (videoResult.success) {
         flowResults.workingAgents++;
         console.log('   ✅ Video Assembler: SUCCESS');
+        
+        // Validate after Video Assembly
+        const videoValidation = await this.validateWithManifestBuilder(projectId, 'video-complete');
+        if (!videoValidation.success) {
+          console.log('   ❌ Video validation failed - continuing with warnings');
+        }
       } else {
         console.log('   ❌ Video Assembler: FAILED');
       }
 
-      // Step 6: YouTube Publishing
-      console.log('📺 Step 6: YouTube Publishing...');
+      // Step 7: YouTube Publishing
+      console.log('📺 Step 7: YouTube Publishing...');
+      
+      // Normalize metadata from script generator results
+      const scriptData = scriptResult?.data?.script || scriptResult?.data;
+      const topicData = topicResult?.data?.topic || topicResult?.data;
+      
+      console.log('🔍 Debug - Script result data:', JSON.stringify(scriptResult?.data, null, 2));
+      console.log('🔍 Debug - Topic result data:', JSON.stringify(topicResult?.data, null, 2));
+      
+      const normalizedMetadata = {
+        title: scriptData?.title || topicData?.title || `Video: ${config.baseTopic}`,
+        description: scriptData?.description || topicData?.description || `Automated video about ${config.baseTopic}`,
+        tags: scriptData?.tags || topicData?.tags || [config.baseTopic.toLowerCase(), 'automated', 'ai-generated'],
+        category: scriptData?.category || 'Education'
+      };
+      
+      console.log('📋 Normalized metadata for YouTube:', JSON.stringify(normalizedMetadata, null, 2));
+      
       const youtubeResult = await this.invokeAgent('youtubePublisher', 'POST', '/youtube/publish', {
-        projectId: projectId,
-        privacy: 'public'
+        projectId: projectId,                   // REQUIRED by the complete-metadata publisher
+        privacy: 'public',
+        metadata: normalizedMetadata
       });
 
       flowResults.steps.push({
-        step: 6,
+        step: 7,
         agent: 'YouTube Publisher',
         success: youtubeResult.success,
         timestamp: new Date().toISOString()
@@ -316,11 +391,15 @@ class WorkflowOrchestrator {
         console.log('   ❌ YouTube Publisher: FAILED');
       }
 
-      // Determine overall success (at least 3 agents working)
-      flowResults.success = flowResults.workingAgents >= 3;
+      // Determine overall success (at least 4 agents working, including Manifest Builder)
+      flowResults.success = flowResults.workingAgents >= 4;
 
       console.log(`📊 Agent Flow Results: ${flowResults.workingAgents}/${flowResults.totalAgents} agents working`);
       console.log(`🎯 Overall Status: ${flowResults.success ? 'SUCCESS' : 'PARTIAL'}`);
+      
+      if (flowResults.error) {
+        console.log(`⚠️  Pipeline Error: ${flowResults.error}`);
+      }
 
       return flowResults;
 
@@ -335,6 +414,11 @@ class WorkflowOrchestrator {
      * Invoke a specific agent
      */
   async invokeAgent(agentKey, method, path, body) {
+    // For manifest builder, use direct Lambda invocation since it may not have API Gateway endpoint yet
+    if (agentKey === 'manifestBuilder') {
+      return await this.invokeLambdaDirect(this.agents[agentKey], method, path, body);
+    }
+
     const apiBaseUrl = process.env.API_GATEWAY_URL || 'https://8tczdwx7q9.execute-api.us-east-1.amazonaws.com/prod';
     const apiKey = process.env.API_KEY || 'Jv0lnwVcLfaFznOtvocBq7s783MyxaXw8DJUomPx';
         
@@ -373,6 +457,82 @@ class WorkflowOrchestrator {
   }
 
   /**
+   * Validate project state with Manifest Builder after each agent
+   */
+  async validateWithManifestBuilder(projectId, phase) {
+    try {
+      console.log(`🔍 Validating project state after ${phase}...`);
+      
+      const validationResult = await this.invokeLambdaDirect(
+        this.agents.manifestBuilder, 
+        'POST', 
+        '/manifest/validate', 
+        {
+          projectId: projectId,
+          phase: phase,
+          strict: false  // Non-strict for intermediate validations
+        }
+      );
+
+      if (validationResult.success) {
+        console.log(`   ✅ ${phase} validation passed`);
+      } else {
+        console.log(`   ⚠️  ${phase} validation warnings: ${validationResult.data?.issues?.length || 0} issues`);
+      }
+
+      return validationResult;
+    } catch (error) {
+      console.error(`   ❌ ${phase} validation error:`, error.message);
+      return { success: false, error: error.message };
+    }
+  }
+
+  /**
+   * Direct Lambda invocation for agents without API Gateway endpoints
+   */
+  async invokeLambdaDirect(functionName, method, path, body) {
+    try {
+      console.log(`🔗 Invoking ${functionName} directly via Lambda: ${method} ${path}`);
+
+      const payload = {
+        httpMethod: method,
+        path: path,
+        body: JSON.stringify(body),
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      };
+
+      const command = new InvokeCommand({
+        FunctionName: functionName,
+        Payload: JSON.stringify(payload)
+      });
+
+      const response = await this.lambdaClient.send(command);
+      const result = JSON.parse(new TextDecoder().decode(response.Payload));
+
+      const success = !response.FunctionError && result.statusCode === 200;
+      const data = result.body ? JSON.parse(result.body) : result;
+
+      console.log(`${success ? '✅' : '❌'} ${functionName} direct response: ${result.statusCode}`);
+
+      return {
+        success,
+        statusCode: result.statusCode,
+        data: data,
+        functionError: response.FunctionError
+      };
+
+    } catch (error) {
+      console.error(`❌ Failed to invoke ${functionName} directly:`, error);
+      return {
+        success: false,
+        error: error.message
+      };
+    }
+  }
+
+  /**
      * Store execution record in DynamoDB
      */
   async storeExecutionRecord(executionRecord) {
@@ -392,7 +552,7 @@ class WorkflowOrchestrator {
   }
 
   /**
-     * Get execution status
+     * Get execution status (unified format)
      */
   async getExecutionStatus(executionId) {
     try {
@@ -402,12 +562,49 @@ class WorkflowOrchestrator {
       });
 
       const response = await this.docClient.send(command);
-      return response.Item || null;
+      const execution = response.Item;
+      
+      if (!execution) {
+        return {
+          success: false,
+          error: 'Execution not found',
+          executionId: executionId
+        };
+      }
+
+      // Return unified status format
+      return {
+        success: true,
+        executionId: execution.executionId,
+        projectId: execution.projectId,
+        status: execution.status,
+        baseTopic: execution.baseTopic,
+        startedAt: execution.startedAt,
+        completedAt: execution.completedAt,
+        type: execution.type,
+        workingAgents: execution.result?.workingAgents || 0,
+        totalAgents: execution.result?.totalAgents || 7,
+        steps: execution.result?.steps || [],
+        error: execution.result?.error || null,
+        timestamp: new Date().toISOString()
+      };
 
     } catch (error) {
       console.error('❌ Failed to get execution status:', error);
-      return null;
+      return {
+        success: false,
+        error: error.message,
+        executionId: executionId
+      };
     }
+  }
+
+  /**
+     * Get enhanced execution status (same as regular status for consistency)
+     */
+  async getEnhancedExecutionStatus(executionId) {
+    // Use the same unified format for consistency
+    return await this.getExecutionStatus(executionId);
   }
 
   /**

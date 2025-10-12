@@ -40,31 +40,55 @@ const handler = async (event) => {
     try {
       console.log(`📝 Starting complete metadata creation for project: ${projectId}`);
       
+      // Check for existing YouTube metadata to prevent duplicate processing
+      const existingCheck = await checkExistingYouTubeMetadata(projectId);
+      if (existingCheck.exists) {
+        console.log('🔄 Idempotency: YouTube metadata already exists');
+        return {
+          statusCode: 200,
+          headers: {
+            'Content-Type': 'application/json',
+            'Access-Control-Allow-Origin': '*'
+          },
+          body: JSON.stringify({
+            success: true,
+            videoId: existingCheck.videoId,
+            youtubeUrl: existingCheck.youtubeUrl,
+            projectId: projectId,
+            mode: 'idempotent-return',
+            message: 'YouTube metadata already exists',
+            skippedProcessing: true,
+            existingMetadata: existingCheck.metadata,
+            timestamp: new Date().toISOString()
+          })
+        };
+      }
+      
       // Step 1: Analyze project content for comprehensive metadata
       const projectAnalysis = await analyzeCompleteProject(projectId);
-      console.log(`📊 Project analysis complete:`);
+      console.log('📊 Project analysis complete:');
       console.log(`   Total files: ${projectAnalysis.totalFiles}`);
       console.log(`   Content types: ${Object.keys(projectAnalysis.contentByType).join(', ')}`);
       
       // Step 2: Create YouTube metadata
       console.log('🎬 Creating YouTube metadata...');
       const youtubeMetadata = await createYouTubeMetadata(projectId, projectAnalysis, metadata, videoId, youtubeUrl, privacy);
-      console.log(`✅ YouTube metadata created`);
+      console.log('✅ YouTube metadata created');
       
       // Step 3: Create project summary
       console.log('📋 Creating project summary...');
       const projectSummary = await createProjectSummary(projectId, projectAnalysis, youtubeUrl);
-      console.log(`✅ Project summary created`);
+      console.log('✅ Project summary created');
       
       // Step 4: Create cost tracking
       console.log('💰 Creating cost tracking...');
       const costTracking = await createCostTracking(projectId, projectAnalysis);
-      console.log(`✅ Cost tracking created`);
+      console.log('✅ Cost tracking created');
       
       // Step 5: Create analytics
       console.log('📈 Creating analytics...');
       const analytics = await createAnalytics(projectId, projectAnalysis);
-      console.log(`✅ Analytics created`);
+      console.log('✅ Analytics created');
       
       // Step 6: Upload all metadata files to 06-metadata/ folder
       console.log('📁 Uploading all metadata files to 06-metadata/ folder...');
@@ -130,6 +154,50 @@ const handler = async (event) => {
     })
   };
 };
+
+/**
+ * Check for existing YouTube metadata to prevent duplicate processing
+ */
+async function checkExistingYouTubeMetadata(projectId) {
+  console.log(`🔍 Checking for existing YouTube metadata for project: ${projectId}`);
+  
+  try {
+    const { getS3Object } = require('/opt/nodejs/aws-service-manager');
+    
+    const youtubeMetadataKey = `videos/${projectId}/06-metadata/youtube-metadata.json`;
+    
+    try {
+      const existingMetadata = await getS3Object(
+        process.env.S3_BUCKET_NAME || process.env.S3_BUCKET,
+        youtubeMetadataKey
+      );
+      
+      const metadata = JSON.parse(existingMetadata);
+      
+      console.log('   ✅ Found existing YouTube metadata');
+      console.log(`   📺 Video ID: ${metadata.videoId}`);
+      console.log(`   🔗 YouTube URL: ${metadata.youtubeUrl}`);
+      
+      return {
+        exists: true,
+        videoId: metadata.videoId,
+        youtubeUrl: metadata.youtubeUrl,
+        metadata: metadata,
+        message: 'YouTube metadata already exists - skipping duplicate processing'
+      };
+      
+    } catch (error) {
+      if (error.name === 'NoSuchKey' || error.message.includes('NoSuchKey')) {
+        console.log('   📝 No existing YouTube metadata found - proceeding with processing');
+        return { exists: false, reason: 'No previous YouTube processing found' };
+      }
+      throw error;
+    }
+  } catch (error) {
+    console.error('   ❌ Error checking existing YouTube metadata:', error.message);
+    return { exists: false, reason: 'Error checking existing metadata', error: error.message };
+  }
+}
 
 /**
  * Analyze complete project to gather comprehensive data for metadata
@@ -475,12 +543,12 @@ async function uploadAllMetadataFiles(projectId, metadataObjects) {
 
 // Helper functions for calculations
 function generateVideoDescription(projectId, projectAnalysis) {
-  return `AI-generated video content created through automated pipeline.\n\n` +
-    `This video was automatically created using advanced AI agents including:\n` +
-    `• Script generation and content planning\n` +
-    `• Professional image curation\n` +
-    `• Audio narration synthesis\n` +
-    `• Video assembly and optimization\n\n` +
+  return 'AI-generated video content created through automated pipeline.\n\n' +
+    'This video was automatically created using advanced AI agents including:\n' +
+    '• Script generation and content planning\n' +
+    '• Professional image curation\n' +
+    '• Audio narration synthesis\n' +
+    '• Video assembly and optimization\n\n' +
     `Project: ${projectId}\n` +
     `Total assets: ${projectAnalysis.totalFiles} files\n` +
     `Created: ${new Date().toLocaleDateString()}`;

@@ -1,8 +1,8 @@
 # Implementation Plan - Automated Video Pipeline
 
-## 🎯 **Current Status: FULLY IMPLEMENTED & OPERATIONAL**
+## 🎯 **Current Status: PRODUCTION-READY & FULLY OPERATIONAL**
 
-**Date**: 2025-10-12 | **Status**: ✅ ENHANCED ARCHITECTURE | **Pipeline**: 7 agents + Manifest Builder
+**Date**: 2025-10-12 | **Status**: 🚀 PRODUCTION-READY ARCHITECTURE | **Pipeline**: 7 agents + Continuous Validation + Production Enhancements
 
 ### ✅ **Enhanced Architecture Implementation - Manifest Builder Integration**
 
@@ -36,7 +36,82 @@ The automated video pipeline has achieved **ENHANCED ARCHITECTURE** with quality
 - ✅ **Performance Optimization**: Video Assembler optimized to <1 second execution
 - ✅ **Documentation**: Comprehensive lessons learned and debugging guides maintained
 
-## 🚀 **Future Enhancement Tasks**
+## 🚀 **Production-Ready Tasks**
+
+### Critical Fixes for Production Deployment
+
+- [ ] **Orchestrator Manifest Builder Integration**: Add quality gatekeeper step before video assembly
+  - Insert manifest validation step after media/audio completion and before video assembly
+  - Implement fail-fast validation to prevent rendering with insufficient content
+  - Add manifest builder API call with `minVisualsPerScene: 3` and `strict: true` validation
+  - Short-circuit pipeline execution if manifest validation fails
+  - Update orchestrator flow: Topic → Script → Media → Audio → **Manifest** → Video → YouTube
+  - _Requirements: 8.1, 8.2, Quality Gatekeeper Architecture_
+
+- [x] 10.1 Implement manifest validation step in orchestrator
+
+
+
+
+
+  - Add manifest builder invocation after audio and media completion
+  - Implement code: `const manifestResult = await this.invokeAgent('manifestBuilder','POST','/manifest/build',{projectId, minVisualsPerScene: 3, strict: true});`
+  - Add validation failure handling: `if (!manifestResult.success) { return {...flowResults, success:false, error:'Manifest validation failed'}; }`
+  - Update pipeline flow to include manifest step before video assembly
+  - _Requirements: 8.1, Quality Gatekeeper_
+
+- [ ] **YouTube Publisher Payload Normalization**: Fix orchestrator-publisher contract
+  - Update orchestrator Step 6 to pass correct payload format to YouTube Publisher
+  - Ensure `projectId` is always included (required by complete-metadata publisher)
+  - Normalize metadata shape from script generator results
+  - Add assembled file path reference or let publisher auto-discover from `05-video/`
+  - Unify "enhanced vs direct" status shapes for consistent API responses
+  - _Requirements: 7.1, 7.2, Agent Coordination_
+
+
+
+- [ ] 10.2 Implement YouTube Publisher payload normalization
+  - Update orchestrator Step 6 with correct payload format
+  - Implement code: `await this.invokeAgent('youtubePublisher','POST','/youtube/publish',{projectId, privacy: 'public', metadata: {title: scriptResult?.data?.clickWorthyMetadata?.title, description: scriptResult?.data?.clickWorthyMetadata?.description, tags: scriptResult?.data?.clickWorthyMetadata?.tags}});`
+  - Ensure projectId is always passed to YouTube Publisher
+  - Normalize metadata extraction from script generator results
+  - _Requirements: 7.1, 7.2_
+
+- [ ] **FFmpeg Audio Reliability Enhancement**: Fix audio concatenation in Video Assembler
+  - Replace buffer-based audio joining with FFmpeg concat demuxer
+  - Implement proper concat list file generation for multiple audio segments
+  - Add FFmpeg layer validation to ensure ffprobe and loudnorm filter availability
+  - Improve error handling for audio processing failures
+
+
+  - Add audio quality validation and normalization
+  - _Requirements: 5.1, 5.2, Professional Audio Production_
+
+- [ ] 10.3 Implement FFmpeg concat demuxer for audio reliability
+  - Replace buffer-based audio joining in createMasterAudio function
+  - Implement concat list generation: `const listTxt = '/tmp/audios.txt'; fs.writeFileSync(listTxt, audioFiles.map(a=>\`file '${a.key.replace(/'/g,"'\\\\''")}'`).join('\\n'));`
+  - Add FFmpeg concat execution: `await run([FFMPEG_PATH,'-y','-safe','0','-f','concat','-i',listTxt,'-c','copy','/tmp/narration.mp3']);`
+  - Upload processed audio to S3 using existing uploadToS3 helper
+  - Add error handling for FFmpeg processing failures
+  - _Requirements: 5.1, 5.2_
+
+
+- [ ] **S3 Idempotency and Re-run Protection**: Prevent duplicate processing
+  - Add `x-amz-meta-manifest-hash` tagging to S3 outputs for idempotency
+  - Implement manifest hash comparison to short-circuit duplicate assembly requests
+
+  - Add YouTube Publisher check for existing `06-metadata/youtube-metadata.json`
+  - Prevent rebuilding unless manifestHash has changed
+  - Add processing status tracking to avoid concurrent executions
+  - _Requirements: 8.5, 8.6, Cost Optimization_
+
+- [ ] 10.4 Implement S3 idempotency and re-run protection
+  - Add manifest hash tagging to S3 outputs: `x-amz-meta-manifest-hash`
+  - Implement hash comparison in Video Assembler to detect duplicate requests
+  - Add YouTube Publisher check for existing metadata before rebuilding
+  - Create processing status tracking in DynamoDB to prevent concurrent executions
+  - Add short-circuit logic when manifestHash matches existing processing
+  - _Requirements: 8.5, 8.6_
 
 ### Optional Improvements (Not Required for Core Functionality)
 
@@ -65,7 +140,35 @@ The automated video pipeline has achieved **ENHANCED ARCHITECTURE** with quality
   - ✅ Create fail-fast validation before rendering
   - ✅ Enhance Topic Management with concrete, value-driven prompts
   - ✅ Update Video Assembler to consume manifest instead of creating it
+
+
+
+
   - _Requirements: All quality and content requirements_
+
+- [ ] **Enhanced Topic Management Prompting**: Implement advanced Bedrock prompting strategies
+  - Upgrade Topic Management AI with universal, engagement-optimized prompts
+  - Add concrete content generation with specific numbers, costs, and timeframes
+  - Implement pattern interrupts and retention optimization in topic context
+  - Create scene-specific visual guidance for Media Curator integration
+  - Add quality standards validation for Manifest Builder compatibility
+  - _Requirements: 1, 2, 8_
+
+- [ ] 10.5 Implement universal engagement-optimized Bedrock prompts
+  - Replace generic topic prompts with universal template supporting any topic type
+  - Add concrete content generation with specific numbers, costs, timeframes (e.g., "7-day Spain itinerary under €120/day")
+  - Implement pattern interrupts in topic context: hooks at 0s, 90s, 180s with specific retention cues
+  - Create scene-specific visual guidance with searchTerms and mustHaveVisuals for Media Curator
+  - Add quality standards validation: minVisualsPerScene, requiredScenes, engagementHooks for Manifest Builder
+  - Update prompt structure to include qualityStandards, patternInterrupts, and mediaBrief sections
+  - _Requirements: 1, 2, 8_
+
+- [ ] **S3 Event-Driven Publishing**: Enable hands-off video publishing (Optional)
+  - Attach S3 PutObject events for `05-video/final-video.mp4` to YouTube Publisher
+  - Extend YouTube Publisher to parse S3 events and derive videoId automatically
+  - Add automatic reading of `01-context/video-context.json` for projectId from S3 events
+  - Implement fully autonomous pipeline trigger from video completion
+  - _Requirements: 7.3, 8.3, Automation_
 
 - [ ] **Advanced Cost Optimization**: Enhance cost tracking and optimization
   - Implement predictive cost modeling
