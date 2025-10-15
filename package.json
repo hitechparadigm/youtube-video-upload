@@ -1,79 +1,74 @@
 {
-  "name": "automated-video-pipeline",
-  "version": "1.0.0",
-  "description": "AWS-based automated video generation pipeline with configurable media sources, Node.js 20.x runtime, and complete project isolation",
-
-  "main": "index.js",
-  "scripts": {
-    "test": "jest",
-    "test:unit": "jest --selectProjects=\"Unit Tests\"",
-    "test:integration": "jest --selectProjects=\"Integration Tests\"",
-    "test:e2e": "node tests/e2e-pipeline.test.js",
-    "test:coverage": "jest --coverage",
-    "test:watch": "jest --watch",
-    "test:health": "node scripts/utils/health-check.js",
-    "test:infrastructure": "node scripts/validate-infrastructure.js",
-    "test:agents": "node test-all-agents.js",
-    "test:layers": "node test-layers-utils.js",
-    "test:agent1": "node test-agent-1-topic-management.js",
-    "test:agent2": "node test-agent-2-script-generator.js",
-    "test:agent3": "node test-agent-3-media-curator.js",
-    "test:agent4": "node test-agent-4-audio-generator.js",
-    "test:agent5": "node test-agent-5-video-assembler.js",
-    "test:agent6": "node test-agent-6-youtube-publisher.js",
-    "test:agent7": "node test-agent-7-workflow-orchestrator.js",
-    "test:agent8": "node test-agent-8-async-processor.js",
-    "deploy": "cd infrastructure && npm run deploy",
-    "destroy": "cd infrastructure && npm run destroy",
-    "synth": "cd infrastructure && npm run synth",
-    "diff": "cd infrastructure && npm run diff",
-    "upload-video": "node scripts/upload-first-video.js",
-    "sync-sheets": "node scripts/sync-spreadsheet.js",
-    "lint": "eslint src/ tests/",
-    "lint:fix": "eslint src/ tests/ --fix"
-  },
-  "devDependencies": {
-    "aws-cdk": "^2.110.0",
-    "@babel/core": "^7.23.0",
-    "@babel/preset-env": "^7.23.0",
-    "babel-jest": "^29.7.0",
-    "eslint": "^8.50.0",
-    "jest": "^29.7.0",
-    "jest-html-reporters": "^3.1.5",
-    "jest-junit": "^16.0.0"
-  },
-  "dependencies": {
-    "@aws-sdk/client-bedrock-runtime": "^3.901.0",
-    "@aws-sdk/client-dynamodb": "^3.450.0",
-    "@aws-sdk/client-ec2": "^3.901.0",
-    "@aws-sdk/client-ecs": "^3.901.0",
-    "@aws-sdk/client-iam": "^3.901.0",
-    "@aws-sdk/client-lambda": "^3.901.0",
-    "@aws-sdk/client-polly": "^3.901.0",
-    "@aws-sdk/client-s3": "^3.901.0",
-    "@aws-sdk/client-secrets-manager": "^3.901.0",
-    "@aws-sdk/client-sfn": "^3.901.0",
-    "aws-lambda": "^1.0.7",
-    "constructs": "^10.3.0",
-    "google-auth-library": "^9.4.1",
-    "googleapis": "^128.0.0"
-  },
-  "engines": {
-    "node": ">=20.0.0"
-  },
-  "keywords": [
-    "aws",
-    "lambda",
-    "video-generation",
-    "youtube-automation",
-    "nodejs20",
-    "pexels",
-    "pixabay",
-    "configurable-media-sources"
-  ],
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/hitechparadigm/youtube-video-upload.git"
-  },
-  "license": "MIT"
+    "name": "automated-video-pipeline",
+    "version": "1.0.0",
+    "description": "AWS-based automated video generation pipeline with configurable media sources, Node.js 20.x runtime, and complete project isolation",
+    "main": "index.js",
+    "scripts": {
+        "test": "jest",
+        "test:unit": "jest --selectProjects=\"Unit Tests\"",
+        "test:integration": "jest --selectProjects=\"Integration Tests\"",
+        "test:e2e": "node tests/e2e-pipeline.test.js",
+        "test:coverage": "jest --coverage",
+        "test:watch": "jest --watch",
+        "test:health": "node scripts/utils/health-check.js",
+        "test:infrastructure": "node scripts/validate-infrastructure.js",
+        "test:system": "node test-system-verification.js",
+        "test:functions": "node test-lambda-functions.js",
+        "test:complete": "node test-integration-complete.js",
+        "test:enhanced": "node test-enhanced-manifest-architecture.js",
+        "test:all": "node run-all-tests.js",
+        "deploy": "cd infrastructure && npm run deploy",
+        "destroy": "cd infrastructure && npm run destroy",
+        "synth": "cd infrastructure && npm run synth",
+        "diff": "cd infrastructure && npm run diff",
+        "upload-video": "node scripts/upload-first-video.js",
+        "sync-sheets": "node scripts/sync-spreadsheet.js",
+        "lint": "eslint src/ tests/",
+        "lint:fix": "eslint src/ tests/ --fix"
+    },
+    "devDependencies": {
+        "@babel/core": "^7.23.0",
+        "@babel/preset-env": "^7.23.0",
+        "aws-cdk": "^2.110.0",
+        "babel-jest": "^29.7.0",
+        "eslint": "^8.50.0",
+        "jest": "^29.7.0",
+        "jest-html-reporters": "^3.1.5",
+        "jest-junit": "^16.0.0"
+    },
+    "dependencies": {
+        "@aws-sdk/client-bedrock-runtime": "^3.901.0",
+        "@aws-sdk/client-dynamodb": "^3.450.0",
+        "@aws-sdk/client-ec2": "^3.901.0",
+        "@aws-sdk/client-ecs": "^3.901.0",
+        "@aws-sdk/client-iam": "^3.901.0",
+        "@aws-sdk/client-lambda": "^3.901.0",
+        "@aws-sdk/client-polly": "^3.901.0",
+        "@aws-sdk/client-s3": "^3.901.0",
+        "@aws-sdk/client-secrets-manager": "^3.901.0",
+        "@aws-sdk/client-sfn": "^3.901.0",
+        "aws-lambda": "^1.0.7",
+        "aws-sdk": "^2.1692.0",
+        "constructs": "^10.3.0",
+        "google-auth-library": "^9.4.1",
+        "googleapis": "^128.0.0"
+    },
+    "engines": {
+        "node": ">=20.0.0"
+    },
+    "keywords": [
+        "aws",
+        "lambda",
+        "video-generation",
+        "youtube-automation",
+        "nodejs20",
+        "pexels",
+        "pixabay",
+        "configurable-media-sources"
+    ],
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/hitechparadigm/youtube-video-upload.git"
+    },
+    "license": "MIT"
 }

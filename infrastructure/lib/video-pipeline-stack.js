@@ -3,574 +3,885 @@
  * Deploys all components for the automated video pipeline
  */
 
-import { Stack, Duration, RemovalPolicy, CfnOutput } from 'aws-cdk-lib';
-import { Function, Runtime, Code, LayerVersion } from 'aws-cdk-lib/aws-lambda';
-import { Bucket, BucketEncryption } from 'aws-cdk-lib/aws-s3';
-import { Table, AttributeType, BillingMode } from 'aws-cdk-lib/aws-dynamodb';
-import { RestApi, LambdaIntegration, Cors, ApiKey, UsagePlan } from 'aws-cdk-lib/aws-apigateway';
+import {
+    Stack,
+    Duration,
+    RemovalPolicy,
+    CfnOutput
+} from 'aws-cdk-lib';
+import {
+    Function,
+    Runtime,
+    Code,
+    LayerVersion
+} from 'aws-cdk-lib/aws-lambda';
+import {
+    Bucket,
+    BucketEncryption
+} from 'aws-cdk-lib/aws-s3';
+import {
+    Table,
+    AttributeType,
+    BillingMode
+} from 'aws-cdk-lib/aws-dynamodb';
+import {
+    RestApi,
+    LambdaIntegration,
+    Cors,
+    ApiKey,
+    UsagePlan
+} from 'aws-cdk-lib/aws-apigateway';
 // Step Functions removed - using direct orchestration
-import { Rule, Schedule, RuleTargetInput } from 'aws-cdk-lib/aws-events';
-import { LambdaFunction } from 'aws-cdk-lib/aws-events-targets';
-import { Cluster } from 'aws-cdk-lib/aws-ecs';
-import { Role, ServicePrincipal, PolicyStatement, Effect } from 'aws-cdk-lib/aws-iam';
-import { readFileSync } from 'fs';
-import { join } from 'path';
+import {
+    Rule,
+    Schedule,
+    RuleTargetInput
+} from 'aws-cdk-lib/aws-events';
+import {
+    LambdaFunction
+} from 'aws-cdk-lib/aws-events-targets';
+import {
+    Cluster
+} from 'aws-cdk-lib/aws-ecs';
+import {
+    Role,
+    ServicePrincipal,
+    PolicyStatement,
+    Effect
+} from 'aws-cdk-lib/aws-iam';
+import {
+    Topic
+} from 'aws-cdk-lib/aws-sns';
+import {
+    EmailSubscription
+} from 'aws-cdk-lib/aws-sns-subscriptions';
+import {
+    Alarm,
+    Metric,
+    ComparisonOperator
+} from 'aws-cdk-lib/aws-cloudwatch';
+import {
+    SnsAction
+} from 'aws-cdk-lib/aws-cloudwatch-actions';
+import {
+    readFileSync
+} from 'fs';
+import {
+    join
+} from 'path';
 
 export class VideoPipelineStack extends Stack {
-  constructor(scope, id, props) {
-    super(scope, id, props);
+    constructor(scope, id, props) {
+        super(scope, id, props);
 
-    const environment = props.environment || 'production';
-    const projectName = 'automated-video-pipeline';
+        const environment = props.environment || 'production';
+        const projectName = 'automated-video-pipeline';
 
-    // ========================================
-    // S3 Storage Infrastructure
-    // ========================================
+        // ========================================
+        // S3 Storage Infrastructure
+        // ========================================
 
-    // Primary S3 bucket for video pipeline assets
-    const primaryBucket = new Bucket(this, 'PrimaryBucket', {
-      bucketName: `${projectName}-v2-${this.account}-${this.region}`,
-      encryption: BucketEncryption.S3_MANAGED,
-      versioned: false,
-      lifecycleRules: [
-        {
-          id: 'AutoDeleteAfter7Days',
-          enabled: true,
-          expiration: Duration.days(7),
-          abortIncompleteMultipartUploadAfter: Duration.days(1)
+        // Primary S3 bucket for video pipeline assets
+        const primaryBucket = new Bucket(this, 'PrimaryBucket', {
+            bucketName: `${projectName}-v2-${this.account}-${this.region}`,
+            encryption: BucketEncryption.S3_MANAGED,
+            versioned: false,
+            lifecycleRules: [{
+                id: 'AutoDeleteAfter7Days',
+                enabled: true,
+                expiration: Duration.days(7),
+                abortIncompleteMultipartUploadAfter: Duration.days(1)
+            }],
+            removalPolicy: RemovalPolicy.DESTROY // For development - change for production
+        });
+
+        // Backup bucket for cross-region replication
+        const backupBucket = new Bucket(this, 'BackupBucket', {
+            bucketName: `${projectName}-backup-v2-${this.account}-us-west-2`,
+            encryption: BucketEncryption.S3_MANAGED,
+            versioned: false,
+            removalPolicy: RemovalPolicy.DESTROY
+        });
+
+        // ========================================
+        // DynamoDB Tables
+        // ========================================
+
+        // Topics table
+        const topicsTable = new Table(this, 'TopicsTable', {
+            tableName: `${projectName}-topics-v2`,
+            partitionKey: {
+                name: 'topicId',
+                type: AttributeType.STRING
+            },
+            billingMode: BillingMode.PAY_PER_REQUEST,
+            removalPolicy: RemovalPolicy.DESTROY
+        });
+
+        // Add GSI for status queries
+        topicsTable.addGlobalSecondaryIndex({
+            indexName: 'StatusIndex',
+            partitionKey: {
+                name: 'status',
+                type: AttributeType.STRING
+            },
+            sortKey: {
+                name: 'priority',
+                type: AttributeType.NUMBER
+            }
+        });
+
+        // Video production table
+        const videosTable = new Table(this, 'VideosTable', {
+            tableName: `${projectName}-production-v2`,
+            partitionKey: {
+                name: 'videoId',
+                type: AttributeType.STRING
+            },
+            billingMode: BillingMode.PAY_PER_REQUEST,
+            removalPolicy: RemovalPolicy.DESTROY
+        });
+
+        // Executions table for workflow tracking
+        const executionsTable = new Table(this, 'ExecutionsTable', {
+            tableName: `${projectName}-executions-v2`,
+            partitionKey: {
+                name: 'executionId',
+                type: AttributeType.STRING
+            },
+            billingMode: BillingMode.PAY_PER_REQUEST,
+            removalPolicy: RemovalPolicy.DESTROY
+        });
+
+        // Context table for AI agent communication
+        const contextTable = new Table(this, 'ContextTable', {
+            tableName: `${projectName}-context-v2`,
+            partitionKey: {
+                name: 'PK',
+                type: AttributeType.STRING
+            },
+            sortKey: {
+                name: 'SK',
+                type: AttributeType.STRING
+            },
+            billingMode: BillingMode.PAY_PER_REQUEST,
+            removalPolicy: RemovalPolicy.DESTROY,
+            timeToLiveAttribute: 'ttl'
+        });
+
+        // ========================================
+        // IAM Roles and Policies
+        // ========================================
+
+        // Lambda execution role with comprehensive permissions
+        const lambdaRole = new Role(this, 'LambdaExecutionRole', {
+            assumedBy: new ServicePrincipal('lambda.amazonaws.com'),
+            managedPolicies: [{
+                managedPolicyArn: 'arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole'
+            }]
+        });
+
+        // Add permissions for all AWS services used
+        lambdaRole.addToPolicy(new PolicyStatement({
+            effect: Effect.ALLOW,
+            actions: [
+                // S3 permissions
+                's3:GetObject',
+                's3:PutObject',
+                's3:DeleteObject',
+                's3:ListBucket',
+                // DynamoDB permissions
+                'dynamodb:GetItem',
+                'dynamodb:PutItem',
+                'dynamodb:UpdateItem',
+                'dynamodb:DeleteItem',
+                'dynamodb:Query',
+                'dynamodb:Scan',
+                // Secrets Manager permissions
+                'secretsmanager:GetSecretValue',
+                // Bedrock permissions
+                'bedrock:InvokeModel',
+                'bedrock:InvokeModelWithResponseStream',
+                // Polly permissions
+                'polly:SynthesizeSpeech',
+                'polly:DescribeVoices',
+                // Rekognition permissions
+                'rekognition:DetectLabels',
+                'rekognition:DetectText',
+                // Step Functions permissions
+                'states:StartExecution',
+                'states:DescribeExecution',
+                'states:ListExecutions',
+                'states:StopExecution',
+                // ECS permissions
+                'ecs:RunTask',
+                'ecs:DescribeTasks',
+                'ecs:DescribeTaskDefinition'
+            ],
+            resources: ['*']
+        }));
+
+        // ========================================
+        // Lambda Layers
+        // ========================================
+
+        // Configuration Layer for shared configuration management
+        const configLayer = new LayerVersion(this, 'ConfigLayer', {
+            layerVersionName: 'automated-video-pipeline-config',
+            code: Code.fromAsset(join(process.cwd(), '../src/layers/config-layer')),
+            compatibleRuntimes: [Runtime.NODEJS_20_X],
+            description: 'Shared configuration management layer',
+        });
+
+        // Context Integration Layer for AI agent communication
+        const contextLayer = new LayerVersion(this, 'ContextLayer', {
+            layerVersionName: 'automated-video-pipeline-context',
+            code: Code.fromAsset(join(process.cwd(), '../src/layers/context-layer')),
+            compatibleRuntimes: [Runtime.NODEJS_20_X],
+            description: 'Context integration layer for AI agent communication',
+            removalPolicy: RemovalPolicy.RETAIN
+        });
+
+        // ========================================
+        // Lambda Functions
+        // ========================================
+
+        // Topic Management Lambda
+        const topicManagementFunction = new Function(this, 'TopicManagementFunction', {
+            functionName: `${projectName}-topic-management-v3`,
+            runtime: Runtime.NODEJS_20_X,
+            handler: 'handler.handler', // Using fixed layer
+            code: Code.fromAsset(join(process.cwd(), '../src/lambda/topic-management')),
+            timeout: Duration.seconds(60), // Increased for AI processing with Bedrock
+            memorySize: 512, // Increased from 256MB to 512MB for better performance
+            role: lambdaRole,
+            layers: [contextLayer], // Re-enabled with fixed layer
+            environment: {
+                TOPICS_TABLE_NAME: topicsTable.tableName,
+                S3_BUCKET_NAME: primaryBucket.bucketName,
+                S3_BUCKET: primaryBucket.bucketName, // For context manager compatibility
+                CONTEXT_TABLE_NAME: contextTable.tableName,
+                CONTEXT_TABLE: contextTable.tableName, // For context manager compatibility
+                NODE_ENV: environment
+            }
+        });
+
+        // Script Generator Lambda
+        const scriptGeneratorFunction = new Function(this, 'ScriptGeneratorFunction', {
+            functionName: `${projectName}-script-generator-v3`,
+            runtime: Runtime.NODEJS_20_X,
+            handler: 'handler.handler',
+            code: Code.fromAsset(join(process.cwd(), '../src/lambda/script-generator')),
+            timeout: Duration.seconds(60), // Increased for AI processing with Claude
+            memorySize: 1024,
+            role: lambdaRole,
+            layers: [configLayer, contextLayer], // Re-enabled with fixed layer
+            environment: {
+                S3_BUCKET_NAME: primaryBucket.bucketName,
+                S3_BUCKET: primaryBucket.bucketName, // For context manager compatibility
+                CONTEXT_TABLE_NAME: contextTable.tableName,
+                CONTEXT_TABLE: contextTable.tableName, // For context manager compatibility
+                BEDROCK_MODEL_ID: 'anthropic.claude-3-sonnet-20240229-v1:0',
+                BEDROCK_MODEL_REGION: this.region,
+                NODE_ENV: environment
+            }
+        });
+
+        // Media Curator Lambda
+        const mediaCuratorFunction = new Function(this, 'MediaCuratorFunction', {
+            functionName: `${projectName}-media-curator-v3`,
+            runtime: Runtime.NODEJS_20_X,
+            handler: 'handler.handler',
+            code: Code.fromAsset(join(process.cwd(), '../src/lambda/media-curator')),
+            timeout: Duration.seconds(25), // API Gateway compatible timeout
+            memorySize: 512,
+            role: lambdaRole,
+            layers: [contextLayer], // Re-enabled with fixed layer
+            environment: {
+                S3_BUCKET_NAME: primaryBucket.bucketName,
+                S3_BUCKET: primaryBucket.bucketName, // For context manager compatibility
+                CONTEXT_TABLE_NAME: contextTable.tableName,
+                CONTEXT_TABLE: contextTable.tableName, // For context manager compatibility
+                API_KEYS_SECRET_NAME: `${projectName}/api-keys`,
+                NODE_ENV: environment
+            }
+        });
+
+        // Audio Generator Lambda
+        const audioGeneratorFunction = new Function(this, 'AudioGeneratorFunction', {
+            functionName: `${projectName}-audio-generator-v3`,
+            runtime: Runtime.NODEJS_20_X,
+            handler: 'handler.handler',
+            code: Code.fromAsset(join(process.cwd(), '../src/lambda/audio-generator')),
+            timeout: Duration.seconds(25), // API Gateway compatible timeout
+            memorySize: 512,
+            role: lambdaRole,
+            layers: [configLayer, contextLayer], // Re-enabled with fixed layer
+            environment: {
+                S3_BUCKET_NAME: primaryBucket.bucketName,
+                S3_BUCKET: primaryBucket.bucketName, // For context manager compatibility
+                CONTEXT_TABLE_NAME: contextTable.tableName,
+                CONTEXT_TABLE: contextTable.tableName, // For context manager compatibility
+                NODE_ENV: environment
+            }
+        });
+
+        // Video Assembler Lambda
+        const videoAssemblerFunction = new Function(this, 'VideoAssemblerFunction', {
+            functionName: `${projectName}-video-assembler-v3`,
+            runtime: Runtime.NODEJS_20_X,
+            handler: 'handler.handler',
+            code: Code.fromAsset(join(process.cwd(), '../src/lambda/video-assembler')),
+            timeout: Duration.minutes(15),
+            memorySize: 1024,
+            role: lambdaRole,
+            layers: [contextLayer], // Re-enabled with fixed layer
+            environment: {
+                S3_BUCKET_NAME: primaryBucket.bucketName,
+                S3_BUCKET: primaryBucket.bucketName, // For context manager compatibility
+                CONTEXT_TABLE_NAME: contextTable.tableName,
+                CONTEXT_TABLE: contextTable.tableName, // For context manager compatibility
+                VIDEOS_TABLE_NAME: videosTable.tableName,
+                ECS_CLUSTER_NAME: `${projectName}-cluster`,
+                ECS_TASK_DEFINITION: 'video-processor-task',
+                NODE_ENV: environment
+            }
+        });
+
+        // Manifest Builder Lambda - Quality Gatekeeper
+        const manifestBuilderFunction = new Function(this, 'ManifestBuilderFunction', {
+            functionName: `${projectName}-manifest-builder-v3`,
+            runtime: Runtime.NODEJS_20_X,
+            handler: 'index.handler',
+            code: Code.fromAsset(join(process.cwd(), '../src/lambda/manifest-builder')),
+            timeout: Duration.seconds(60), // Sufficient for validation and manifest generation
+            memorySize: 512,
+            role: lambdaRole,
+            layers: [contextLayer],
+            environment: {
+                S3_BUCKET_NAME: primaryBucket.bucketName,
+                S3_BUCKET: primaryBucket.bucketName, // For context manager compatibility
+                CONTEXT_TABLE_NAME: contextTable.tableName,
+                CONTEXT_TABLE: contextTable.tableName, // For context manager compatibility
+                NODE_ENV: environment
+            }
+        });
+
+        // YouTube Publisher Lambda
+        const youtubePublisherFunction = new Function(this, 'YouTubePublisherFunction', {
+            functionName: `${projectName}-youtube-publisher-v3`,
+            runtime: Runtime.NODEJS_20_X,
+            handler: 'handler.handler',
+            code: Code.fromAsset(join(process.cwd(), '../src/lambda/youtube-publisher')),
+            timeout: Duration.minutes(15),
+            memorySize: 1024,
+            role: lambdaRole,
+            layers: [contextLayer], // Re-enabled with fixed layer
+            environment: {
+                S3_BUCKET_NAME: primaryBucket.bucketName,
+                S3_BUCKET: primaryBucket.bucketName, // For context manager compatibility
+                CONTEXT_TABLE_NAME: contextTable.tableName,
+                CONTEXT_TABLE: contextTable.tableName, // For context manager compatibility
+                VIDEOS_TABLE_NAME: videosTable.tableName,
+                YOUTUBE_SECRET_NAME: `${projectName}/youtube-credentials`,
+                NODE_ENV: environment
+            }
+        });
+
+        // Workflow Orchestrator Lambda
+        const workflowOrchestratorFunction = new Function(this, 'WorkflowOrchestratorFunction', {
+            functionName: `${projectName}-workflow-orchestrator-v3`,
+            runtime: Runtime.NODEJS_20_X,
+            handler: 'handler.handler',
+            code: Code.fromAsset(join(process.cwd(), '../src/lambda/workflow-orchestrator')),
+            timeout: Duration.minutes(5), // Increased for full pipeline orchestration
+            memorySize: 512,
+            role: lambdaRole,
+            layers: [contextLayer], // FIX: Add the missing context layer!
+            environment: {
+                EXECUTIONS_TABLE_NAME: executionsTable.tableName,
+                TOPICS_TABLE_NAME: topicsTable.tableName,
+                S3_BUCKET: primaryBucket.bucketName,
+                CONTEXT_TABLE: contextTable.tableName,
+                NODE_ENV: environment
+            }
+        });
+
+        // Jobs table for async processing
+        const jobsTable = new Table(this, 'JobsTable', {
+            tableName: `${projectName}-jobs-v2`,
+            partitionKey: {
+                name: 'jobId',
+                type: AttributeType.STRING
+            },
+            billingMode: BillingMode.PAY_PER_REQUEST,
+            removalPolicy: RemovalPolicy.DESTROY,
+            timeToLiveAttribute: 'ttl' // Auto-cleanup completed jobs after 24 hours
+        });
+
+        // Async Processor Lambda for handling long-running operations
+        const asyncProcessorFunction = new Function(this, 'AsyncProcessorFunction', {
+            functionName: `${projectName}-async-processor-v3`,
+            runtime: Runtime.NODEJS_20_X,
+            handler: 'index.handler',
+            code: Code.fromAsset(join(process.cwd(), '../src/lambda/async-processor')),
+            timeout: Duration.minutes(15), // Long timeout for actual processing
+            memorySize: 1024,
+            role: lambdaRole,
+            layers: [contextLayer],
+            environment: {
+                JOBS_TABLE_NAME: jobsTable.tableName,
+                S3_BUCKET: primaryBucket.bucketName,
+                CONTEXT_TABLE: contextTable.tableName,
+                NODE_ENV: environment
+            }
+        });
+
+        // ========================================
+        // Automatic Scheduling with EventBridge
+        // ========================================
+
+        // Schedule automatic video production based on Google Sheets
+        const videoProductionSchedule = new Rule(this, 'VideoProductionSchedule', {
+            ruleName: `${projectName}-auto-schedule`,
+            description: 'Automatically triggers video production based on Google Sheets schedule',
+            schedule: Schedule.rate(Duration.hours(8)), // Every 8 hours
+            enabled: true
+        });
+
+        // Target the workflow orchestrator for scheduled executions
+        videoProductionSchedule.addTarget(new LambdaFunction(workflowOrchestratorFunction, {
+            event: RuleTargetInput.fromObject({
+                action: 'start-scheduled',
+                source: 'eventbridge-schedule',
+                baseTopic: 'Auto-scheduled from Google Sheets',
+                scheduledBy: 'eventbridge',
+                useGoogleSheets: true,
+                timestamp: new Date().toISOString()
+            })
+        }));
+
+        // Optional: Additional schedule for high-priority content (every 4 hours)
+        const highPrioritySchedule = new Rule(this, 'HighPriorityVideoSchedule', {
+            ruleName: `${projectName}-high-priority-schedule`,
+            description: 'More frequent schedule for high-priority video topics',
+            schedule: Schedule.rate(Duration.hours(4)), // Every 4 hours
+            enabled: false // Disabled by default - can be enabled via AWS Console
+        });
+
+        highPrioritySchedule.addTarget(new LambdaFunction(workflowOrchestratorFunction, {
+            event: RuleTargetInput.fromObject({
+                action: 'start-scheduled',
+                source: 'eventbridge-high-priority',
+                baseTopic: 'High-priority auto-scheduled',
+                scheduledBy: 'eventbridge-priority',
+                useGoogleSheets: true,
+                priorityOnly: true,
+                timestamp: new Date().toISOString()
+            })
+        }));
+
+        // Grant EventBridge permission to invoke the workflow orchestrator
+        workflowOrchestratorFunction.addPermission('AllowEventBridgeInvoke', {
+            principal: new ServicePrincipal('events.amazonaws.com'),
+            sourceArn: videoProductionSchedule.ruleArn
+        });
+
+        workflowOrchestratorFunction.addPermission('AllowEventBridgeHighPriorityInvoke', {
+            principal: new ServicePrincipal('events.amazonaws.com'),
+            sourceArn: highPrioritySchedule.ruleArn
+        });
+
+        // ========================================
+        // API Gateway
+        // ========================================
+
+        // Create REST API
+        const api = new RestApi(this, 'VideoPipelineAPI', {
+            restApiName: `${projectName}-api`,
+            description: 'API for Automated Video Pipeline',
+            defaultCorsPreflightOptions: {
+                allowOrigins: Cors.ALL_ORIGINS,
+                allowMethods: Cors.ALL_METHODS,
+                allowHeaders: ['Content-Type', 'X-Amz-Date', 'Authorization', 'X-Api-Key', 'X-Amz-Security-Token']
+            }
+        });
+
+        // API Key and Usage Plan
+        const apiKey = new ApiKey(this, 'VideoPipelineApiKey', {
+            apiKeyName: `${projectName}-api-key`,
+            description: 'API Key for Video Pipeline'
+        });
+
+        const usagePlan = new UsagePlan(this, 'VideoPipelineUsagePlan', {
+            name: `${projectName}-usage-plan`,
+            description: 'Usage plan for Video Pipeline API',
+            throttle: {
+                rateLimit: 100,
+                burstLimit: 200
+            },
+            quota: {
+                limit: 10000,
+                period: 'MONTH'
+            }
+        });
+
+        usagePlan.addApiKey(apiKey);
+        usagePlan.addApiStage({
+            stage: api.deploymentStage
+        });
+
+        // API Resources and Methods - Simplified and Enhanced by Default
+        const topicsResource = api.root.addResource('topics');
+        topicsResource.addMethod('GET', new LambdaIntegration(topicManagementFunction), {
+            apiKeyRequired: true
+        });
+        topicsResource.addMethod('POST', new LambdaIntegration(topicManagementFunction), {
+            apiKeyRequired: true
+        }); // Enhanced by default
+
+        // Health endpoint
+        const topicsHealthResource = topicsResource.addResource('health');
+        topicsHealthResource.addMethod('GET', new LambdaIntegration(topicManagementFunction), {
+            apiKeyRequired: true
+        });
+
+        const topicResource = topicsResource.addResource('{topicId}');
+        topicResource.addMethod('GET', new LambdaIntegration(topicManagementFunction), {
+            apiKeyRequired: true
+        });
+        topicResource.addMethod('PUT', new LambdaIntegration(topicManagementFunction), {
+            apiKeyRequired: true
+        });
+        topicResource.addMethod('DELETE', new LambdaIntegration(topicManagementFunction), {
+            apiKeyRequired: true
+        });
+
+        // Script Generator endpoints
+        const scriptsResource = api.root.addResource('scripts');
+        scriptsResource.addResource('generate').addMethod('POST', new LambdaIntegration(scriptGeneratorFunction), {
+            apiKeyRequired: true
+        });
+        scriptsResource.addResource('generate-enhanced').addMethod('POST', new LambdaIntegration(scriptGeneratorFunction), {
+            apiKeyRequired: true
+        });
+        scriptsResource.addResource('generate-from-project').addMethod('POST', new LambdaIntegration(scriptGeneratorFunction), {
+            apiKeyRequired: true
+        });
+        scriptsResource.addResource('health').addMethod('GET', new LambdaIntegration(scriptGeneratorFunction), {
+            apiKeyRequired: true
+        });
+
+        // Media Curator endpoints
+        const mediaResource = api.root.addResource('media');
+        mediaResource.addResource('curate').addMethod('POST', new LambdaIntegration(mediaCuratorFunction), {
+            apiKeyRequired: true
+        });
+        mediaResource.addResource('health').addMethod('GET', new LambdaIntegration(mediaCuratorFunction), {
+            apiKeyRequired: true
+        });
+
+        // Audio Generator endpoints
+        const audioResource = api.root.addResource('audio');
+        audioResource.addResource('generate').addMethod('POST', new LambdaIntegration(audioGeneratorFunction), {
+            apiKeyRequired: true
+        });
+        audioResource.addResource('health').addMethod('GET', new LambdaIntegration(audioGeneratorFunction), {
+            apiKeyRequired: true
+        });
+
+        // Video Assembler endpoints
+        const videoResource = api.root.addResource('video');
+        videoResource.addResource('assemble').addMethod('POST', new LambdaIntegration(videoAssemblerFunction), {
+            apiKeyRequired: true
+        });
+        videoResource.addResource('health').addMethod('GET', new LambdaIntegration(videoAssemblerFunction), {
+            apiKeyRequired: true
+        });
+
+        // Manifest Builder endpoints - Quality Gatekeeper
+        const manifestResource = api.root.addResource('manifest');
+        manifestResource.addResource('build').addMethod('POST', new LambdaIntegration(manifestBuilderFunction), {
+            apiKeyRequired: true
+        });
+        manifestResource.addResource('health').addMethod('GET', new LambdaIntegration(manifestBuilderFunction), {
+            apiKeyRequired: true
+        });
+
+        // YouTube Publisher endpoints
+        const youtubeResource = api.root.addResource('youtube');
+        youtubeResource.addResource('publish').addMethod('POST', new LambdaIntegration(youtubePublisherFunction), {
+            apiKeyRequired: true
+        });
+        youtubeResource.addResource('health').addMethod('GET', new LambdaIntegration(youtubePublisherFunction), {
+            apiKeyRequired: true
+        });
+
+        // Workflow endpoints
+        const workflowResource = api.root.addResource('workflow');
+        workflowResource.addResource('start').addMethod('POST', new LambdaIntegration(workflowOrchestratorFunction), {
+            apiKeyRequired: true
+        });
+        workflowResource.addResource('status').addMethod('GET', new LambdaIntegration(workflowOrchestratorFunction), {
+            apiKeyRequired: true
+        });
+        workflowResource.addResource('list').addMethod('GET', new LambdaIntegration(workflowOrchestratorFunction), {
+            apiKeyRequired: true
+        });
+        workflowResource.addResource('stats').addMethod('GET', new LambdaIntegration(workflowOrchestratorFunction), {
+            apiKeyRequired: true
+        });
+
+        // Async processing endpoints (timeout-safe)
+        const asyncResource = api.root.addResource('async');
+        asyncResource.addResource('health').addMethod('GET', new LambdaIntegration(asyncProcessorFunction), {
+            apiKeyRequired: true
+        });
+        asyncResource.addResource('start-pipeline').addMethod('POST', new LambdaIntegration(asyncProcessorFunction), {
+            apiKeyRequired: true
+        });
+
+        const jobsResource = asyncResource.addResource('jobs');
+        const jobResource = jobsResource.addResource('{jobId}');
+        jobResource.addMethod('GET', new LambdaIntegration(asyncProcessorFunction), {
+            apiKeyRequired: true
+        });
+
+        videoResource.addResource('publish').addMethod('POST', new LambdaIntegration(youtubePublisherFunction), {
+            apiKeyRequired: true
+        });
+
+        // ========================================
+        // EventBridge Scheduling
+        // ========================================
+
+        // Daily video generation schedule
+        const dailySchedule = new Rule(this, 'DailyVideoGeneration', {
+            ruleName: `${projectName}-daily-schedule`,
+            description: 'Trigger daily video generation',
+            schedule: Schedule.cron({
+                hour: '10',
+                minute: '0'
+            }) // 10 AM UTC daily
+        });
+
+        dailySchedule.addTarget(new LambdaFunction(workflowOrchestratorFunction));
+
+        // ========================================
+        // Cost Tracking and Advanced Scheduling
+        // ========================================
+
+        // Reference existing DynamoDB tables (created by previous deployments)
+        const costTrackingTable = Table.fromTableName(this, 'ExistingCostTrackingTable', 'automated-video-pipeline-costs');
+        const scheduleMetadataTable = Table.fromTableName(this, 'ExistingScheduleMetadataTable', 'automated-video-pipeline-schedules');
+
+        // SNS Topics for alerts
+        const budgetAlertTopic = new Topic(this, 'BudgetAlertTopic', {
+            topicName: 'automated-video-pipeline-budget-alerts',
+            displayName: 'Video Pipeline Budget Alerts'
+        });
+
+        if (props.alertEmail && props.alertEmail !== 'admin@example.com') {
+            budgetAlertTopic.addSubscription(new EmailSubscription(props.alertEmail));
         }
-      ],
-      removalPolicy: RemovalPolicy.DESTROY // For development - change for production
-    });
 
-    // Backup bucket for cross-region replication
-    const backupBucket = new Bucket(this, 'BackupBucket', {
-      bucketName: `${projectName}-backup-v2-${this.account}-us-west-2`,
-      encryption: BucketEncryption.S3_MANAGED,
-      versioned: false,
-      removalPolicy: RemovalPolicy.DESTROY
-    });
+        const scheduleAlertTopic = new Topic(this, 'ScheduleAlertTopic', {
+            topicName: 'automated-video-pipeline-schedule-alerts',
+            displayName: 'Video Pipeline Schedule Alerts'
+        });
 
-    // ========================================
-    // DynamoDB Tables
-    // ========================================
+        // EventBridge Scheduler Lambda (for advanced scheduling)
+        const eventBridgeScheduler = new Function(this, 'EventBridgeScheduler', {
+            functionName: `${projectName}-eventbridge-scheduler`,
+            runtime: Runtime.NODEJS_20_X,
+            handler: 'index.handler',
+            code: Code.fromAsset('../src/lambda/eventbridge-scheduler'),
+            timeout: Duration.seconds(25),
+            memorySize: 512,
+            layers: [contextLayer],
+            environment: {
+                TOPICS_TABLE: topicsTable.tableName,
+                SCHEDULE_METADATA_TABLE: scheduleMetadataTable.tableName,
+                WORKFLOW_ORCHESTRATOR_ARN: workflowOrchestratorFunction.functionArn,
+                AWS_ACCOUNT_ID: this.account,
+                SCHEDULE_ALERT_TOPIC_ARN: scheduleAlertTopic.topicArn
+            }
+        });
 
-    // Topics table
-    const topicsTable = new Table(this, 'TopicsTable', {
-      tableName: `${projectName}-topics-v2`,
-      partitionKey: { name: 'topicId', type: AttributeType.STRING },
-      billingMode: BillingMode.PAY_PER_REQUEST,
-      removalPolicy: RemovalPolicy.DESTROY
-    });
+        // Cost Tracker Lambda
+        const costTracker = new Function(this, 'CostTracker', {
+            functionName: `${projectName}-cost-tracker`,
+            runtime: Runtime.NODEJS_20_X,
+            handler: 'index.handler',
+            code: Code.fromAsset('../src/lambda/cost-tracker'),
+            timeout: Duration.seconds(25),
+            memorySize: 512,
+            layers: [contextLayer],
+            environment: {
+                COST_TRACKING_TABLE: costTrackingTable.tableName,
+                BUDGET_ALERT_TOPIC_ARN: budgetAlertTopic.topicArn,
+                SCHEDULE_ALERT_TOPIC_ARN: scheduleAlertTopic.topicArn
+            }
+        });
 
-    // Add GSI for status queries
-    topicsTable.addGlobalSecondaryIndex({
-      indexName: 'StatusIndex',
-      partitionKey: { name: 'status', type: AttributeType.STRING },
-      sortKey: { name: 'priority', type: AttributeType.NUMBER }
-    });
+        // Grant permissions for EventBridge Scheduler
+        eventBridgeScheduler.addToRolePolicy(new PolicyStatement({
+            effect: Effect.ALLOW,
+            actions: [
+                'events:PutRule',
+                'events:DeleteRule',
+                'events:PutTargets',
+                'events:RemoveTargets',
+                'events:ListRules',
+                'events:DescribeRule'
+            ],
+            resources: ['*']
+        }));
 
-    // Video production table
-    const videosTable = new Table(this, 'VideosTable', {
-      tableName: `${projectName}-production-v2`,
-      partitionKey: { name: 'videoId', type: AttributeType.STRING },
-      billingMode: BillingMode.PAY_PER_REQUEST,
-      removalPolicy: RemovalPolicy.DESTROY
-    });
+        eventBridgeScheduler.addToRolePolicy(new PolicyStatement({
+            effect: Effect.ALLOW,
+            actions: ['lambda:InvokeFunction'],
+            resources: [workflowOrchestratorFunction.functionArn]
+        }));
 
-    // Executions table for workflow tracking
-    const executionsTable = new Table(this, 'ExecutionsTable', {
-      tableName: `${projectName}-executions-v2`,
-      partitionKey: { name: 'executionId', type: AttributeType.STRING },
-      billingMode: BillingMode.PAY_PER_REQUEST,
-      removalPolicy: RemovalPolicy.DESTROY
-    });
+        // Grant DynamoDB permissions
+        scheduleMetadataTable.grantReadWriteData(eventBridgeScheduler);
+        scheduleAlertTopic.grantPublish(eventBridgeScheduler);
 
-    // Context table for AI agent communication
-    const contextTable = new Table(this, 'ContextTable', {
-      tableName: `${projectName}-context-v2`,
-      partitionKey: { name: 'PK', type: AttributeType.STRING },
-      sortKey: { name: 'SK', type: AttributeType.STRING },
-      billingMode: BillingMode.PAY_PER_REQUEST,
-      removalPolicy: RemovalPolicy.DESTROY,
-      timeToLiveAttribute: 'ttl'
-    });
+        // Grant permissions for Cost Tracker
+        costTracker.addToRolePolicy(new PolicyStatement({
+            effect: Effect.ALLOW,
+            actions: [
+                'ce:GetCostAndUsage',
+                'ce:GetDimensionValues',
+                'ce:GetReservationCoverage',
+                'ce:GetReservationPurchaseRecommendation',
+                'ce:GetReservationUtilization',
+                'ce:GetUsageReport',
+                'cloudwatch:PutMetricData',
+                'cloudwatch:GetMetricStatistics'
+            ],
+            resources: ['*']
+        }));
 
-    // ========================================
-    // IAM Roles and Policies
-    // ========================================
+        costTrackingTable.grantReadWriteData(costTracker);
+        budgetAlertTopic.grantPublish(costTracker);
 
-    // Lambda execution role with comprehensive permissions
-    const lambdaRole = new Role(this, 'LambdaExecutionRole', {
-      assumedBy: new ServicePrincipal('lambda.amazonaws.com'),
-      managedPolicies: [
-        { managedPolicyArn: 'arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole' }
-      ]
-    });
+        // CloudWatch Alarms
+        const highCostAlarm = new Alarm(this, 'HighCostAlarm', {
+            alarmName: 'video-pipeline-high-cost',
+            alarmDescription: 'Alert when video production costs exceed threshold',
+            metric: new Metric({
+                namespace: 'AutomatedVideoPipeline/Costs',
+                metricName: 'TotalCost',
+                statistic: 'Sum'
+            }),
+            threshold: 5.0, // $5.00 threshold
+            evaluationPeriods: 2,
+            comparisonOperator: ComparisonOperator.GREATER_THAN_THRESHOLD
+        });
 
-    // Add permissions for all AWS services used
-    lambdaRole.addToPolicy(new PolicyStatement({
-      effect: Effect.ALLOW,
-      actions: [
-        // S3 permissions
-        's3:GetObject',
-        's3:PutObject',
-        's3:DeleteObject',
-        's3:ListBucket',
-        // DynamoDB permissions
-        'dynamodb:GetItem',
-        'dynamodb:PutItem',
-        'dynamodb:UpdateItem',
-        'dynamodb:DeleteItem',
-        'dynamodb:Query',
-        'dynamodb:Scan',
-        // Secrets Manager permissions
-        'secretsmanager:GetSecretValue',
-        // Bedrock permissions
-        'bedrock:InvokeModel',
-        'bedrock:InvokeModelWithResponseStream',
-        // Polly permissions
-        'polly:SynthesizeSpeech',
-        'polly:DescribeVoices',
-        // Rekognition permissions
-        'rekognition:DetectLabels',
-        'rekognition:DetectText',
-        // Step Functions permissions
-        'states:StartExecution',
-        'states:DescribeExecution',
-        'states:ListExecutions',
-        'states:StopExecution',
-        // ECS permissions
-        'ecs:RunTask',
-        'ecs:DescribeTasks',
-        'ecs:DescribeTaskDefinition'
-      ],
-      resources: ['*']
-    }));
+        highCostAlarm.addAlarmAction(new SnsAction(budgetAlertTopic));
 
-    // ========================================
-    // Lambda Layers
-    // ========================================
+        const scheduleFailureAlarm = new Alarm(this, 'ScheduleFailureAlarm', {
+            alarmName: 'video-pipeline-schedule-failures',
+            alarmDescription: 'Alert when scheduled video generation fails',
+            metric: eventBridgeScheduler.metricErrors({
+                period: Duration.minutes(5)
+            }),
+            threshold: 3,
+            evaluationPeriods: 2
+        });
 
-    // Configuration Layer for shared configuration management
-    const configLayer = new LayerVersion(this, 'ConfigLayer', {
-      layerVersionName: 'automated-video-pipeline-config',
-      code: Code.fromAsset(join(process.cwd(), '../src/layers/config-layer')),
-      compatibleRuntimes: [Runtime.NODEJS_20_X],
-      description: 'Shared configuration management layer',
-    });
+        scheduleFailureAlarm.addAlarmAction(new SnsAction(scheduleAlertTopic));
 
-    // Context Integration Layer for AI agent communication
-    const contextLayer = new LayerVersion(this, 'ContextLayer', {
-      layerVersionName: 'automated-video-pipeline-context',
-      code: Code.fromAsset(join(process.cwd(), '../src/layers/context-layer')),
-      compatibleRuntimes: [Runtime.NODEJS_20_X],
-      description: 'Context integration layer for AI agent communication',
-      removalPolicy: RemovalPolicy.RETAIN
-    });
+        // EventBridge Rules for monitoring
+        const dailyCostReportRule = new Rule(this, 'DailyCostReportRule', {
+            ruleName: 'daily-cost-report',
+            description: 'Generate daily cost reports',
+            schedule: Schedule.cron({
+                hour: '9',
+                minute: '0'
+            }) // 9 AM daily
+        });
 
-    // ========================================
-    // Lambda Functions
-    // ========================================
+        dailyCostReportRule.addTarget(new LambdaFunction(costTracker));
 
-    // Topic Management Lambda
-    const topicManagementFunction = new Function(this, 'TopicManagementFunction', {
-      functionName: `${projectName}-topic-management-v3`,
-      runtime: Runtime.NODEJS_20_X,
-      handler: 'handler.handler', // Using fixed layer
-      code: Code.fromAsset(join(process.cwd(), '../src/lambda/topic-management')),
-      timeout: Duration.seconds(60), // Increased for AI processing with Bedrock
-      memorySize: 512, // Increased from 256MB to 512MB for better performance
-      role: lambdaRole,
-      layers: [contextLayer], // Re-enabled with fixed layer
-      environment: {
-        TOPICS_TABLE_NAME: topicsTable.tableName,
-        S3_BUCKET_NAME: primaryBucket.bucketName,
-        S3_BUCKET: primaryBucket.bucketName,  // For context manager compatibility
-        CONTEXT_TABLE_NAME: contextTable.tableName,
-        CONTEXT_TABLE: contextTable.tableName,  // For context manager compatibility
-        NODE_ENV: environment
-      }
-    });
+        const weeklyOptimizationRule = new Rule(this, 'WeeklyOptimizationRule', {
+            ruleName: 'weekly-schedule-optimization',
+            description: 'Optimize schedules based on performance data',
+            schedule: Schedule.cron({
+                weekDay: '1',
+                hour: '8',
+                minute: '0'
+            }) // Monday 8 AM
+        });
 
-    // Script Generator Lambda
-    const scriptGeneratorFunction = new Function(this, 'ScriptGeneratorFunction', {
-      functionName: `${projectName}-script-generator-v3`,
-      runtime: Runtime.NODEJS_20_X,
-      handler: 'handler.handler',
-      code: Code.fromAsset(join(process.cwd(), '../src/lambda/script-generator')),
-      timeout: Duration.seconds(60), // Increased for AI processing with Claude
-      memorySize: 1024,
-      role: lambdaRole,
-      layers: [configLayer, contextLayer], // Re-enabled with fixed layer
-      environment: {
-        S3_BUCKET_NAME: primaryBucket.bucketName,
-        S3_BUCKET: primaryBucket.bucketName,  // For context manager compatibility
-        CONTEXT_TABLE_NAME: contextTable.tableName,
-        CONTEXT_TABLE: contextTable.tableName,  // For context manager compatibility
-        BEDROCK_MODEL_ID: 'anthropic.claude-3-sonnet-20240229-v1:0',
-        BEDROCK_MODEL_REGION: this.region,
-        NODE_ENV: environment
-      }
-    });
+        weeklyOptimizationRule.addTarget(new LambdaFunction(eventBridgeScheduler));
 
-    // Media Curator Lambda
-    const mediaCuratorFunction = new Function(this, 'MediaCuratorFunction', {
-      functionName: `${projectName}-media-curator-v3`,
-      runtime: Runtime.NODEJS_20_X,
-      handler: 'handler.handler',
-      code: Code.fromAsset(join(process.cwd(), '../src/lambda/media-curator')),
-      timeout: Duration.seconds(25), // API Gateway compatible timeout
-      memorySize: 512,
-      role: lambdaRole,
-      layers: [contextLayer], // Re-enabled with fixed layer
-      environment: {
-        S3_BUCKET_NAME: primaryBucket.bucketName,
-        S3_BUCKET: primaryBucket.bucketName,  // For context manager compatibility
-        CONTEXT_TABLE_NAME: contextTable.tableName,
-        CONTEXT_TABLE: contextTable.tableName,  // For context manager compatibility
-        API_KEYS_SECRET_NAME: `${projectName}/api-keys`,
-        NODE_ENV: environment
-      }
-    });
+        // ========================================
+        // ECS Cluster for Video Processing
+        // Note: ECS cluster will be created separately when needed
+        // For now, video assembly uses Lambda with processing instructions
+        // ========================================
 
-    // Audio Generator Lambda
-    const audioGeneratorFunction = new Function(this, 'AudioGeneratorFunction', {
-      functionName: `${projectName}-audio-generator-v3`,
-      runtime: Runtime.NODEJS_20_X,
-      handler: 'handler.handler',
-      code: Code.fromAsset(join(process.cwd(), '../src/lambda/audio-generator')),
-      timeout: Duration.seconds(25), // API Gateway compatible timeout
-      memorySize: 512,
-      role: lambdaRole,
-      layers: [configLayer, contextLayer], // Re-enabled with fixed layer
-      environment: {
-        S3_BUCKET_NAME: primaryBucket.bucketName,
-        S3_BUCKET: primaryBucket.bucketName,  // For context manager compatibility
-        CONTEXT_TABLE_NAME: contextTable.tableName,
-        CONTEXT_TABLE: contextTable.tableName,  // For context manager compatibility
-        NODE_ENV: environment
-      }
-    });
+        // ========================================
+        // Outputs
+        // ========================================
 
-    // Video Assembler Lambda
-    const videoAssemblerFunction = new Function(this, 'VideoAssemblerFunction', {
-      functionName: `${projectName}-video-assembler-v3`,
-      runtime: Runtime.NODEJS_20_X,
-      handler: 'handler.handler',
-      code: Code.fromAsset(join(process.cwd(), '../src/lambda/video-assembler')),
-      timeout: Duration.minutes(15),
-      memorySize: 1024,
-      role: lambdaRole,
-      layers: [contextLayer], // Re-enabled with fixed layer
-      environment: {
-        S3_BUCKET_NAME: primaryBucket.bucketName,
-        S3_BUCKET: primaryBucket.bucketName,  // For context manager compatibility
-        CONTEXT_TABLE_NAME: contextTable.tableName,
-        CONTEXT_TABLE: contextTable.tableName,  // For context manager compatibility
-        VIDEOS_TABLE_NAME: videosTable.tableName,
-        ECS_CLUSTER_NAME: `${projectName}-cluster`,
-        ECS_TASK_DEFINITION: 'video-processor-task',
-        NODE_ENV: environment
-      }
-    });
+        this.addOutput('PrimaryBucketName', {
+            value: primaryBucket.bucketName,
+            description: 'Primary S3 bucket for video assets'
+        });
 
-    // YouTube Publisher Lambda
-    const youtubePublisherFunction = new Function(this, 'YouTubePublisherFunction', {
-      functionName: `${projectName}-youtube-publisher-v3`,
-      runtime: Runtime.NODEJS_20_X,
-      handler: 'handler.handler',
-      code: Code.fromAsset(join(process.cwd(), '../src/lambda/youtube-publisher')),
-      timeout: Duration.minutes(15),
-      memorySize: 1024,
-      role: lambdaRole,
-      layers: [contextLayer], // Re-enabled with fixed layer
-      environment: {
-        S3_BUCKET_NAME: primaryBucket.bucketName,
-        S3_BUCKET: primaryBucket.bucketName,  // For context manager compatibility
-        CONTEXT_TABLE_NAME: contextTable.tableName,
-        CONTEXT_TABLE: contextTable.tableName,  // For context manager compatibility
-        VIDEOS_TABLE_NAME: videosTable.tableName,
-        YOUTUBE_SECRET_NAME: `${projectName}/youtube-credentials`,
-        NODE_ENV: environment
-      }
-    });
+        this.addOutput('APIEndpoint', {
+            value: api.url,
+            description: 'API Gateway endpoint URL'
+        });
 
-    // Workflow Orchestrator Lambda
-    const workflowOrchestratorFunction = new Function(this, 'WorkflowOrchestratorFunction', {
-      functionName: `${projectName}-workflow-orchestrator-v3`,
-      runtime: Runtime.NODEJS_20_X,
-      handler: 'handler.handler',
-      code: Code.fromAsset(join(process.cwd(), '../src/lambda/workflow-orchestrator')),
-      timeout: Duration.minutes(5), // Increased for full pipeline orchestration
-      memorySize: 512,
-      role: lambdaRole,
-      layers: [contextLayer], // FIX: Add the missing context layer!
-      environment: {
-        EXECUTIONS_TABLE_NAME: executionsTable.tableName,
-        TOPICS_TABLE_NAME: topicsTable.tableName,
-        S3_BUCKET: primaryBucket.bucketName,
-        CONTEXT_TABLE: contextTable.tableName,
-        NODE_ENV: environment
-      }
-    });
+        this.addOutput('APIKeyId', {
+            value: apiKey.keyId,
+            description: 'API Key ID for authentication'
+        });
 
-    // Jobs table for async processing
-    const jobsTable = new Table(this, 'JobsTable', {
-      tableName: `${projectName}-jobs-v2`,
-      partitionKey: { name: 'jobId', type: AttributeType.STRING },
-      billingMode: BillingMode.PAY_PER_REQUEST,
-      removalPolicy: RemovalPolicy.DESTROY,
-      timeToLiveAttribute: 'ttl' // Auto-cleanup completed jobs after 24 hours
-    });
+        this.addOutput('WorkflowOrchestratorArn', {
+            value: workflowOrchestratorFunction.functionArn,
+            description: 'Workflow Orchestrator Lambda ARN (replaces Step Functions)'
+        });
 
-    // Async Processor Lambda for handling long-running operations
-    const asyncProcessorFunction = new Function(this, 'AsyncProcessorFunction', {
-      functionName: `${projectName}-async-processor-v3`,
-      runtime: Runtime.NODEJS_20_X,
-      handler: 'index.handler',
-      code: Code.fromAsset(join(process.cwd(), '../src/lambda/async-processor')),
-      timeout: Duration.minutes(15), // Long timeout for actual processing
-      memorySize: 1024,
-      role: lambdaRole,
-      layers: [contextLayer],
-      environment: {
-        JOBS_TABLE_NAME: jobsTable.tableName,
-        S3_BUCKET: primaryBucket.bucketName,
-        CONTEXT_TABLE: contextTable.tableName,
-        NODE_ENV: environment
-      }
-    });
+        this.addOutput('TopicsTableName', {
+            value: topicsTable.tableName,
+            description: 'DynamoDB topics table name'
+        });
 
-    // ========================================
-    // Automatic Scheduling with EventBridge
-    // ========================================
-    
-    // Schedule automatic video production based on Google Sheets
-    const videoProductionSchedule = new Rule(this, 'VideoProductionSchedule', {
-      ruleName: `${projectName}-auto-schedule`,
-      description: 'Automatically triggers video production based on Google Sheets schedule',
-      schedule: Schedule.rate(Duration.hours(8)), // Every 8 hours
-      enabled: true
-    });
+        this.addOutput('VideosTableName', {
+            value: videosTable.tableName,
+            description: 'DynamoDB videos table name'
+        });
 
-    // Target the workflow orchestrator for scheduled executions
-    videoProductionSchedule.addTarget(new LambdaFunction(workflowOrchestratorFunction, {
-      event: RuleTargetInput.fromObject({
-        action: 'start-scheduled',
-        source: 'eventbridge-schedule',
-        baseTopic: 'Auto-scheduled from Google Sheets',
-        scheduledBy: 'eventbridge',
-        useGoogleSheets: true,
-        timestamp: new Date().toISOString()
-      })
-    }));
+        this.addOutput('AutoScheduleRuleArn', {
+            value: videoProductionSchedule.ruleArn,
+            description: 'EventBridge rule for automatic video production (every 8 hours)'
+        });
 
-    // Optional: Additional schedule for high-priority content (every 4 hours)
-    const highPrioritySchedule = new Rule(this, 'HighPriorityVideoSchedule', {
-      ruleName: `${projectName}-high-priority-schedule`,
-      description: 'More frequent schedule for high-priority video topics',
-      schedule: Schedule.rate(Duration.hours(4)), // Every 4 hours
-      enabled: false // Disabled by default - can be enabled via AWS Console
-    });
+        this.addOutput('HighPriorityScheduleRuleArn', {
+            value: highPrioritySchedule.ruleArn,
+            description: 'EventBridge rule for high-priority videos (every 4 hours, disabled by default)'
+        });
 
-    highPrioritySchedule.addTarget(new LambdaFunction(workflowOrchestratorFunction, {
-      event: RuleTargetInput.fromObject({
-        action: 'start-scheduled',
-        source: 'eventbridge-high-priority',
-        baseTopic: 'High-priority auto-scheduled',
-        scheduledBy: 'eventbridge-priority',
-        useGoogleSheets: true,
-        priorityOnly: true,
-        timestamp: new Date().toISOString()
-      })
-    }));
+        // ========================================
+        // Expose properties for other stacks
+        // ========================================
 
-    // Grant EventBridge permission to invoke the workflow orchestrator
-    workflowOrchestratorFunction.addPermission('AllowEventBridgeInvoke', {
-      principal: new ServicePrincipal('events.amazonaws.com'),
-      sourceArn: videoProductionSchedule.ruleArn
-    });
+        this.sharedUtilitiesLayer = contextLayer;
+        this.workflowOrchestratorFunction = workflowOrchestratorFunction;
+        this.manifestBuilderFunction = manifestBuilderFunction;
+        this.topicsTable = topicsTable;
+        this.primaryBucket = primaryBucket;
+        this.contextTable = contextTable;
+    }
 
-    workflowOrchestratorFunction.addPermission('AllowEventBridgeHighPriorityInvoke', {
-      principal: new ServicePrincipal('events.amazonaws.com'),
-      sourceArn: highPrioritySchedule.ruleArn
-    });
-
-    // ========================================
-    // API Gateway
-    // ========================================
-
-    // Create REST API
-    const api = new RestApi(this, 'VideoPipelineAPI', {
-      restApiName: `${projectName}-api`,
-      description: 'API for Automated Video Pipeline',
-      defaultCorsPreflightOptions: {
-        allowOrigins: Cors.ALL_ORIGINS,
-        allowMethods: Cors.ALL_METHODS,
-        allowHeaders: ['Content-Type', 'X-Amz-Date', 'Authorization', 'X-Api-Key', 'X-Amz-Security-Token']
-      }
-    });
-
-    // API Key and Usage Plan
-    const apiKey = new ApiKey(this, 'VideoPipelineApiKey', {
-      apiKeyName: `${projectName}-api-key`,
-      description: 'API Key for Video Pipeline'
-    });
-
-    const usagePlan = new UsagePlan(this, 'VideoPipelineUsagePlan', {
-      name: `${projectName}-usage-plan`,
-      description: 'Usage plan for Video Pipeline API',
-      throttle: {
-        rateLimit: 100,
-        burstLimit: 200
-      },
-      quota: {
-        limit: 10000,
-        period: 'MONTH'
-      }
-    });
-
-    usagePlan.addApiKey(apiKey);
-    usagePlan.addApiStage({
-      stage: api.deploymentStage
-    });
-
-    // API Resources and Methods - Simplified and Enhanced by Default
-    const topicsResource = api.root.addResource('topics');
-    topicsResource.addMethod('GET', new LambdaIntegration(topicManagementFunction), { apiKeyRequired: true });
-    topicsResource.addMethod('POST', new LambdaIntegration(topicManagementFunction), { apiKeyRequired: true }); // Enhanced by default
-
-    // Health endpoint
-    const topicsHealthResource = topicsResource.addResource('health');
-    topicsHealthResource.addMethod('GET', new LambdaIntegration(topicManagementFunction), { apiKeyRequired: true });
-
-    const topicResource = topicsResource.addResource('{topicId}');
-    topicResource.addMethod('GET', new LambdaIntegration(topicManagementFunction), { apiKeyRequired: true });
-    topicResource.addMethod('PUT', new LambdaIntegration(topicManagementFunction), { apiKeyRequired: true });
-    topicResource.addMethod('DELETE', new LambdaIntegration(topicManagementFunction), { apiKeyRequired: true });
-
-    // Script Generator endpoints
-    const scriptsResource = api.root.addResource('scripts');
-    scriptsResource.addResource('generate').addMethod('POST', new LambdaIntegration(scriptGeneratorFunction), { apiKeyRequired: true });
-    scriptsResource.addResource('generate-enhanced').addMethod('POST', new LambdaIntegration(scriptGeneratorFunction), { apiKeyRequired: true });
-    scriptsResource.addResource('generate-from-project').addMethod('POST', new LambdaIntegration(scriptGeneratorFunction), { apiKeyRequired: true });
-    scriptsResource.addResource('health').addMethod('GET', new LambdaIntegration(scriptGeneratorFunction), { apiKeyRequired: true });
-
-    // Media Curator endpoints
-    const mediaResource = api.root.addResource('media');
-    mediaResource.addResource('curate').addMethod('POST', new LambdaIntegration(mediaCuratorFunction), { apiKeyRequired: true });
-    mediaResource.addResource('health').addMethod('GET', new LambdaIntegration(mediaCuratorFunction), { apiKeyRequired: true });
-
-    // Audio Generator endpoints
-    const audioResource = api.root.addResource('audio');
-    audioResource.addResource('generate').addMethod('POST', new LambdaIntegration(audioGeneratorFunction), { apiKeyRequired: true });
-    audioResource.addResource('health').addMethod('GET', new LambdaIntegration(audioGeneratorFunction), { apiKeyRequired: true });
-
-    // Video Assembler endpoints
-    const videoResource = api.root.addResource('video');
-    videoResource.addResource('assemble').addMethod('POST', new LambdaIntegration(videoAssemblerFunction), { apiKeyRequired: true });
-    videoResource.addResource('health').addMethod('GET', new LambdaIntegration(videoAssemblerFunction), { apiKeyRequired: true });
-
-    // YouTube Publisher endpoints
-    const youtubeResource = api.root.addResource('youtube');
-    youtubeResource.addResource('publish').addMethod('POST', new LambdaIntegration(youtubePublisherFunction), { apiKeyRequired: true });
-    youtubeResource.addResource('health').addMethod('GET', new LambdaIntegration(youtubePublisherFunction), { apiKeyRequired: true });
-
-    // Workflow endpoints
-    const workflowResource = api.root.addResource('workflow');
-    workflowResource.addResource('start').addMethod('POST', new LambdaIntegration(workflowOrchestratorFunction), { apiKeyRequired: true });
-    workflowResource.addResource('status').addMethod('GET', new LambdaIntegration(workflowOrchestratorFunction), { apiKeyRequired: true });
-    workflowResource.addResource('list').addMethod('GET', new LambdaIntegration(workflowOrchestratorFunction), { apiKeyRequired: true });
-    workflowResource.addResource('stats').addMethod('GET', new LambdaIntegration(workflowOrchestratorFunction), { apiKeyRequired: true });
-
-    // Async processing endpoints (timeout-safe)
-    const asyncResource = api.root.addResource('async');
-    asyncResource.addResource('health').addMethod('GET', new LambdaIntegration(asyncProcessorFunction), { apiKeyRequired: true });
-    asyncResource.addResource('start-pipeline').addMethod('POST', new LambdaIntegration(asyncProcessorFunction), { apiKeyRequired: true });
-    
-    const jobsResource = asyncResource.addResource('jobs');
-    const jobResource = jobsResource.addResource('{jobId}');
-    jobResource.addMethod('GET', new LambdaIntegration(asyncProcessorFunction), { apiKeyRequired: true });
-
-    videoResource.addResource('publish').addMethod('POST', new LambdaIntegration(youtubePublisherFunction), { apiKeyRequired: true });
-
-    // ========================================
-    // EventBridge Scheduling
-    // ========================================
-
-    // Daily video generation schedule
-    const dailySchedule = new Rule(this, 'DailyVideoGeneration', {
-      ruleName: `${projectName}-daily-schedule`,
-      description: 'Trigger daily video generation',
-      schedule: Schedule.cron({ hour: '10', minute: '0' }) // 10 AM UTC daily
-    });
-
-    dailySchedule.addTarget(new LambdaFunction(workflowOrchestratorFunction));
-
-    // ========================================
-    // ECS Cluster for Video Processing
-    // Note: ECS cluster will be created separately when needed
-    // For now, video assembly uses Lambda with processing instructions
-    // ========================================
-
-    // ========================================
-    // Outputs
-    // ========================================
-
-    this.addOutput('PrimaryBucketName', {
-      value: primaryBucket.bucketName,
-      description: 'Primary S3 bucket for video assets'
-    });
-
-    this.addOutput('APIEndpoint', {
-      value: api.url,
-      description: 'API Gateway endpoint URL'
-    });
-
-    this.addOutput('APIKeyId', {
-      value: apiKey.keyId,
-      description: 'API Key ID for authentication'
-    });
-
-    this.addOutput('WorkflowOrchestratorArn', {
-      value: workflowOrchestratorFunction.functionArn,
-      description: 'Workflow Orchestrator Lambda ARN (replaces Step Functions)'
-    });
-
-    this.addOutput('TopicsTableName', {
-      value: topicsTable.tableName,
-      description: 'DynamoDB topics table name'
-    });
-
-    this.addOutput('VideosTableName', {
-      value: videosTable.tableName,
-      description: 'DynamoDB videos table name'
-    });
-
-    this.addOutput('AutoScheduleRuleArn', {
-      value: videoProductionSchedule.ruleArn,
-      description: 'EventBridge rule for automatic video production (every 8 hours)'
-    });
-
-    this.addOutput('HighPriorityScheduleRuleArn', {
-      value: highPrioritySchedule.ruleArn,
-      description: 'EventBridge rule for high-priority videos (every 4 hours, disabled by default)'
-    });
-
-    // ========================================
-    // Expose properties for other stacks
-    // ========================================
-    
-    this.sharedUtilitiesLayer = contextLayer;
-    this.workflowOrchestratorFunction = workflowOrchestratorFunction;
-    this.topicsTable = topicsTable;
-    this.primaryBucket = primaryBucket;
-    this.contextTable = contextTable;
-  }
-
-  addOutput(id, props) {
-    new CfnOutput(this, id, props);
-  }
+    addOutput(id, props) {
+        new CfnOutput(this, id, props);
+    }
 }
-

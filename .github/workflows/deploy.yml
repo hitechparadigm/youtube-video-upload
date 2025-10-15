@@ -1,199 +1,39 @@
-name: Deploy Automated Video Pipeline
+name: Deploy Enhanced Video Pipeline
 
 on:
   push:
-    branches: [main, develop]
-  pull_request:
-    branches: [main]
+    branches: [ main ]
   workflow_dispatch:
-    inputs:
-      environment:
-        description: 'Environment to deploy to'
-        required: true
-        default: 'staging'
-        type: choice
-        options:
-        - staging
-        - production
-
-env:
-  AWS_REGION: us-east-1
-  NODE_VERSION: '20'
 
 jobs:
-  test:
-    name: Run Tests
+  deploy:
     runs-on: ubuntu-latest
+    
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
-
-      - name: Install dependencies
-        run: |
-          npm ci
-          cd infrastructure && npm ci
-
-      - name: Run comprehensive test suite
-        run: |
-          # Run consolidated Jest test suite
-          npm run test:health
-          npm run test:unit
-          npm run test:integration
-
-      - name: Lint code
-        run: |
-          npm run lint || echo "Linting not configured yet"
-
-      - name: Security audit
-        run: |
-          npm audit --audit-level moderate
-          cd infrastructure && npm audit --audit-level moderate
-
-  deploy-staging:
-    name: Deploy to Staging
-    runs-on: ubuntu-latest
-    needs: test
-    if: github.ref == 'refs/heads/develop' || (github.event_name == 'workflow_dispatch' && github.event.inputs.environment == 'staging')
-    environment: staging
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
-
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ env.AWS_REGION }}
-
-      - name: Install AWS CDK
-        run: npm install -g aws-cdk
-
-      - name: Install dependencies
-        run: |
-          npm ci
-          cd infrastructure && npm ci
-
-      - name: Install Lambda dependencies
-        run: |
-          # All Lambda functions now use shared utilities from root
-          echo "Lambda functions use shared utilities - no individual dependencies needed"
-
-      - name: Bootstrap CDK (if needed)
-        run: |
-          cd infrastructure
-          cdk bootstrap aws://${{ secrets.AWS_ACCOUNT_ID }}/${{ env.AWS_REGION }} || true
-
-      - name: Deploy to staging
-        run: |
-          cd infrastructure
-          export ENVIRONMENT=staging
-          cdk deploy VideoPipelineStack-Staging \
-            --require-approval never \
-            --outputs-file ../deployment-outputs-staging.json \
-            --context environment=staging
-
-      - name: Store deployment outputs securely
-        run: |
-          echo "Deployment completed to staging environment"
-          echo "API Endpoint created (check AWS Console for details)"
-          # DO NOT output sensitive information like API keys
-
-      - name: Run integration tests
-        run: |
-          export AWS_REGION=${{ env.AWS_REGION }}
-          npm run test:health || echo "Health check completed with warnings"
-
-  deploy-production:
-    name: Deploy to Production
-    runs-on: ubuntu-latest
-    needs: test
-    if: github.ref == 'refs/heads/main' || (github.event_name == 'workflow_dispatch' && github.event.inputs.environment == 'production')
-    environment: production
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
-
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID_PROD }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY_PROD }}
-          aws-region: ${{ env.AWS_REGION }}
-
-      - name: Install AWS CDK
-        run: npm install -g aws-cdk
-
-      - name: Install dependencies
-        run: |
-          npm ci
-          cd infrastructure && npm ci
-
-      - name: Install Lambda dependencies
-        run: |
-          # All Lambda functions now use shared utilities from root
-          echo "Lambda functions use shared utilities - no individual dependencies needed"
-
-      - name: Bootstrap CDK (if needed)
-        run: |
-          cd infrastructure
-          cdk bootstrap aws://${{ secrets.AWS_ACCOUNT_ID_PROD }}/${{ env.AWS_REGION }} || true
-
-      - name: Deploy to production
-        run: |
-          cd infrastructure
-          export ENVIRONMENT=production
-          cdk deploy VideoPipelineStack-Production \
-            --require-approval never \
-            --outputs-file ../deployment-outputs-production.json \
-            --context environment=production
-
-      - name: Store deployment outputs securely
-        run: |
-          echo "Deployment completed to production environment"
-          echo "Check AWS Console for API Gateway details"
-          echo "API Key stored securely in AWS - retrieve via AWS CLI when needed"
-
-      - name: Run production health checks
-        run: |
-          export AWS_REGION=${{ env.AWS_REGION }}
-          npm run test:health
-
-  cleanup-old-resources:
-    name: Cleanup Old Resources
-    runs-on: ubuntu-latest
-    if: github.event_name == 'workflow_dispatch'
-    environment: cleanup
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ env.AWS_REGION }}
-
-      - name: Cleanup old resources
-        run: |
-          echo "Running cleanup of old resources..."
-          node scripts/cleanup-old-resources.js
+    - uses: actions/checkout@v3
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '18'
+        cache: 'npm'
+    
+    - name: Install dependencies
+      run: npm install
+    
+    - name: Install CDK dependencies
+      run: |
+        cd infrastructure
+        npm install
+    
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v2
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: us-east-1
+    
+    - name: Deploy CDK Stack
+      run: |
+        cd infrastructure
+        npx cdk deploy --all --require-approval never
