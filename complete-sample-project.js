@@ -13,7 +13,7 @@ AWS.config.update({
 
 const s3 = new AWS.S3();
 const bucketName = 'automated-video-pipeline-v2-786673323159-us-east-1';
-const projectId = '2025-10-15_01-34-01_travel-to-spain';
+const projectId = '2025-10-15_01-58-13_travel-to-spain';
 const basePath = `videos/${projectId}`;
 
 async function completeProject() {

@@ -1,0 +1,15 @@
+{
+  "projectId": null,
+  "contentValidation": {
+    "topicContext": false,
+    "scriptContent": false,
+    "mediaAssets": false,
+    "audioFiles": false,
+    "videoManifest": false
+  },
+  "fileSizes": {},
+  "errors": [
+    "System health check failed: 403"
+  ],
+  "success": false
+}

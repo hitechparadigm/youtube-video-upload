@@ -28,10 +28,114 @@ const handler = async (event) => {
             body: JSON.stringify({
                 service: 'youtube-publisher-complete-metadata',
                 status: 'healthy',
-                capabilities: ['youtube-metadata', 'project-summary', 'cost-tracking', 'analytics'],
+                capabilities: ['youtube-metadata', 'project-summary', 'cost-tracking', 'analytics', 'youtube-upload'],
+                uploadModeAvailable: true,
                 timestamp: new Date().toISOString()
             })
         };
+    }
+
+    // NEW: Authentication check endpoint
+    if (httpMethod === 'POST' && path === '/youtube/auth-check') {
+        try {
+            console.log('🔐 Checking YouTube authentication status...');
+
+            const {
+                YouTubeService
+            } = require('./youtube-service');
+            const youtubeService = new YouTubeService();
+
+            const authStatus = await youtubeService.checkAuthenticationStatus();
+
+            return {
+                statusCode: 200,
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Access-Control-Allow-Origin': '*'
+                },
+                body: JSON.stringify({
+                    success: true,
+                    authStatus: authStatus,
+                    timestamp: new Date().toISOString()
+                })
+            };
+
+        } catch (error) {
+            console.error('❌ Auth check failed:', error);
+            return {
+                statusCode: 500,
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Access-Control-Allow-Origin': '*'
+                },
+                body: JSON.stringify({
+                    success: false,
+                    error: 'Authentication check failed',
+                    details: error.message,
+                    timestamp: new Date().toISOString()
+                })
+            };
+        }
+    }
+
+    // DEBUG: Test credential access endpoint
+    if (httpMethod === 'POST' && path === '/youtube/debug-credentials') {
+        try {
+            console.log('🔍 Debug: Testing credential access...');
+
+            const {
+                SecretsManagerClient,
+                GetSecretValueCommand
+            } = require('@aws-sdk/client-secrets-manager');
+            const secretsClient = new SecretsManagerClient({
+                region: process.env.AWS_REGION || 'us-east-1'
+            });
+
+            const secretName = process.env.YOUTUBE_SECRET_NAME || 'youtube-automation/credentials';
+            console.log(`🔍 Debug: Trying to access secret: ${secretName}`);
+
+            const response = await secretsClient.send(new GetSecretValueCommand({
+                SecretId: secretName
+            }));
+
+            const credentials = JSON.parse(response.SecretString);
+
+            return {
+                statusCode: 200,
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Access-Control-Allow-Origin': '*'
+                },
+                body: JSON.stringify({
+                    success: true,
+                    debug: 'credential-access',
+                    secretName: secretName,
+                    hasCredentials: !!credentials,
+                    hasClientId: !!credentials.client_id,
+                    hasClientSecret: !!credentials.client_secret,
+                    hasRefreshToken: !!credentials.refresh_token,
+                    timestamp: new Date().toISOString()
+                })
+            };
+
+        } catch (error) {
+            console.error('🔍 Debug: Credential access failed:', error);
+            return {
+                statusCode: 500,
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Access-Control-Allow-Origin': '*'
+                },
+                body: JSON.stringify({
+                    success: false,
+                    debug: 'credential-access',
+                    error: 'Credential access failed',
+                    details: error.message,
+                    errorCode: error.code,
+                    timestamp: new Date().toISOString()
+                })
+            };
+        }
     }
 
     if (httpMethod === 'POST' && path === '/youtube/publish') {
@@ -42,8 +146,56 @@ const handler = async (event) => {
             privacy,
             metadata,
             useManifest = false,
-            manifestPath
+            manifestPath,
+            mode = 'auto', // 'auto', 'upload', 'metadata'
+            enableUpload = false, // Feature flag for upload mode
+            action // Handle action-based requests
         } = requestBody;
+
+        // Handle action-based requests
+        if (action === 'auth-check') {
+            try {
+                console.log('🔐 Handling auth-check action...');
+
+                const {
+                    YouTubeService
+                } = require('./youtube-service');
+                const youtubeService = new YouTubeService();
+
+                const authStatus = await youtubeService.checkAuthenticationStatus();
+
+                return {
+                    statusCode: 200,
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Access-Control-Allow-Origin': '*'
+                    },
+                    body: JSON.stringify({
+                        success: true,
+                        action: 'auth-check',
+                        authStatus: authStatus,
+                        timestamp: new Date().toISOString()
+                    })
+                };
+
+            } catch (error) {
+                console.error('❌ Auth check action failed:', error);
+                return {
+                    statusCode: 500,
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Access-Control-Allow-Origin': '*'
+                    },
+                    body: JSON.stringify({
+                        success: false,
+                        action: 'auth-check',
+                        error: 'Authentication check failed',
+                        details: error.message,
+                        timestamp: new Date().toISOString()
+                    })
+                };
+            }
+        }
         const videoId = `yt-${Date.now()}`;
         const youtubeUrl = `https://www.youtube.com/watch?v=${videoId}`;
 
@@ -54,8 +206,14 @@ const handler = async (event) => {
                 return await publishFromManifest(projectId, manifestPath, privacy, videoId, youtubeUrl);
             }
 
-            // LEGACY: Fallback to old method if no manifest specified
-            console.log(`📝 Starting complete metadata creation for project: ${projectId}`);
+            // NEW: Check if upload mode is enabled and requested
+            if (enableUpload && (mode === 'upload' || mode === 'auto')) {
+                console.log(`🚀 Upload mode enabled - attempting YouTube upload (mode: ${mode})`);
+                return await handleUploadMode(projectId, privacy, metadata, mode);
+            }
+
+            // LEGACY: Fallback to metadata-only method
+            console.log(`📝 Starting metadata-only creation for project: ${projectId} (mode: ${mode})`);
 
             // Step 1: Analyze project content for comprehensive metadata
             const projectAnalysis = await analyzeCompleteProject(projectId);
@@ -563,6 +721,118 @@ async function uploadAllMetadataFiles(projectId, metadataObjects) {
     } catch (error) {
         console.error('❌ Failed to upload metadata files:', error);
         throw error;
+    }
+}
+
+/**
+ * Handle upload mode - attempt actual YouTube upload
+ */
+async function handleUploadMode(projectId, privacy, metadata, mode) {
+    console.log(`🚀 Handling upload mode for project: ${projectId}`);
+
+    try {
+        // Import YouTube service
+        const {
+            YouTubeService
+        } = require('./youtube-service');
+        const youtubeService = new YouTubeService();
+
+        // Analyze project to get video file location
+        const projectAnalysis = await analyzeCompleteProject(projectId);
+
+        // Find the video file
+        const videoFiles = projectAnalysis.contentByType.video;
+        if (!videoFiles || videoFiles.length === 0) {
+            throw new Error('No video file found in project');
+        }
+
+        // Use the first video file (should be final-video.mp4)
+        const videoFile = videoFiles[0];
+        const videoFilePath = `s3://${process.env.S3_BUCKET_NAME || process.env.S3_BUCKET}/${videoFile.Key}`;
+
+        // Find the best thumbnail
+        const mediaFiles = projectAnalysis.contentByType.media;
+        let thumbnailPath = null;
+        if (mediaFiles && mediaFiles.length > 0) {
+            // Use the first image as thumbnail
+            const thumbnailFile = mediaFiles.find(f => f.Key.includes('.jpg') || f.Key.includes('.png'));
+            if (thumbnailFile) {
+                thumbnailPath = `s3://${process.env.S3_BUCKET_NAME || process.env.S3_BUCKET}/${thumbnailFile.Key}`;
+            }
+        }
+
+        // Create enhanced metadata
+        const youtubeMetadata = await createYouTubeMetadata(projectId, projectAnalysis, metadata, null, null, privacy);
+
+        // Prepare upload request
+        const uploadRequest = {
+            videoId: projectId,
+            videoFilePath: videoFilePath,
+            title: youtubeMetadata.videoDetails.title,
+            description: youtubeMetadata.videoDetails.description,
+            tags: youtubeMetadata.videoDetails.tags,
+            thumbnail: thumbnailPath,
+            privacy: privacy || youtubeMetadata.videoDetails.privacy,
+            category: youtubeMetadata.videoDetails.category,
+            mode: mode
+        };
+
+        console.log(`📤 Attempting YouTube upload with request:`, {
+            videoId: uploadRequest.videoId,
+            title: uploadRequest.title,
+            privacy: uploadRequest.privacy,
+            hasVideo: !!uploadRequest.videoFilePath,
+            hasThumbnail: !!uploadRequest.thumbnail
+        });
+
+        // Attempt upload using the enhanced service
+        const uploadResult = await youtubeService.publishVideoWithMode(uploadRequest);
+
+        // Create comprehensive response
+        const response = {
+            statusCode: 200,
+            headers: {
+                'Content-Type': 'application/json',
+                'Access-Control-Allow-Origin': '*'
+            },
+            body: JSON.stringify({
+                success: true,
+                mode: uploadResult.mode,
+                projectId: projectId,
+                videoId: uploadResult.videoId,
+                youtubeUrl: uploadResult.youtubeUrl,
+                youtubeVideoId: uploadResult.youtubeVideoId,
+                uploadTime: uploadResult.uploadTime,
+                metadata: uploadResult.metadata,
+                message: uploadResult.message || 'YouTube publishing completed successfully',
+                timestamp: new Date().toISOString()
+            })
+        };
+
+        console.log(`✅ Upload mode completed successfully: ${uploadResult.mode}`);
+        return response;
+
+    } catch (error) {
+        console.error('❌ Upload mode failed, creating error response:', error);
+
+        // Return error response but don't throw - let the caller handle fallback
+        return {
+            statusCode: 500,
+            headers: {
+                'Content-Type': 'application/json',
+                'Access-Control-Allow-Origin': '*'
+            },
+            body: JSON.stringify({
+                success: false,
+                mode: 'upload-failed',
+                projectId: projectId,
+                error: 'YouTube upload failed',
+                details: error.message,
+                fallbackAvailable: true,
+                message: 'Upload failed - metadata-only mode available as fallback',
+                timestamp: new Date().toISOString()
+            })
+        };
     }
 }
 

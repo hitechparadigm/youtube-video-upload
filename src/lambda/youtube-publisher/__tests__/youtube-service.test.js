@@ -1,231 +1,254 @@
 /**
- * Simple tests for YouTube Service
+ * YouTube Service Tests
+ * Tests for video upload, authentication integration, and service functionality
  */
 
-// Mock all AWS SDK modules before importing
-jest.mock('@aws-sdk/client-s3', () => ({
-  S3Client: jest.fn(),
-  GetObjectCommand: jest.fn()
-}));
-jest.mock('@aws-sdk/client-secrets-manager', () => ({
-  SecretsManagerClient: jest.fn(),
-  GetSecretValueCommand: jest.fn()
-}));
-jest.mock('@aws-sdk/client-dynamodb', () => ({
-  DynamoDBClient: jest.fn()
-}));
-jest.mock('@aws-sdk/lib-dynamodb', () => ({
-  DynamoDBDocumentClient: {
-    from: jest.fn()
-  },
-  PutCommand: jest.fn(),
-  UpdateCommand: jest.fn(),
-  GetCommand: jest.fn()
-}));
-jest.mock('googleapis', () => ({
-  google: {
-    auth: {
-      OAuth2: jest.fn()
-    },
-    youtube: jest.fn()
-  }
-}));
-jest.mock('fs', () => ({
-  createReadStream: jest.fn(),
-  writeFileSync: jest.fn(),
-  existsSync: jest.fn(),
-  unlinkSync: jest.fn()
-}));
+const {
+    YouTubeService
+} = require('../youtube-service');
 
-const { YouTubeService } = require('../youtube-service');
+// Mock dependencies
+jest.mock('@aws-sdk/client-s3');
+jest.mock('@aws-sdk/client-secrets-manager');
+jest.mock('@aws-sdk/lib-dynamodb');
+jest.mock('../oauth-manager');
 
 describe('YouTubeService', () => {
-  let youtubeService;
+    let youtubeService;
+    let mockOAuthManager;
 
-  beforeEach(() => {
-    // Set up environment variables
-    process.env.AWS_REGION = 'us-east-1';
-    process.env.S3_BUCKET_NAME = 'test-bucket';
-    process.env.YOUTUBE_SECRET_NAME = 'test-secret';
-    process.env.VIDEOS_TABLE_NAME = 'test-table';
+    beforeEach(() => {
+        jest.clearAllMocks();
 
-    youtubeService = new YouTubeService();
-  });
+        // Mock OAuth Manager
+        const {
+            YouTubeOAuthManager
+        } = require('../oauth-manager');
+        mockOAuthManager = {
+            getAuthenticatedClient: jest.fn(),
+            getAuthStatus: jest.fn()
+        };
+        YouTubeOAuthManager.mockImplementation(() => mockOAuthManager);
 
-  afterEach(() => {
-    jest.clearAllMocks();
-  });
-
-  describe('generateOptimizedMetadata', () => {
-    test('should generate optimized metadata from script data', () => {
-      const scriptData = {
-        clickWorthyMetadata: {
-          title: 'This App Turned $50 Into $127 in 3 Weeks (Beginners Only)',
-          description: 'Sarah started with $50 and made $127 in just 3 weeks...',
-          tags: ['investment apps', 'beginners', 'money']
-        },
-        scenes: [
-          { duration: 15, type: 'hook' },
-          { duration: 45, type: 'story' },
-          { duration: 90, type: 'value' }
-        ]
-      };
-
-      const trendData = {
-        hotKeywords: ['2025 investing', 'AI stocks', 'mobile apps']
-      };
-
-      const result = youtubeService.generateOptimizedMetadata(scriptData, trendData);
-
-      expect(result.title).toContain('This App Turned $50 Into $127');
-      expect(result.description).toContain('TIMESTAMPS:');
-      expect(result.description).toContain('0:00 - hook');
-      expect(result.description).toContain('SUBSCRIBE');
-      expect(result.tags).toContain('investment apps');
-      expect(result.tags).toContain('2025 investing');
+        youtubeService = new YouTubeService();
     });
 
-    test('should handle missing script data gracefully', () => {
-      const result = youtubeService.generateOptimizedMetadata({}, {});
+    describe('initialization', () => {
+        test('should initialize with default configuration', () => {
+            expect(youtubeService.config.bucket).toBe('automated-video-pipeline-786673323159-us-east-1');
+            expect(youtubeService.config.secretName).toBe('youtube-automation/credentials');
+        });
 
-      expect(result.title).toBe('Automated Video Content');
-      expect(result.description).toContain('Automated video content');
-      expect(result.tags).toContain('automated content');
-    });
-  });
-
-  describe('optimizeTitle', () => {
-    test('should optimize title within YouTube limits', () => {
-      const longTitle = 'A'.repeat(120); // Exceeds 100 character limit
-      const result = youtubeService.optimizeTitle(longTitle, {});
-
-      expect(result.length).toBeLessThanOrEqual(100);
+        test('should initialize OAuth manager', () => {
+            expect(youtubeService.oauthManager).toBeDefined();
+        });
     });
 
-    test('should add trending keywords when space allows', () => {
-      const shortTitle = 'Investment Tips';
-      const trendData = { hotKeywords: ['2025 trends'] };
+    describe('authentication status', () => {
+        test('should check authentication status successfully', async () => {
+            const mockAuthStatus = {
+                authenticated: true,
+                channelInfo: {
+                    channelId: 'test-channel-id',
+                    channelTitle: 'Test Channel'
+                }
+            };
 
-      const result = youtubeService.optimizeTitle(shortTitle, trendData);
+            mockOAuthManager.getAuthStatus.mockResolvedValue(mockAuthStatus);
 
-      expect(result).toContain('Investment Tips');
-      expect(result).toContain('2025 trends');
-    });
-  });
+            const result = await youtubeService.checkAuthenticationStatus();
 
-  describe('generateStrategicTags', () => {
-    test('should combine original tags with trending keywords', () => {
-      const originalTags = ['investing', 'money'];
-      const trendData = { hotKeywords: ['2025', 'apps', 'beginners'] };
+            expect(result).toEqual(mockAuthStatus);
+            expect(mockOAuthManager.getAuthStatus).toHaveBeenCalledTimes(1);
+        });
 
-      const result = youtubeService.generateStrategicTags(originalTags, trendData);
+        test('should handle authentication check failures', async () => {
+            mockOAuthManager.getAuthStatus.mockRejectedValue(new Error('Auth check failed'));
 
-      expect(result).toContain('investing');
-      expect(result).toContain('money');
-      expect(result).toContain('2025');
-      expect(result).toContain('apps');
-      expect(result).toContain('automated content');
-      expect(result.length).toBeLessThanOrEqual(15);
-    });
+            const result = await youtubeService.checkAuthenticationStatus();
 
-    test('should remove duplicates', () => {
-      const originalTags = ['investing', 'money', 'investing']; // Duplicate
-      const result = youtubeService.generateStrategicTags(originalTags, {});
-
-      const uniqueTags = [...new Set(result)];
-      expect(result.length).toBe(uniqueTags.length);
-    });
-  });
-
-  describe('createEngagingDescription', () => {
-    test('should create description with timestamps', () => {
-      const originalDescription = 'Test video description';
-      const scriptData = {
-        scenes: [
-          { duration: 30, type: 'intro' },
-          { duration: 60, type: 'main content' },
-          { duration: 15, type: 'outro' }
-        ]
-      };
-
-      const result = youtubeService.createEngagingDescription(originalDescription, scriptData);
-
-      expect(result).toContain('Test video description');
-      expect(result).toContain('TIMESTAMPS:');
-      expect(result).toContain('0:00 - intro');
-      expect(result).toContain('0:30 - main content');
-      expect(result).toContain('1:30 - outro');
-      expect(result).toContain('SUBSCRIBE');
+            expect(result.authenticated).toBe(false);
+            expect(result.error).toBe('Auth check failed');
+            expect(result.needsReauth).toBe(true);
+        });
     });
 
-    test('should handle missing description', () => {
-      const result = youtubeService.createEngagingDescription(null, {});
+    describe('publish video with mode', () => {
+        test('should use upload mode when authenticated', async () => {
+            const mockAuthStatus = {
+                authenticated: true
+            };
+            mockOAuthManager.getAuthStatus.mockResolvedValue(mockAuthStatus);
 
-      expect(result).toContain('Automated video content');
-      expect(result).toContain('SUBSCRIBE');
+            // Mock the publishVideo method
+            youtubeService.publishVideo = jest.fn().mockResolvedValue({
+                success: true,
+                youtubeVideoId: 'test-video-id',
+                youtubeUrl: 'https://youtube.com/watch?v=test-video-id'
+            });
+
+            const publishRequest = {
+                videoId: 'test-video',
+                title: 'Test Video',
+                mode: 'auto'
+            };
+
+            const result = await youtubeService.publishVideoWithMode(publishRequest);
+
+            expect(result.success).toBe(true);
+            expect(youtubeService.publishVideo).toHaveBeenCalledWith(publishRequest);
+        });
+
+        test('should use metadata-only mode when not authenticated', async () => {
+            const mockAuthStatus = {
+                authenticated: false
+            };
+            mockOAuthManager.getAuthStatus.mockResolvedValue(mockAuthStatus);
+
+            // Mock the storeUploadRecord method
+            youtubeService.storeUploadRecord = jest.fn().mockResolvedValue();
+
+            const publishRequest = {
+                videoId: 'test-video',
+                title: 'Test Video',
+                mode: 'auto'
+            };
+
+            const result = await youtubeService.publishVideoWithMode(publishRequest);
+
+            expect(result.success).toBe(true);
+            expect(result.mode).toBe('metadata-only');
+            expect(result.metadata).toBeDefined();
+            expect(result.metadata.uploadInstructions).toBeDefined();
+        });
+
+        test('should force upload mode when explicitly requested', async () => {
+            const mockAuthStatus = {
+                authenticated: true
+            };
+            mockOAuthManager.getAuthStatus.mockResolvedValue(mockAuthStatus);
+
+            youtubeService.publishVideo = jest.fn().mockResolvedValue({
+                success: true,
+                youtubeVideoId: 'test-video-id'
+            });
+
+            const publishRequest = {
+                videoId: 'test-video',
+                mode: 'upload'
+            };
+
+            await youtubeService.publishVideoWithMode(publishRequest);
+
+            expect(youtubeService.publishVideo).toHaveBeenCalled();
+        });
+
+        test('should force metadata-only mode when explicitly requested', async () => {
+            const mockAuthStatus = {
+                authenticated: true
+            };
+            mockOAuthManager.getAuthStatus.mockResolvedValue(mockAuthStatus);
+
+            youtubeService.storeUploadRecord = jest.fn().mockResolvedValue();
+
+            const publishRequest = {
+                videoId: 'test-video',
+                mode: 'metadata'
+            };
+
+            const result = await youtubeService.publishVideoWithMode(publishRequest);
+
+            expect(result.mode).toBe('metadata-only');
+            expect(youtubeService.storeUploadRecord).toHaveBeenCalled();
+        });
     });
-  });
 
-  describe('publishVideo', () => {
-    test('should handle missing YouTube client gracefully', async () => {
-      const publishRequest = {
-        videoId: 'test-video',
-        videoFilePath: 's3://bucket/video.mp4',
-        title: 'Test Video',
-        description: 'Test description',
-        tags: ['test']
-      };
+    describe('metadata-only mode', () => {
+        test('should create comprehensive metadata for manual upload', async () => {
+            youtubeService.storeUploadRecord = jest.fn().mockResolvedValue();
 
-      // Mock the initialization to fail
-      youtubeService.initializeYouTubeClient = jest.fn().mockRejectedValue(new Error('No credentials'));
-      youtubeService.storeUploadRecord = jest.fn().mockResolvedValue();
-      youtubeService.updateUploadRecord = jest.fn().mockResolvedValue();
+            const publishRequest = {
+                videoId: 'test-video',
+                title: 'Test Video Title',
+                description: 'Test Description',
+                tags: ['test', 'video'],
+                privacy: 'unlisted',
+                videoFilePath: 's3://bucket/video.mp4',
+                thumbnail: 's3://bucket/thumb.jpg'
+            };
 
-      await expect(youtubeService.publishVideo(publishRequest)).rejects.toThrow('No credentials');
+            const authStatus = {
+                authenticated: false,
+                error: 'No credentials'
+            };
+
+            const result = await youtubeService.createMetadataOnly(publishRequest, authStatus);
+
+            expect(result.success).toBe(true);
+            expect(result.mode).toBe('metadata-only');
+            expect(result.metadata.youtubeMetadata.title).toBe('Test Video Title');
+            expect(result.metadata.youtubeMetadata.description).toBe('Test Description');
+            expect(result.metadata.youtubeMetadata.tags).toEqual(['test', 'video']);
+            expect(result.metadata.youtubeMetadata.privacy).toBe('unlisted');
+            expect(result.metadata.uploadInstructions.steps).toHaveLength(7);
+            expect(result.metadata.uploadInstructions.videoLocation).toBe('s3://bucket/video.mp4');
+            expect(result.metadata.authenticationStatus).toEqual(authStatus);
+        });
+
+        test('should use default values for missing metadata', async () => {
+            youtubeService.storeUploadRecord = jest.fn().mockResolvedValue();
+
+            const publishRequest = {
+                videoId: 'test-video'
+            };
+
+            const result = await youtubeService.createMetadataOnly(publishRequest, {});
+
+            expect(result.metadata.youtubeMetadata.title).toBe('AI Generated Video - test-video');
+            expect(result.metadata.youtubeMetadata.description).toBe('AI-generated video content ready for upload.');
+            expect(result.metadata.youtubeMetadata.tags).toEqual(['ai-generated', 'automated-content']);
+            expect(result.metadata.youtubeMetadata.privacy).toBe('unlisted');
+        });
     });
 
-    test('should validate required parameters', async () => {
-      const invalidRequest = {
-        videoId: 'test-video'
-        // Missing videoFilePath
-      };
+    describe('error handling', () => {
+        test('should fallback to metadata-only on upload failure', async () => {
+            const mockAuthStatus = {
+                authenticated: true
+            };
+            mockOAuthManager.getAuthStatus.mockResolvedValue(mockAuthStatus);
 
-      await expect(youtubeService.publishVideo(invalidRequest)).rejects.toThrow('Missing required parameters');
+            // Mock publishVideo to fail
+            youtubeService.publishVideo = jest.fn().mockRejectedValue(new Error('Upload failed'));
+            youtubeService.storeUploadRecord = jest.fn().mockResolvedValue();
+
+            const publishRequest = {
+                videoId: 'test-video',
+                mode: 'auto'
+            };
+
+            const result = await youtubeService.publishVideoWithMode(publishRequest);
+
+            expect(result.success).toBe(true);
+            expect(result.mode).toBe('metadata-only');
+            expect(result.message).toContain('Manual upload required due to authentication issues');
+        });
+
+        test('should throw error if both upload and metadata-only fail', async () => {
+            const mockAuthStatus = {
+                authenticated: true
+            };
+            mockOAuthManager.getAuthStatus.mockResolvedValue(mockAuthStatus);
+
+            youtubeService.publishVideo = jest.fn().mockRejectedValue(new Error('Upload failed'));
+            youtubeService.storeUploadRecord = jest.fn().mockRejectedValue(new Error('Storage failed'));
+
+            const publishRequest = {
+                videoId: 'test-video',
+                mode: 'auto'
+            };
+
+            await expect(youtubeService.publishVideoWithMode(publishRequest)).rejects.toThrow('Complete publishing failure');
+        });
     });
-  });
-
-  describe('getYouTubeCredentials', () => {
-    test('should validate required credential fields', async () => {
-      // Mock Secrets Manager to return incomplete credentials
-      youtubeService.secretsClient = {
-        send: jest.fn().mockResolvedValue({
-          SecretString: JSON.stringify({
-            client_id: 'test-id'
-            // Missing client_secret and refresh_token
-          })
-        })
-      };
-
-      await expect(youtubeService.getYouTubeCredentials()).rejects.toThrow('Missing required credential: client_secret');
-    });
-
-    test('should return valid credentials', async () => {
-      const mockCredentials = {
-        client_id: 'test-id',
-        client_secret: 'test-secret',
-        refresh_token: 'test-token',
-        redirect_uri: 'http://localhost'
-      };
-
-      youtubeService.secretsClient = {
-        send: jest.fn().mockResolvedValue({
-          SecretString: JSON.stringify(mockCredentials)
-        })
-      };
-
-      const result = await youtubeService.getYouTubeCredentials();
-
-      expect(result).toEqual(mockCredentials);
-    });
-  });
 });
