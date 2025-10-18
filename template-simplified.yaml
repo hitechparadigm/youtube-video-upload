@@ -78,6 +78,7 @@ Resources:
   # Usage Plan
   UsagePlan:
     Type: AWS::ApiGateway::UsagePlan
+    DependsOn: VideoApiStage
     Properties:
       UsagePlanName: !Sub 'video-pipeline-${Environment}'
       ApiStages:
