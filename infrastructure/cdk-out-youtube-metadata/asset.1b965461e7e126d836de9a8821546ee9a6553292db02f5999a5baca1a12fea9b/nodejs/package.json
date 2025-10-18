@@ -1,6 +1,0 @@
-{
-  "name": "automated-video-pipeline-config-layer",
-  "version": "1.0.0",
-  "description": "Shared configuration management for video pipeline",
-  "main": "config.js"
-}
