@@ -11,7 +11,7 @@ Parameters:
 
 Globals:
   Function:
-    Runtime: nodejs18.x
+    Runtime: nodejs22.x
     Timeout: 300
     MemorySize: 1024
     Environment:
@@ -19,7 +19,7 @@ Globals:
         S3_BUCKET: !Ref VideoBucket
         CONTEXT_TABLE: !Ref ContextTable
         NODE_ENV: !Ref Environment
-        AWS_REGION: !Ref AWS::Region
+        REGION: !Ref AWS::Region
     Architectures:
       - x86_64
     Tags:

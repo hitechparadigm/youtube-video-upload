@@ -20,10 +20,10 @@ const {
 } = require('@aws-sdk/util-dynamodb');
 
 const s3Client = new S3Client({
-    region: process.env.AWS_REGION || 'us-east-1'
+    region: process.env.REGION || process.env.AWS_REGION || 'us-east-1'
 });
 const dynamoClient = new DynamoDBClient({
-    region: process.env.AWS_REGION || 'us-east-1'
+    region: process.env.REGION || process.env.AWS_REGION || 'us-east-1'
 });
 
 /**
