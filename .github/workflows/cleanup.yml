@@ -6,10 +6,12 @@ on:
       environment:
         description: 'Environment to clean up'
         required: true
-        default: 'production'
+        default: 'dev'
         type: choice
         options:
-          - production
+          - dev
+          - staging
+          - prod
       confirm_cleanup:
         description: 'Type "CONFIRM" to proceed with cleanup'
         required: true
@@ -17,11 +19,12 @@ on:
       cleanup_scope:
         description: 'What to clean up'
         required: true
-        default: 'old-versions'
+        default: 'deployment-artifacts'
         type: choice
         options:
-          - old-versions
-          - all-resources
+          - deployment-artifacts
+          - old-lambda-versions
+          - cloudformation-stacks
 
 env:
   AWS_REGION: us-east-1
@@ -52,12 +55,34 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Run cleanup script
+      - name: Install SAM CLI
+        uses: aws-actions/setup-sam@v2
+
+      - name: Run SAM-based cleanup
         run: |
           echo "🧹 Starting cleanup for ${{ github.event.inputs.environment }} environment"
-          node scripts/cleanup-old-resources.js
+          echo "Cleanup scope: ${{ github.event.inputs.cleanup_scope }}"
+          
+          case "${{ github.event.inputs.cleanup_scope }}" in
+            "deployment-artifacts")
+              echo "Cleaning up S3 deployment artifacts..."
+              aws s3 rm s3://automated-video-pipeline-deployments-${{ github.event.inputs.environment }} --recursive --exclude "*" --include "*.zip" --include "packaged-*"
+              ;;
+            "old-lambda-versions")
+              echo "Cleaning up old Lambda function versions..."
+              aws lambda list-functions --query 'Functions[?starts_with(FunctionName, `video-pipeline`)].FunctionName' --output text | \
+              xargs -I {} aws lambda list-versions-by-function --function-name {} --query 'Versions[?Version!=`$LATEST`][:-3].Version' --output text | \
+              xargs -I {} aws lambda delete-function --function-name {} --qualifier {}
+              ;;
+            "cloudformation-stacks")
+              echo "⚠️ CloudFormation stack cleanup requires manual confirmation"
+              echo "Stack name: automated-video-pipeline-${{ github.event.inputs.environment }}"
+              echo "Use: aws cloudformation delete-stack --stack-name automated-video-pipeline-${{ github.event.inputs.environment }}"
+              ;;
+          esac
 
       - name: Summary
         run: |
           echo "✅ Cleanup completed for ${{ github.event.inputs.environment }} environment"
-          echo "Old resources have been removed to prepare for new deployments"
+          echo "Scope: ${{ github.event.inputs.cleanup_scope }}"
+          echo "SAM-based resources cleaned up successfully"
