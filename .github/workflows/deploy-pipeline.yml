@@ -173,7 +173,8 @@ jobs:
           --parameter-overrides Environment=${{ matrix.environment }} \
           --capabilities CAPABILITY_IAM \
           --no-confirm-changeset \
-          --no-fail-on-empty-changeset
+          --no-fail-on-empty-changeset \
+          --config-env ${{ matrix.environment }}
 
     - name: Get deployment outputs
       id: outputs
