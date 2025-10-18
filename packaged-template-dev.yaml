@@ -1,0 +1,283 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: Simplified Automated Video Pipeline
+Parameters:
+  Environment:
+    Type: String
+    Default: dev
+    AllowedValues:
+    - dev
+    - staging
+    - prod
+    Description: Environment name for resource naming and configuration
+Globals:
+  Function:
+    Runtime: nodejs18.x
+    Timeout: 300
+    MemorySize: 1024
+    Environment:
+      Variables:
+        S3_BUCKET:
+          Ref: VideoBucket
+        CONTEXT_TABLE:
+          Ref: ContextTable
+        NODE_ENV:
+          Ref: Environment
+        AWS_REGION:
+          Ref: AWS::Region
+    Architectures:
+    - x86_64
+    Tags:
+      Environment:
+        Ref: Environment
+      Project: automated-video-pipeline
+      Architecture: simplified
+Resources:
+  VideoBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName:
+        Fn::Sub: automated-video-pipeline-${Environment}-${AWS::AccountId}-${AWS::Region}
+      VersioningConfiguration:
+        Status: Enabled
+  ContextTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName:
+        Fn::Sub: automated-video-pipeline-context-${Environment}
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+      - AttributeName: PK
+        AttributeType: S
+      - AttributeName: SK
+        AttributeType: S
+      KeySchema:
+      - AttributeName: PK
+        KeyType: HASH
+      - AttributeName: SK
+        KeyType: RANGE
+      TimeToLiveSpecification:
+        AttributeName: ttl
+        Enabled: true
+  VideoApi:
+    Type: AWS::Serverless::Api
+    Properties:
+      StageName:
+        Ref: Environment
+      Auth:
+        ApiKeyRequired: true
+      Cors:
+        AllowMethods: "'GET,POST,PUT,DELETE,OPTIONS'"
+        AllowHeaders: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
+        AllowOrigin: "'*'"
+  ApiKey:
+    Type: AWS::ApiGateway::ApiKey
+    Properties:
+      Name:
+        Fn::Sub: video-pipeline-${Environment}
+      Enabled: true
+  UsagePlan:
+    Type: AWS::ApiGateway::UsagePlan
+    Properties:
+      UsagePlanName:
+        Fn::Sub: video-pipeline-${Environment}
+      ApiStages:
+      - ApiId:
+          Ref: VideoApi
+        Stage:
+          Ref: Environment
+  UsagePlanKey:
+    Type: AWS::ApiGateway::UsagePlanKey
+    Properties:
+      KeyId:
+        Ref: ApiKey
+      KeyType: API_KEY
+      UsagePlanId:
+        Ref: UsagePlan
+  TopicManagementFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName:
+        Fn::Sub: video-pipeline-topic-management-${Environment}
+      CodeUri: s3://automated-video-pipeline-deployments-dev/aba2e63b9a631ef64ad7e37d660a15fe
+      Handler: index.handler
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            RestApiId:
+              Ref: VideoApi
+            Path: /topics
+            Method: POST
+      Policies:
+      - S3FullAccessPolicy:
+          BucketName:
+            Ref: VideoBucket
+      - DynamoDBCrudPolicy:
+          TableName:
+            Ref: ContextTable
+  ScriptGeneratorFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName:
+        Fn::Sub: video-pipeline-script-generator-${Environment}
+      CodeUri: s3://automated-video-pipeline-deployments-dev/96e5570ddadd32563fa08d21aea56e31
+      Handler: index.handler
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            RestApiId:
+              Ref: VideoApi
+            Path: /scripts/generate
+            Method: POST
+      Policies:
+      - S3FullAccessPolicy:
+          BucketName:
+            Ref: VideoBucket
+      - DynamoDBCrudPolicy:
+          TableName:
+            Ref: ContextTable
+  MediaCuratorFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName:
+        Fn::Sub: video-pipeline-media-curator-${Environment}
+      CodeUri: s3://automated-video-pipeline-deployments-dev/9de1d6ddbf8a42da3bb434625fd26e13
+      Handler: index.handler
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            RestApiId:
+              Ref: VideoApi
+            Path: /media/curate
+            Method: POST
+      Policies:
+      - S3FullAccessPolicy:
+          BucketName:
+            Ref: VideoBucket
+      - DynamoDBCrudPolicy:
+          TableName:
+            Ref: ContextTable
+  AudioGeneratorFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName:
+        Fn::Sub: video-pipeline-audio-generator-${Environment}
+      CodeUri: s3://automated-video-pipeline-deployments-dev/d3e8fbf99855813832f86ac227fb2f6a
+      Handler: index.handler
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            RestApiId:
+              Ref: VideoApi
+            Path: /audio/generate
+            Method: POST
+      Policies:
+      - S3FullAccessPolicy:
+          BucketName:
+            Ref: VideoBucket
+      - DynamoDBCrudPolicy:
+          TableName:
+            Ref: ContextTable
+      - Statement:
+          Effect: Allow
+          Action:
+          - polly:SynthesizeSpeech
+          Resource: '*'
+  ManifestBuilderFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName:
+        Fn::Sub: video-pipeline-manifest-builder-${Environment}
+      CodeUri: s3://automated-video-pipeline-deployments-dev/c958450c8dc5029c4be30dffd589ea74
+      Handler: index.handler
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            RestApiId:
+              Ref: VideoApi
+            Path: /manifest/build
+            Method: POST
+      Policies:
+      - S3FullAccessPolicy:
+          BucketName:
+            Ref: VideoBucket
+      - DynamoDBCrudPolicy:
+          TableName:
+            Ref: ContextTable
+  VideoAssemblerFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName:
+        Fn::Sub: video-pipeline-video-assembler-${Environment}
+      CodeUri: s3://automated-video-pipeline-deployments-dev/fda01f4e5619d97ac1f1db30095a17ed
+      Handler: index.handler
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            RestApiId:
+              Ref: VideoApi
+            Path: /video/assemble
+            Method: POST
+      Policies:
+      - S3FullAccessPolicy:
+          BucketName:
+            Ref: VideoBucket
+      - DynamoDBCrudPolicy:
+          TableName:
+            Ref: ContextTable
+  YouTubePublisherFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName:
+        Fn::Sub: video-pipeline-youtube-publisher-${Environment}
+      CodeUri: s3://automated-video-pipeline-deployments-dev/567b03f899a2d7be5b7198f3bd9045b7
+      Handler: index.handler
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            RestApiId:
+              Ref: VideoApi
+            Path: /youtube/publish
+            Method: POST
+      Policies:
+      - S3FullAccessPolicy:
+          BucketName:
+            Ref: VideoBucket
+      - DynamoDBCrudPolicy:
+          TableName:
+            Ref: ContextTable
+      - Statement:
+          Effect: Allow
+          Action:
+          - secretsmanager:GetSecretValue
+          Resource:
+            Fn::Sub: arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:automated-video-pipeline/api-keys*
+Outputs:
+  ApiUrl:
+    Description: API Gateway endpoint URL
+    Value:
+      Fn::Sub: https://${VideoApi}.execute-api.${AWS::Region}.amazonaws.com/${Environment}
+    Export:
+      Name:
+        Fn::Sub: ${AWS::StackName}-ApiUrl
+  ApiKey:
+    Description: API Key for authentication
+    Value:
+      Ref: ApiKey
+    Export:
+      Name:
+        Fn::Sub: ${AWS::StackName}-ApiKey
+  S3Bucket:
+    Description: S3 bucket for video assets
+    Value:
+      Ref: VideoBucket
+    Export:
+      Name:
+        Fn::Sub: ${AWS::StackName}-S3Bucket

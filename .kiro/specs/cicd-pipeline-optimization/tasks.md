@@ -28,6 +28,7 @@
   - [ ] 2.1 Implement GitHub Actions artifact retention policies
     - Configure appropriate retention periods for build artifacts (30 days)
     - Set up automatic cleanup for packaged templates and deployment artifacts
+
     - Optimize artifact size limits and storage usage
     - _Requirements: 1.4, 4.4_
 
