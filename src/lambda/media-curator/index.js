@@ -119,7 +119,7 @@ async function curateMediaForScenes(projectId, sceneContext, baseTopic) {
 
     for (const scene of scenes) {
         const sceneNumber = scene.sceneNumber;
-        const searchKeywords = scene.visualRequirements ? .searchKeywords || [baseTopic];
+        const searchKeywords = scene.visualRequirements ?.searchKeywords || [baseTopic];
 
         // Generate placeholder images for each scene (simplified approach)
         const sceneImages = await generatePlaceholderImages(projectId, sceneNumber, searchKeywords);

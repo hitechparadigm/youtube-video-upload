@@ -125,7 +125,7 @@ async function generateAudioForScenes(projectId, sceneContext, voiceId) {
     // Generate audio for each scene
     for (const scene of scenes) {
         const sceneNumber = scene.sceneNumber;
-        const script = scene.content ? .script || `Scene ${sceneNumber} content`;
+        const script = scene.content ?.script || `Scene ${sceneNumber} content`;
 
         // Generate audio using AWS Polly
         const audioData = await synthesizeSpeech(script, voiceId);
@@ -152,7 +152,7 @@ async function generateAudioForScenes(projectId, sceneContext, voiceId) {
     }
 
     // Create master narration (combine all scenes)
-    const masterScript = scenes.map(s => s.content ? .script || '').join(' ');
+    const masterScript = scenes.map(s => s.content ?.script || '').join(' ');
     const masterAudioData = await synthesizeSpeech(masterScript, voiceId);
 
     // Store master narration

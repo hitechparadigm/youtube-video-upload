@@ -317,16 +317,16 @@ async function generateUnifiedManifest(projectId, validation) {
     } = validation;
 
     const manifest = {
-        videoId: contexts.topic ? .mainTopic ? .replace(/[^a-z0-9]/gi, '-').toLowerCase() || projectId,
-        title: contexts.topic ? .mainTopic || `Video ${projectId}`,
+        videoId: contexts.topic ?.mainTopic ?.replace(/[^a-z0-9]/gi, '-').toLowerCase() || projectId,
+        title: contexts.topic ?.mainTopic || `Video ${projectId}`,
         visibility: "unlisted",
         seo: {
             tags: [
-                ...(contexts.topic ? .seoContext ? .primaryKeywords || []),
-                ...(contexts.topic ? .seoContext ? .longTailKeywords || [])
+                ...(contexts.topic ?.seoContext ?.primaryKeywords || []),
+                ...(contexts.topic ?.seoContext ?.longTailKeywords || [])
             ].slice(0, 50)
         },
-        chapters: generateChaptersFromScenes(contexts.scene ? .scenes || []),
+        chapters: generateChaptersFromScenes(contexts.scene ?.scenes || []),
         scenes: buildScenesFromContexts(projectId, contexts),
         export: {
             resolution: "1920x1080",
@@ -369,14 +369,14 @@ function generateChaptersFromScenes(scenes) {
  * Build scenes array from contexts
  */
 function buildScenesFromContexts(projectId, contexts) {
-    const scenes = contexts.scene ? .scenes || [];
+    const scenes = contexts.scene ?.scenes || [];
 
     return scenes.map(scene => {
         const sceneNumber = scene.sceneNumber;
 
         return {
             id: sceneNumber,
-            script: scene.content ? .script || scene.script || "",
+            script: scene.content ?.script || scene.script || "",
             audio: {
                 path: `videos/${projectId}/04-audio/audio-segments/scene-${sceneNumber}.mp3`,
                 durationHintSec: scene.duration || 30
