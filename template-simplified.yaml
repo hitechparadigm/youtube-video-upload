@@ -78,6 +78,7 @@ Resources:
   # Usage Plan
   UsagePlan:
     Type: AWS::ApiGateway::UsagePlan
+    DependsOn: VideoApi
     Properties:
       UsagePlanName: !Sub 'video-pipeline-${Environment}'
       ApiStages:
@@ -87,6 +88,7 @@ Resources:
   # Usage Plan Key
   UsagePlanKey:
     Type: AWS::ApiGateway::UsagePlanKey
+    DependsOn: UsagePlan
     Properties:
       KeyId: !Ref ApiKey
       KeyType: API_KEY
