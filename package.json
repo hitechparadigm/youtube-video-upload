@@ -1,74 +1,70 @@
 {
     "name": "automated-video-pipeline",
-    "version": "1.0.0",
-    "description": "AWS-based automated video generation pipeline with configurable media sources, Node.js 20.x runtime, and complete project isolation",
+    "version": "4.1.0",
+    "description": "Simplified Automated Video Pipeline with Infrastructure as Code",
     "main": "index.js",
     "scripts": {
-        "test": "jest",
-        "test:unit": "jest --selectProjects=\"Unit Tests\"",
-        "test:integration": "jest --selectProjects=\"Integration Tests\"",
-        "test:e2e": "node tests/e2e-pipeline.test.js",
-        "test:coverage": "jest --coverage",
-        "test:watch": "jest --watch",
-        "test:health": "node scripts/utils/health-check.js",
-        "test:infrastructure": "node scripts/validate-infrastructure.js",
-        "test:system": "node test-system-verification.js",
-        "test:functions": "node test-lambda-functions.js",
-        "test:complete": "node test-integration-complete.js",
-        "test:enhanced": "node test-enhanced-manifest-architecture.js",
-        "test:all": "node run-all-tests.js",
-        "deploy": "cd infrastructure && npm run deploy",
-        "destroy": "cd infrastructure && npm run destroy",
-        "synth": "cd infrastructure && npm run synth",
-        "diff": "cd infrastructure && npm run diff",
-        "upload-video": "node scripts/upload-first-video.js",
-        "sync-sheets": "node scripts/sync-spreadsheet.js",
-        "lint": "eslint src/ tests/",
-        "lint:fix": "eslint src/ tests/ --fix"
+        "test": "npm run test:syntax && npm run test:pipeline",
+        "test:syntax": "node scripts/validate-syntax.js",
+        "test:pipeline": "node test-simplified-pipeline.js",
+        "test:full": "node test-final-working-pipeline.js",
+        "build": "sam build --template-file template-simplified.yaml",
+        "deploy:dev": "sam deploy --config-env dev",
+        "deploy:staging": "sam deploy --config-env staging",
+        "deploy:prod": "sam deploy --config-env prod",
+        "validate": "sam validate --template-file template-simplified.yaml",
+        "package": "sam package --template-file template-simplified.yaml --s3-bucket automated-video-pipeline-deployments --output-template-file packaged-template.yaml",
+        "local:api": "sam local start-api --template-file template-simplified.yaml",
+        "local:invoke": "sam local invoke --template-file template-simplified.yaml",
+        "lint": "eslint src/lambda/**/*.js",
+        "format": "prettier --write src/lambda/**/*.js",
+        "docs": "echo 'Documentation available in README.md and docs/ folder'",
+        "clean": "rm -rf .aws-sam packaged-template.yaml",
+        "setup": "npm install && sam build"
     },
-    "devDependencies": {
-        "@babel/core": "^7.23.0",
-        "@babel/preset-env": "^7.23.0",
-        "aws-cdk": "^2.110.0",
-        "babel-jest": "^29.7.0",
-        "eslint": "^8.50.0",
-        "jest": "^29.7.0",
-        "jest-html-reporters": "^3.1.5",
-        "jest-junit": "^16.0.0"
-    },
-    "dependencies": {
-        "@aws-sdk/client-bedrock-runtime": "^3.901.0",
-        "@aws-sdk/client-dynamodb": "^3.450.0",
-        "@aws-sdk/client-ec2": "^3.901.0",
-        "@aws-sdk/client-ecs": "^3.901.0",
-        "@aws-sdk/client-iam": "^3.901.0",
-        "@aws-sdk/client-lambda": "^3.901.0",
-        "@aws-sdk/client-polly": "^3.901.0",
-        "@aws-sdk/client-s3": "^3.901.0",
-        "@aws-sdk/client-secrets-manager": "^3.901.0",
-        "@aws-sdk/client-sfn": "^3.901.0",
-        "aws-lambda": "^1.0.7",
-        "aws-sdk": "^2.1692.0",
-        "constructs": "^10.3.0",
-        "google-auth-library": "^9.4.1",
-        "googleapis": "^128.0.0"
-    },
-    "engines": {
-        "node": ">=20.0.0"
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/your-org/automated-video-pipeline.git"
     },
     "keywords": [
         "aws",
         "lambda",
-        "video-generation",
-        "youtube-automation",
-        "nodejs20",
-        "pexels",
-        "pixabay",
-        "configurable-media-sources"
+        "sam",
+        "serverless",
+        "video",
+        "automation",
+        "cicd",
+        "infrastructure-as-code"
     ],
-    "repository": {
-        "type": "git",
-        "url": "https://github.com/hitechparadigm/youtube-video-upload.git"
+    "author": "Your Organization",
+    "license": "MIT",
+    "bugs": {
+        "url": "https://github.com/your-org/automated-video-pipeline/issues"
     },
-    "license": "MIT"
+    "homepage": "https://github.com/your-org/automated-video-pipeline#readme",
+    "devDependencies": {
+        "eslint": "^8.0.0",
+        "prettier": "^3.0.0",
+        "jest": "^29.0.0"
+    },
+    "dependencies": {
+        "@aws-sdk/client-s3": "^3.0.0",
+        "@aws-sdk/client-dynamodb": "^3.0.0",
+        "@aws-sdk/lib-dynamodb": "^3.0.0",
+        "@aws-sdk/util-dynamodb": "^3.0.0",
+        "@aws-sdk/client-polly": "^3.0.0",
+        "@aws-sdk/client-secrets-manager": "^3.0.0"
+    },
+    "engines": {
+        "node": ">=18.0.0"
+    },
+    "os": [
+        "darwin",
+        "linux",
+        "win32"
+    ],
+    "cpu": [
+        "x64",
+        "arm64"
+    ]
 }

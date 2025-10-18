@@ -1,361 +1,269 @@
 /**
- * 📋 TOPIC MANAGEMENT AI LAMBDA FUNCTION - SIMPLIFIED AND RELIABLE
+ * 📋 TOPIC MANAGEMENT AI LAMBDA FUNCTION - SIMPLIFIED VERSION
  * 
- * PERMANENT SOLUTION: Fast, reliable topic processing without complex AI generation
- * 
- * ROLE: Quick Topic Selection & Basic Context Creation
- * This Lambda function provides fast, reliable topic processing for the video pipeline.
- * Complex AI generation is delegated to async processing or other agents.
- * 
- * KEY RESPONSIBILITIES:
- * 1. 📊 Quick Google Sheets Integration - Fast topic selection
- * 2. 📁 Project Creation - Generates unique project IDs
- * 3. 🔄 Basic Context Storage - Simple, reliable context for downstream agents
- * 4. ⚡ Fast Response - Under 10 seconds execution time
- * 
- * ARCHITECTURAL BENEFITS:
- * - 🚀 Fast execution (< 10 seconds)
- * - 🔧 Simple and reliable (no complex AI calls)
- * - 📊 Consistent response times
- * - 🎯 Single responsibility (topic selection only)
+ * ROLE: Fast Topic Analysis and Project Creation
+ * This is a simplified version that avoids timeouts by skipping complex AI processing
  */
 
 const { randomUUID } = require('crypto');
+const { S3Client, PutObjectCommand } = require('@aws-sdk/client-s3');
+const { DynamoDBClient, PutItemCommand } = require('@aws-sdk/client-dynamodb');
 
-// Import shared utilities
-const { 
-  storeContext, 
-  createProject
-} = require('/opt/nodejs/context-manager');
-const { 
-  putDynamoDBItem, 
-  scanDynamoDB
-} = require('/opt/nodejs/aws-service-manager');
-const { 
-  wrapHandler, 
-  AppError, 
-  ERROR_TYPES, 
-  validateRequiredParams,
-  monitorPerformance 
-} = require('/opt/nodejs/error-handler');
+// Initialize AWS clients
+const s3Client = new S3Client({ region: process.env.AWS_REGION || 'us-east-1' });
+const dynamoClient = new DynamoDBClient({ region: process.env.AWS_REGION || 'us-east-1' });
 
 // Configuration
+const S3_BUCKET = process.env.S3_BUCKET_NAME || process.env.S3_BUCKET || 'automated-video-pipeline-v2-786673323159-us-east-1';
 const TOPICS_TABLE = process.env.TOPICS_TABLE_NAME || 'automated-video-pipeline-topics-v2';
 
 /**
- * Main Lambda handler - SIMPLIFIED
+ * Main Lambda handler - simplified version
  */
 const handler = async (event, context) => {
-  console.log('Topic Management (Simplified) invoked:', JSON.stringify(event, null, 2));
+    console.log('Topic Management invoked:', JSON.stringify(event, null, 2));
 
-  const { httpMethod, pathParameters, queryStringParameters, body } = event;
+    try {
+        const { httpMethod, path, body } = event;
 
-  // Parse request body if present
-  let requestBody = {};
-  if (body) {
-    requestBody = typeof body === 'string' ? JSON.parse(body) : body;
-  }
+        // Parse request body
+        let requestBody = {};
+        if (body) {
+            requestBody = typeof body === 'string' ? JSON.parse(body) : body;
+        }
 
-  // Route requests based on HTTP method and path
-  switch (httpMethod) {
-  case 'GET':
-    if (event.path === '/topics/health' || event.path === '/health') {
-      return {
-        statusCode: 200,
-        headers: {
-          'Content-Type': 'application/json',
-          'Access-Control-Allow-Origin': '*'
-        },
-        body: JSON.stringify({
-          success: true,
-          result: {
-            service: 'topic-management',
-            status: 'healthy',
-            timestamp: new Date().toISOString(),
-            version: '4.0.0-simplified',
-            type: 'fast-reliable',
-            approach: 'simplified-architecture'
-          }
-        })
-      };
+        // Route requests
+        switch (httpMethod) {
+            case 'GET':
+                if (path === '/health' || path === '/topics/health') {
+                    return {
+                        statusCode: 200,
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Access-Control-Allow-Origin': '*'
+                        },
+                        body: JSON.stringify({
+                            success: true,
+                            service: 'topic-management',
+                            status: 'healthy',
+                            timestamp: new Date().toISOString(),
+                            version: '3.0.0-simplified'
+                        })
+                    };
+                }
+                break;
+
+            case 'POST':
+                return await generateTopicContext(requestBody);
+
+            default:
+                return {
+                    statusCode: 405,
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Access-Control-Allow-Origin': '*'
+                    },
+                    body: JSON.stringify({
+                        success: false,
+                        error: 'Method not allowed'
+                    })
+                };
+        }
+
+    } catch (error) {
+        console.error('Topic Management error:', error);
+        return {
+            statusCode: 500,
+            headers: {
+                'Content-Type': 'application/json',
+                'Access-Control-Allow-Origin': '*'
+            },
+            body: JSON.stringify({
+                success: false,
+                error: {
+                    message: 'Internal server error',
+                    type: 'INTERNAL',
+                    timestamp: new Date().toISOString()
+                }
+            })
+        };
     }
-    return await getTopics(queryStringParameters || {});
-
-  case 'POST':
-    return await generateBasicTopicContext(requestBody, context);
-
-  default:
-    throw new AppError('Method not allowed', ERROR_TYPES.VALIDATION, 405);
-  }
 };
 
 /**
- * Get topics with filtering - SIMPLIFIED
+ * Generate topic context quickly without complex AI processing
  */
-const getTopics = async (queryParams) => {
-  return await monitorPerformance(async () => {
-    const { limit = '20' } = queryParams;
-
-    const topics = await scanDynamoDB(TOPICS_TABLE, {
-      Limit: parseInt(limit)
-    });
-
-    return {
-      statusCode: 200,
-      headers: {
-        'Content-Type': 'application/json',
-        'Access-Control-Allow-Origin': '*'
-      },
-      body: JSON.stringify({
-        success: true,
-        topics: topics || [],
-        count: topics?.length || 0,
-        timestamp: new Date().toISOString()
-      })
-    };
-  }, 'getTopics', { queryParams });
-};
-
-/**
- * Generate basic topic context - FAST AND RELIABLE
- */
-const generateBasicTopicContext = async (requestBody, _context) => {
-  return await monitorPerformance(async () => {
+async function generateTopicContext(requestBody) {
     const {
-      projectId,
-      baseTopic,
-      targetAudience = 'general',
-      contentType = 'educational',
-      videoDuration = 480,
-      videoStyle = 'engaging_educational',
-      useGoogleSheets = true
+        topic,
+        targetAudience = 'general',
+        videoDuration = 180,
+        contentType = 'educational'
     } = requestBody;
 
-    if (!baseTopic && !useGoogleSheets) {
-      throw new AppError('Base topic is required when not using Google Sheets', ERROR_TYPES.VALIDATION, 400);
+    if (!topic) {
+        return {
+            statusCode: 400,
+            headers: {
+                'Content-Type': 'application/json',
+                'Access-Control-Allow-Origin': '*'
+            },
+            body: JSON.stringify({
+                success: false,
+                error: 'Topic is required'
+            })
+        };
     }
 
-    console.log(`🎯 FAST topic processing for: ${baseTopic || 'from Google Sheets'}`);
+    try {
+        console.log(`Generating context for topic: ${topic}`);
 
-    let finalBaseTopic = baseTopic;
-    let sheetsTopics = [];
+        // Create project ID
+        const timestamp = new Date().toISOString().replace(/[:.]/g, '-').substr(0, 19);
+        const topicSlug = topic.toLowerCase().replace(/[^a-z0-9]+/g, '-').substr(0, 30);
+        const projectId = `${timestamp}_${topicSlug}`;
 
-    // Step 1: Quick topic selection (< 3 seconds)
-    if (useGoogleSheets && !baseTopic) {
-      console.log('📊 Quick Google Sheets read...');
-      try {
-        sheetsTopics = await Promise.race([
-          readTopicsFromGoogleSheets(),
-          new Promise((_, reject) => setTimeout(() => reject(new Error('Sheets timeout')), 3000))
-        ]);
-        
-        if (sheetsTopics.length > 0) {
-          // Simple selection: take first active topic
-          finalBaseTopic = sheetsTopics[0].topic;
-          console.log(`📝 Selected: ${finalBaseTopic}`);
-        }
-      } catch (error) {
-        console.log('⚠️ Google Sheets unavailable, using fallback');
-        finalBaseTopic = baseTopic || 'General Tutorial Topic';
-      }
+        console.log(`Created project ID: ${projectId}`);
+
+        // Create simplified topic context (no AI processing to avoid timeout)
+        const topicContext = {
+            mainTopic: topic,
+            projectId: projectId,
+            expandedTopics: [
+                {
+                    subtopic: `Introduction to ${topic}`,
+                    priority: 'high',
+                    trendScore: 90,
+                    valueProposition: `Complete guide to ${topic}`,
+                    visualNeeds: ['overview', 'introduction', 'key concepts']
+                },
+                {
+                    subtopic: `Key aspects of ${topic}`,
+                    priority: 'high', 
+                    trendScore: 85,
+                    valueProposition: `Essential information about ${topic}`,
+                    visualNeeds: ['details', 'examples', 'demonstrations']
+                },
+                {
+                    subtopic: `Practical tips for ${topic}`,
+                    priority: 'medium',
+                    trendScore: 80,
+                    valueProposition: `Actionable advice for ${topic}`,
+                    visualNeeds: ['tips', 'advice', 'recommendations']
+                }
+            ],
+            contentGuidance: {
+                concreteDetails: [`Specific information about ${topic}`, 'Practical examples', 'Real-world applications'],
+                actionableAdvice: ['Step-by-step guidance', 'Best practices', 'Common mistakes to avoid'],
+                visualOpportunities: ['Charts and diagrams', 'Examples and demonstrations', 'Before/after comparisons'],
+                engagementHooks: ['Interesting facts', 'Common questions', 'Surprising insights'],
+                callToActionSuggestions: [`Learn more about ${topic}`, 'Share your experience', 'Subscribe for more guides']
+            },
+            seoContext: {
+                primaryKeywords: [
+                    topic.toLowerCase(),
+                    `${topic.toLowerCase()} guide`,
+                    `${topic.toLowerCase()} tips`,
+                    `${topic.toLowerCase()} 2025`,
+                    `best ${topic.toLowerCase()}`,
+                    `${topic.toLowerCase()} tutorial`,
+                    `${topic.toLowerCase()} strategy`,
+                    `${topic.toLowerCase()} advice`
+                ],
+                longTailKeywords: [
+                    `complete guide to ${topic.toLowerCase()}`,
+                    `how to ${topic.toLowerCase()}`,
+                    `${topic.toLowerCase()} for beginners`,
+                    `best ${topic.toLowerCase()} tips`,
+                    `${topic.toLowerCase()} step by step`,
+                    `${topic.toLowerCase()} mistakes to avoid`,
+                    `${topic.toLowerCase()} best practices`,
+                    `${topic.toLowerCase()} examples`
+                ]
+            },
+            videoStructure: {
+                recommendedScenes: Math.max(3, Math.min(6, Math.ceil(videoDuration / 60))),
+                hookDuration: 15,
+                mainContentDuration: Math.floor(videoDuration * 0.75),
+                conclusionDuration: videoDuration - 15 - Math.floor(videoDuration * 0.75),
+                totalDuration: videoDuration,
+                contentComplexity: 'moderate'
+            },
+            metadata: {
+                generatedAt: new Date().toISOString(),
+                model: 'simplified-fast-generation',
+                inputParameters: { topic, targetAudience, contentType, videoDuration },
+                confidence: 0.85,
+                processingTime: 'under-5-seconds'
+            }
+        };
+
+        // Store topic context in S3
+        const contextKey = `videos/${projectId}/01-context/topic-context.json`;
+        await s3Client.send(new PutObjectCommand({
+            Bucket: S3_BUCKET,
+            Key: contextKey,
+            Body: JSON.stringify(topicContext, null, 2),
+            ContentType: 'application/json'
+        }));
+
+        console.log(`Stored topic context: ${contextKey}`);
+
+        // Store topic record in DynamoDB
+        const topicRecord = {
+            topicId: { S: randomUUID() },
+            topic: { S: topic },
+            projectId: { S: projectId },
+            status: { S: 'generated' },
+            source: { S: 'simplified_generation' },
+            createdAt: { S: new Date().toISOString() },
+            targetAudience: { S: targetAudience },
+            videoDuration: { N: videoDuration.toString() }
+        };
+
+        await dynamoClient.send(new PutItemCommand({
+            TableName: TOPICS_TABLE,
+            Item: topicRecord
+        }));
+
+        console.log(`Topic generation completed for: ${topic}`);
+
+        return {
+            statusCode: 200,
+            headers: {
+                'Content-Type': 'application/json',
+                'Access-Control-Allow-Origin': '*'
+            },
+            body: JSON.stringify({
+                success: true,
+                projectId: projectId,
+                baseTopic: topic,
+                expandedTopics: topicContext.expandedTopics,
+                generatedAt: new Date().toISOString(),
+                contextStored: true,
+                approach: 'simplified-fast-generation',
+                executionTime: 'under-10-seconds'
+            })
+        };
+
+    } catch (error) {
+        console.error('Topic context generation error:', error);
+        return {
+            statusCode: 500,
+            headers: {
+                'Content-Type': 'application/json',
+                'Access-Control-Allow-Origin': '*'
+            },
+            body: JSON.stringify({
+                success: false,
+                error: {
+                    message: 'Internal server error',
+                    type: 'INTERNAL',
+                    timestamp: new Date().toISOString()
+                }
+            })
+        };
     }
+}
 
-    if (!finalBaseTopic) {
-      finalBaseTopic = 'General Tutorial Topic'; // Fallback
-    }
-
-    // Step 2: Create project immediately (< 1 second)
-    let finalProjectId;
-    if (projectId) {
-      finalProjectId = projectId;
-    } else {
-      finalProjectId = await createProject(finalBaseTopic);
-    }
-    console.log(`📁 Project: ${finalProjectId}`);
-
-    // Step 3: Generate simple, reliable context (< 2 seconds)
-    const topicContext = generateSimpleContext({
-      baseTopic: finalBaseTopic,
-      targetAudience,
-      videoDuration,
-      videoStyle
-    });
-
-    // Step 4: Store context (< 2 seconds)
-    await storeContext(topicContext, 'topic', finalProjectId);
-    console.log('💾 Context stored');
-
-    // Step 5: Store topic record (< 1 second)
-    await storeTopicRecord(finalBaseTopic, topicContext);
-
-    return {
-      statusCode: 200,
-      headers: {
-        'Content-Type': 'application/json',
-        'Access-Control-Allow-Origin': '*'
-      },
-      body: JSON.stringify({
-        success: true,
-        projectId: finalProjectId,
-        baseTopic: finalBaseTopic,
-        topicContext,
-        sheetsTopicsCount: sheetsTopics.length,
-        generatedAt: new Date().toISOString(),
-        contextStored: true,
-        approach: 'simplified-fast',
-        executionTime: 'under-10-seconds'
-      })
-    };
-  }, 'generateBasicTopicContext', { baseTopic: requestBody.baseTopic });
-};
-
-/**
- * Read topics from Google Sheets - FAST VERSION
- */
-const readTopicsFromGoogleSheets = async () => {
-  const SPREADSHEET_ID = '1WnUJredElhFEgXAhnnNtcbjmJ1l9t3i1YNnYblVOaao';
-  const CSV_URL = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?tqx=out:csv`;
-
-  try {
-    console.log('📥 Fast Google Sheets fetch...');
-    
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 3000); // 3 second timeout
-    
-    const response = await fetch(CSV_URL, {
-      signal: controller.signal,
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (compatible; AWS Lambda)'
-      }
-    });
-    
-    clearTimeout(timeoutId);
-    
-    if (!response.ok) {
-      throw new Error(`HTTP ${response.status}`);
-    }
-    
-    const csvData = await response.text();
-    
-    // Fast CSV parsing - only first 5 rows
-    const lines = csvData.trim().split('\n');
-    const topics = [];
-    
-    const maxRows = Math.min(lines.length, 6); // Header + 5 data rows
-    
-    for (let i = 1; i < maxRows; i++) {
-      const line = lines[i];
-      if (!line.trim()) continue;
-      
-      const values = line.split(',').map(v => v.trim().replace(/^"|"$/g, ''));
-      const topicText = values[0];
-      
-      if (topicText && topicText !== 'Topic') {
-        topics.push({
-          topic: topicText,
-          source: 'google_sheets'
-        });
-      }
-    }
-    
-    console.log(`📊 Found ${topics.length} topics`);
-    return topics;
-    
-  } catch (error) {
-    console.error('❌ Google Sheets error:', error.message);
-    return [];
-  }
-};
-
-/**
- * Generate simple, reliable context - NO AI CALLS
- */
-const generateSimpleContext = ({ baseTopic, targetAudience, videoDuration, videoStyle }) => {
-  
-  // Simple, reliable context structure
-  const context = {
-    mainTopic: baseTopic,
-    expandedTopics: [
-      {
-        subtopic: `Introduction to ${baseTopic}`,
-        priority: 'high',
-        contentComplexity: 'simple',
-        estimatedCoverage: '60 seconds'
-      },
-      {
-        subtopic: `${baseTopic} fundamentals`,
-        priority: 'high',
-        contentComplexity: 'moderate',
-        estimatedCoverage: '120 seconds'
-      },
-      {
-        subtopic: `${baseTopic} best practices`,
-        priority: 'medium',
-        contentComplexity: 'moderate',
-        estimatedCoverage: '90 seconds'
-      },
-      {
-        subtopic: `${baseTopic} tips and tricks`,
-        priority: 'medium',
-        contentComplexity: 'simple',
-        estimatedCoverage: '90 seconds'
-      }
-    ],
-    contentGuidance: {
-      complexConcepts: [`${baseTopic} core principles`],
-      quickWins: [`Quick ${baseTopic} tips`],
-      visualOpportunities: ['Charts', 'Demonstrations', 'Examples'],
-      emotionalBeats: ['Success stories'],
-      callToActionSuggestions: [`Learn more about ${baseTopic}`]
-    },
-    seoContext: {
-      primaryKeywords: [baseTopic, `${baseTopic} guide`, `${baseTopic} tips`],
-      longTailKeywords: [`how to ${baseTopic}`, `${baseTopic} for beginners`],
-      trendingTerms: [`${baseTopic} 2025`],
-      semanticKeywords: [`${baseTopic} tutorial`],
-      questionKeywords: [`what is ${baseTopic}`]
-    },
-    videoStructure: {
-      recommendedScenes: Math.ceil(videoDuration / 80),
-      hookDuration: 15,
-      mainContentDuration: Math.floor(videoDuration * 0.75),
-      conclusionDuration: videoDuration - 15 - Math.floor(videoDuration * 0.75),
-      totalDuration: videoDuration,
-      contentComplexity: 'moderate'
-    },
-    metadata: {
-      generatedAt: new Date().toISOString(),
-      model: 'simplified-reliable',
-      approach: 'fast-basic-context',
-      confidence: 0.85
-    }
-  };
-
-  return context;
-};
-
-/**
- * Store topic record - SIMPLE
- */
-const storeTopicRecord = async (baseTopic, topicContext) => {
-  try {
-    const topicId = randomUUID();
-    const topicRecord = {
-      topicId,
-      topic: baseTopic,
-      status: 'processed',
-      source: 'simplified_pipeline',
-      createdAt: new Date().toISOString(),
-      approach: 'fast-reliable'
-    };
-    
-    await putDynamoDBItem(TOPICS_TABLE, topicRecord);
-    console.log(`💾 Stored topic: ${baseTopic}`);
-    
-  } catch (error) {
-    console.error('❌ Error storing topic:', error.message);
-    // Don't fail the whole process
-  }
-};
-
-module.exports = { handler: wrapHandler(handler) };
+module.exports = { handler };

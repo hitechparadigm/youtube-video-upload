@@ -60,9 +60,9 @@ async function testYouTubeAuthentication() {
 
                     resolve({
                         success: response.success,
-                        authenticated: response.authStatus ? .authenticated || false,
-                        channelTitle: response.authStatus ? .channelInfo ? .channelTitle,
-                        error: response.authStatus ? .error
+                        authenticated: (response.authStatus && response.authStatus.authenticated) || false,
+                        channelTitle: response.authStatus && response.authStatus.channelInfo && response.authStatus.channelInfo.channelTitle,
+                        error: response.authStatus && response.authStatus.error
                     });
 
                 } catch (e) {

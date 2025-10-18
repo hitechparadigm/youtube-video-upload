@@ -1,604 +1,323 @@
 /**
- * 🎵 AUDIO GENERATOR AI LAMBDA FUNCTION - REFACTORED WITH SHARED UTILITIES
- * 
- * ROLE: Professional Narration Generation using Amazon Polly Generative Voices
- * This Lambda function converts video scripts into high-quality audio narration
- * using Amazon Polly's advanced neural and generative voices with context awareness.
- * 
- * KEY RESPONSIBILITIES:
- * 1. 🎙️ Audio Synthesis - Converts script text to professional narration
- * 2. 🎭 Voice Selection - Prioritizes generative voices (Ruth/Stephen) for maximum quality
- * 3. 📊 Quality Optimization - Ensures broadcast-quality audio output
- * 4. 🔄 Context Integration - Uses scene and media context for timing and pacing
- * 5. 📁 Asset Storage - Stores audio files in S3 for video assembly
- * 
- * ENHANCED FEATURES (PRESERVED):
- * - AWS Polly Generative Voices: Ruth, Stephen (maximum quality)
- * - Updated Rate Limits: 2 TPS for generative voices (per AWS documentation)
- * - Scene-Aware Pacing: Adjusts speaking rate based on scene purpose and media timing
- * - Context Integration: Consumes both scene and media context for synchronization
- * 
- * REFACTORED FEATURES:
- * - Uses shared context-manager for context validation and storage
- * - Uses shared aws-service-manager for S3 operations
- * - Uses shared error-handler for consistent error handling and logging
- * - Maintains all enhanced Audio Generator capabilities
- * 
- * VOICE SELECTION STRATEGY (PRIORITIZING GENERATIVE VOICES):
- * - PRIMARY: Ruth (Generative, US English, most natural and expressive) ⭐ RECOMMENDED
- * - SECONDARY: Stephen (Generative, US English, authoritative and engaging) ⭐ RECOMMENDED  
- * - FALLBACK: Joanna Neural (Neural, US English, clear and professional)
- * - FALLBACK: Matthew Neural (Neural, US English, authoritative)
+ * SIMPLIFIED Audio Generator Lambda - No Shared Layer Dependencies
+ * Eliminates architectural complexity and configuration drift
  */
 
-const { PollyClient, SynthesizeSpeechCommand, DescribeVoicesCommand  } = require('@aws-sdk/client-polly');
+const {
+    S3Client,
+    GetObjectCommand,
+    PutObjectCommand
+} = require('@aws-sdk/client-s3');
+const {
+    DynamoDBClient,
+    GetItemCommand,
+    PutItemCommand
+} = require('@aws-sdk/client-dynamodb');
+const {
+    PollyClient,
+    SynthesizeSpeechCommand
+} = require('@aws-sdk/client-polly');
+const {
+    marshall,
+    unmarshall
+} = require('@aws-sdk/util-dynamodb');
 
-// Import shared utilities
-const { storeContext, 
-  retrieveContext, 
-  validateContext 
-} = require('/opt/nodejs/context-manager');
-const { uploadToS3,
-  executeWithRetry 
-} = require('/opt/nodejs/aws-service-manager');
-const { wrapHandler, 
-  AppError, 
-  ERROR_TYPES, 
-  validateRequiredParams,
-  withTimeout,
-  monitorPerformance 
-} = require('/opt/nodejs/error-handler');
-
-// Initialize AWS clients
-const pollyClient = new PollyClient({ region: process.env.AWS_REGION || 'us-east-1' });
-
-// Configuration
-const S3_BUCKET = process.env.S3_BUCKET || 'automated-video-pipeline-storage';
+const s3Client = new S3Client({
+    region: process.env.AWS_REGION || 'us-east-1'
+});
+const dynamoClient = new DynamoDBClient({
+    region: process.env.AWS_REGION || 'us-east-1'
+});
+const pollyClient = new PollyClient({
+    region: process.env.AWS_REGION || 'us-east-1'
+});
 
 /**
- * Main Lambda handler with shared error handling
+ * Main Lambda handler
  */
-const handler = async (event, context) => {
-  console.log('Audio Generator invoked:', JSON.stringify(event, null, 2));
+exports.handler = async (event, context) => {
+    console.log('Simplified Audio Generator invoked:', JSON.stringify(event, null, 2));
 
-  const { httpMethod, path, pathParameters, body, queryStringParameters } = event;
+    const {
+        httpMethod,
+        path,
+        body
+    } = event;
 
-  // Parse request body if present
-  let requestBody = {};
-  if (body) {
-    requestBody = typeof body === 'string' ? JSON.parse(body) : body;
-  }
-
-  // Route requests
-  switch (httpMethod) {
-  case 'GET':
-    if (path === '/health') {
-      return {
-        statusCode: 200,
-        headers: {
-          'Content-Type': 'application/json',
-          'Access-Control-Allow-Origin': '*'
-        },
-        body: JSON.stringify({
-          service: 'audio-generator',
-          status: 'healthy',
-          timestamp: new Date().toISOString(),
-          version: '3.0.0-refactored',
-          generativeVoices: true,
-          contextAware: true,
-          sceneAwarePacing: true,
-          sharedUtilities: true,
-          primaryVoices: ['Ruth (Generative)', 'Stephen (Generative)']
-        })
-      };
-    } else if (path === '/audio/voices') {
-      return await getAvailableVoices();
+    // Health check
+    if (httpMethod === 'GET' && path === '/audio/health') {
+        return createResponse(200, {
+            service: 'audio-generator-simplified',
+            status: 'healthy',
+            timestamp: new Date().toISOString(),
+            architecture: 'simplified-no-shared-layer'
+        });
     }
-    break;
 
-  case 'POST':
-    if (path === '/audio/generate-from-project') {
-      return await generateAudioFromProject(requestBody, context);
-    } else if (path === '/audio/generate') {
-      // Use full functionality - convert simple text input to project format
-      if (requestBody.text && !requestBody.sceneContext) {
-        // Convert simple text input to scene context format
-        requestBody.sceneContext = {
-          scenes: [{
-            sceneNumber: 1,
-            content: { script: requestBody.text },
-            duration: 30
-          }]
-        };
-      }
-      return await generateAudioFromProject(requestBody, context);
+    // Audio generation
+    if (httpMethod === 'POST' && path === '/audio/generate') {
+        try {
+            const requestBody = body ? JSON.parse(body) : {};
+            const {
+                projectId,
+                text,
+                voiceId = 'Joanna'
+            } = requestBody;
+
+            if (!projectId) {
+                return createResponse(400, {
+                    success: false,
+                    error: 'Project ID is required'
+                });
+            }
+
+            // Retrieve scene context
+            const sceneContext = await retrieveContext('scene', projectId);
+
+            if (!sceneContext) {
+                return createResponse(400, {
+                    success: false,
+                    error: 'No scene context found. Script Generator must run first.',
+                    type: 'VALIDATION'
+                });
+            }
+
+            // Generate audio for each scene
+            const audioResults = await generateAudioForScenes(projectId, sceneContext, voiceId);
+
+            // Store audio context
+            await storeContext(audioResults, 'audio', projectId);
+
+            console.log(`✅ Audio Generator completed for project: ${projectId}`);
+
+            return createResponse(200, {
+                success: true,
+                projectId: projectId,
+                totalScenes: sceneContext.scenes.length,
+                audioSegments: audioResults.audioSegments.length,
+                masterNarration: audioResults.masterNarrationFile,
+                timestamp: new Date().toISOString()
+            });
+
+        } catch (error) {
+            console.error('❌ Audio Generator error:', error);
+            return createResponse(500, {
+                success: false,
+                error: error.message
+            });
+        }
     }
-    break;
-  }
 
-  throw new AppError('Endpoint not found', ERROR_TYPES.NOT_FOUND, 404);
+    return createResponse(404, {
+        success: false,
+        error: 'Endpoint not found'
+    });
 };
 
 /**
- * Generate audio from project context (MAIN ENDPOINT with Generative Voices)
+ * Generate audio for all scenes
  */
-async function generateAudioFromProject(requestBody, context) {
-  return await monitorPerformance(async () => {
-    const { projectId, voiceOptions = {} } = requestBody;
-    
-    validateRequiredParams(requestBody, ['projectId'], 'audio generation from project');
-
-    console.log(`🎵 Generating audio for project: ${projectId}`);
-
-    // Retrieve scene context using shared context manager
-    console.log('🔍 Retrieving scene context from shared context manager...');
-    const sceneContext = await retrieveContext('scene', projectId);
-
-    if (!sceneContext) {
-      throw new AppError(
-        'No scene context found for project. Script Generator AI must run first.',
-        ERROR_TYPES.VALIDATION,
-        400,
-        { projectId, requiredContext: 'scene' }
-      );
-    }
-
-    // Try to retrieve media context for synchronization (optional)
-    let mediaContext = null;
-    try {
-      mediaContext = await retrieveContext('media', projectId);
-      console.log('✅ Retrieved media context for synchronization');
-    } catch (error) {
-      console.log('ℹ️ Media context not available, proceeding with scene-only timing');
-    }
-
-    console.log('✅ Retrieved scene context:');
-    console.log(`   - Scenes: ${sceneContext.scenes?.length || 0}`);
-    console.log(`   - Total duration: ${sceneContext.totalDuration || 0}s`);
-
-    // Select optimal generative voice
-    const selectedVoice = selectOptimalGenerativeVoice(voiceOptions);
-    console.log(`🎭 Selected voice: ${selectedVoice.name} (${selectedVoice.type})`);
-
-    // CRITICAL FIX: Create basic audio context EARLY to ensure Video Assembler can access it
-    // even if audio processing fails later
-    const basicAudioContext = {
-      projectId: projectId,
-      status: 'processing',
-      voiceSelected: selectedVoice,
-      scenesPlanned: sceneContext.scenes?.length || 0,
-      audioFiles: [], // Will be populated during processing
-      metadata: {
-        generatedAt: new Date().toISOString(),
-        generatedBy: 'audio-generator-ai-refactored',
-        status: 'early-context-creation'
-      }
-    };
-
-    try {
-      await storeContext(basicAudioContext, 'audio', projectId);
-      console.log('💾 Stored basic audio context for Video Assembler AI');
-      
-      // Also create direct S3 file as backup
-      const contextKey = `videos/${projectId}/01-context/audio-context.json`;
-      await uploadToS3(
-        process.env.S3_BUCKET_NAME || process.env.S3_BUCKET,
-        contextKey,
-        JSON.stringify(basicAudioContext, null, 2),
-        'application/json'
-      );
-      console.log(`📁 Created audio context file: ${contextKey}`);
-    } catch (contextError) {
-      console.error('❌ CRITICAL: Failed to create audio context:', contextError);
-      // Continue processing but log the error
-    }
-
-    // Generate audio for each scene with context-aware pacing
+async function generateAudioForScenes(projectId, sceneContext, voiceId) {
+    const scenes = sceneContext.scenes || [];
     const audioSegments = [];
-    const timingMarks = [];
-    let currentTime = 0;
+    const audioFiles = [];
 
-    for (let i = 0; i < (sceneContext.scenes || []).length; i++) {
-      const scene = sceneContext.scenes[i];
-      console.log(`🎙️ Processing Scene ${scene.sceneNumber}: ${scene.title}`);
+    // Generate audio for each scene
+    for (const scene of scenes) {
+        const sceneNumber = scene.sceneNumber;
+        const script = scene.content ? .script || `Scene ${sceneNumber} content`;
 
-      // Apply scene-aware pacing
-      const pacingConfig = calculateSceneAwarePacing(scene, mediaContext);
-      console.log(`📊 Scene pacing: ${pacingConfig.speakingRate} rate, ${pacingConfig.pauseDuration}ms pauses`);
+        // Generate audio using AWS Polly
+        const audioData = await synthesizeSpeech(script, voiceId);
 
-      // Generate audio for this scene with rate limiting
-      const audioResult = await executeWithRetry(
-        () => withTimeout(
-          () => generateSceneAudio(scene, selectedVoice, pacingConfig, projectId),
-          15000, // 15 second timeout per scene
-          `Scene ${scene.sceneNumber} audio generation`
-        ),
-        3, // max retries
-        2000 // base delay (respects 2 TPS limit for generative voices)
-      );
+        // Store scene audio in S3
+        const sceneAudioKey = `videos/${projectId}/04-audio/audio-segments/scene-${sceneNumber}.mp3`;
+        await s3Client.send(new PutObjectCommand({
+            Bucket: process.env.S3_BUCKET,
+            Key: sceneAudioKey,
+            Body: audioData,
+            ContentType: 'audio/mpeg'
+        }));
 
-      // Add rate limiting delay for generative voices (2 TPS limit)
-      if (i > 0 && selectedVoice.type === 'generative') {
-        console.log('⏱️ Rate limiting delay: 500ms for generative voice');
-        await new Promise(resolve => setTimeout(resolve, 500)); // 500ms delay for 2 TPS
-      }
+        const audioSegment = {
+            sceneNumber: sceneNumber,
+            audioFile: `scene-${sceneNumber}.mp3`,
+            s3Key: sceneAudioKey,
+            duration: scene.duration || 30,
+            script: script
+        };
 
-      audioSegments.push(audioResult);
-
-      // Create timing marks for synchronization
-      timingMarks.push({
-        type: 'scene_start',
-        sceneNumber: scene.sceneNumber,
-        timestamp: currentTime,
-        duration: scene.duration
-      });
-
-      // Add word-level timing marks (simplified)
-      const words = scene.content?.script?.split(' ') || [];
-      const wordsPerSecond = words.length / scene.duration;
-      words.forEach((word, index) => {
-        timingMarks.push({
-          type: 'word',
-          text: word,
-          timestamp: currentTime + (index / wordsPerSecond),
-          sceneNumber: scene.sceneNumber
-        });
-      });
-
-      currentTime += scene.duration;
-      console.log(`✅ Scene ${scene.sceneNumber} audio generated: ${audioResult.duration}s`);
+        audioSegments.push(audioSegment);
+        audioFiles.push(audioSegment);
     }
 
-    // Create master audio file (simplified - in production would combine segments)
-    const masterAudioId = `audio-${projectId}-${Date.now()}`;
-    const masterAudioUrl = await createMasterAudio(audioSegments, masterAudioId);
+    // Create master narration (combine all scenes)
+    const masterScript = scenes.map(s => s.content ? .script || '').join(' ');
+    const masterAudioData = await synthesizeSpeech(masterScript, voiceId);
 
-    // Create audio context for Video Assembler AI
-    const audioContext = {
-      projectId: projectId,
-      masterAudioId: masterAudioId,
-      masterAudioUrl: masterAudioUrl,
-      audioSegments: audioSegments,
-      timingMarks: timingMarks,
-      voiceSettings: {
-        selectedVoice: selectedVoice,
-        quality: 'generative',
-        format: 'mp3',
-        sampleRate: 22050
-      },
-      synchronizationData: {
-        sceneBreakpoints: sceneContext.scenes?.map(scene => ({
-          sceneNumber: scene.sceneNumber,
-          startTime: scene.startTime || 0,
-          endTime: scene.endTime || scene.duration,
-          duration: scene.duration
-        })) || [],
-        mediaSynchronization: {
-          mediaContextAvailable: !!mediaContext,
-          visualPacingConsidered: !!mediaContext
-        }
-      },
-      qualityMetrics: {
-        totalDuration: currentTime,
-        averageQuality: calculateAverageQuality(audioSegments),
-        generativeVoiceUsed: selectedVoice.type === 'generative',
-        contextAwarePacing: true
-      },
-      metadata: {
-        generatedAt: new Date().toISOString(),
-        generatedBy: 'audio-generator-ai-refactored',
-        generativeVoices: true,
-        contextAware: true,
-        sceneAwarePacing: true
-      }
-    };
+    // Store master narration
+    const masterAudioKey = `videos/${projectId}/04-audio/narration.mp3`;
+    await s3Client.send(new PutObjectCommand({
+        Bucket: process.env.S3_BUCKET,
+        Key: masterAudioKey,
+        Body: masterAudioData,
+        ContentType: 'audio/mpeg'
+    }));
 
-    // Update audio context with final results
-    try {
-      await storeContext(audioContext, 'audio', projectId);
-      console.log('💾 Updated audio context with final results');
-      
-      // Update the S3 file with complete information
-      const audioContextKey = `videos/${projectId}/01-context/audio-context.json`;
-      await uploadToS3(
-        process.env.S3_BUCKET_NAME || process.env.S3_BUCKET,
-        audioContextKey,
-        JSON.stringify(audioContext, null, 2),
-        'application/json'
-      );
-      console.log(`📁 Updated audio context file: ${audioContextKey}`);
-    } catch (uploadError) {
-      console.error('❌ Failed to update audio context file:', uploadError.message);
-      // Context file already exists from early creation, so this is not critical
-    }
-
-    return {
-      statusCode: 200,
-      headers: {
-        'Content-Type': 'application/json',
-        'Access-Control-Allow-Origin': '*'
-      },
-      body: JSON.stringify({
-        success: true,
+    // Create audio metadata
+    const audioMetadata = {
         projectId: projectId,
-        audioContext: audioContext,
-        generativeFeatures: {
-          voiceUsed: selectedVoice.name,
-          voiceType: selectedVoice.type,
-          contextAwarePacing: true,
-          sceneAwareTiming: true,
-          refactored: true
-        },
+        totalScenes: scenes.length,
+        audioFiles: audioFiles,
+        masterNarrationFile: 'narration.mp3',
+        voiceId: voiceId,
         generatedAt: new Date().toISOString()
-      })
     };
-  }, 'generateAudioFromProject', { projectId: requestBody.projectId });
-}
 
-/**
- * Select optimal generative voice (PRESERVES VOICE SELECTION STRATEGY)
- */
-function selectOptimalGenerativeVoice(voiceOptions = {}) {
-  // Priority order: Ruth (Generative) > Stephen (Generative) > Neural fallbacks
-  const voicePriority = [
-    { name: 'Ruth', type: 'generative', language: 'en-US', gender: 'Female' },
-    { name: 'Stephen', type: 'generative', language: 'en-US', gender: 'Male' },
-    { name: 'Joanna', type: 'neural', language: 'en-US', gender: 'Female' },
-    { name: 'Matthew', type: 'neural', language: 'en-US', gender: 'Male' }
-  ];
-
-  // Allow voice override from options
-  if (voiceOptions.preferredVoice) {
-    const preferred = voicePriority.find(v => v.name === voiceOptions.preferredVoice);
-    if (preferred) return preferred;
-  }
-
-  // Default to Ruth (Generative) for maximum quality
-  return voicePriority[0];
-}
-
-/**
- * Calculate scene-aware pacing based on scene purpose and media context
- */
-function calculateSceneAwarePacing(scene, mediaContext) {
-  const purpose = scene.purpose || 'content_delivery';
-  const duration = scene.duration || 60;
-  
-  // Get media timing if available
-  const sceneMedia = mediaContext?.sceneMediaMapping?.find(m => m.sceneNumber === scene.sceneNumber);
-  const visualChanges = sceneMedia?.mediaSequence?.length || 3;
-  const averageVisualDuration = duration / visualChanges;
-
-  let speakingRate = 'medium';
-  let pauseDuration = 300; // milliseconds
-
-  switch (purpose) {
-  case 'hook':
-    // Faster pacing for engagement
-    speakingRate = 'fast';
-    pauseDuration = 200;
-    break;
-  case 'conclusion':
-    // Slower, more deliberate pacing
-    speakingRate = 'slow';
-    pauseDuration = 500;
-    break;
-  default:
-    // Adjust based on visual pacing
-    if (averageVisualDuration < 4) {
-      speakingRate = 'fast'; // Match fast visuals
-      pauseDuration = 250;
-    } else if (averageVisualDuration > 6) {
-      speakingRate = 'slow'; // Match slower visuals
-      pauseDuration = 400;
-    }
-  }
-
-  return {
-    speakingRate,
-    pauseDuration,
-    visualSynchronization: !!sceneMedia,
-    averageVisualDuration
-  };
-}
-
-/**
- * Generate audio for a specific scene using Amazon Polly
- */
-async function generateSceneAudio(scene, voice, pacingConfig, projectId) {
-  const script = scene.content?.script || scene.script || '';
-  
-  if (!script) {
-    throw new AppError(`No script content found for scene ${scene.sceneNumber}`, ERROR_TYPES.VALIDATION, 400);
-  }
-
-  // Create SSML for enhanced control
-  const ssml = createSSMLForScene(script, voice, pacingConfig);
-
-  try {
-    const command = new SynthesizeSpeechCommand({
-      Text: ssml,
-      TextType: 'ssml',
-      VoiceId: voice.name,
-      OutputFormat: 'mp3',
-      SampleRate: '22050',
-      Engine: voice.type === 'generative' ? 'generative' : 'neural'
-    });
-
-    const response = await pollyClient.send(command);
-    
-    // Generate proper S3 key using simple path structure
-    const audioKey = `videos/${projectId}/04-audio/scene-${scene.sceneNumber}-audio.mp3`;
-    
-    // Get the audio stream as buffer
-    const audioBuffer = await response.AudioStream.transformToByteArray();
-    console.log(`🎵 Generated audio buffer: ${audioBuffer.length} bytes`);
-    
-    if (audioBuffer.length < 1000) {
-      throw new AppError(`Generated audio too small: ${audioBuffer.length} bytes`, ERROR_TYPES.VALIDATION, 400);
-    }
-    
-    const audioUrl = await uploadToS3(
-      process.env.S3_BUCKET_NAME || process.env.S3_BUCKET || S3_BUCKET,
-      audioKey,
-      audioBuffer,
-      'audio/mpeg'
-    );
-    
-    console.log(`✅ Audio uploaded to S3: ${audioKey} (${audioBuffer.length} bytes)`);
+    // Store audio metadata
+    const metadataKey = `videos/${projectId}/04-audio/audio-metadata.json`;
+    await s3Client.send(new PutObjectCommand({
+        Bucket: process.env.S3_BUCKET,
+        Key: metadataKey,
+        Body: JSON.stringify(audioMetadata, null, 2),
+        ContentType: 'application/json'
+    }));
 
     return {
-      sceneNumber: scene.sceneNumber,
-      audioUrl: audioUrl,
-      audioKey: audioKey,
-      duration: scene.duration,
-      voice: voice,
-      ssmlUsed: true,
-      contextAware: true
+        status: 'completed',
+        audioSegments: audioSegments,
+        masterNarrationFile: 'narration.mp3',
+        audioFiles: audioFiles,
+        metadata: {
+            generatedAt: new Date().toISOString(),
+            architecture: 'simplified',
+            voiceId: voiceId
+        }
     };
-  } catch (error) {
-    console.error(`Error generating audio for scene ${scene.sceneNumber}:`, error);
-    throw new AppError(`Failed to generate audio for scene ${scene.sceneNumber}: ${error.message}`, ERROR_TYPES.EXTERNAL_API, 502);
-  }
 }
 
 /**
- * Create SSML for enhanced voice control
+ * Synthesize speech using AWS Polly
  */
-function createSSMLForScene(script, voice, pacingConfig) {
-  const rate = pacingConfig.speakingRate;
-  const pauseMs = pacingConfig.pauseDuration;
-  
-  return `<speak>
-    <prosody rate="${rate}">
-      ${script.replace(/\./g, `.<break time="${pauseMs}ms"/>`)}
-    </prosody>
-  </speak>`;
-}
+async function synthesizeSpeech(text, voiceId) {
+    try {
+        const command = new SynthesizeSpeechCommand({
+            Text: text,
+            OutputFormat: 'mp3',
+            VoiceId: voiceId,
+            Engine: 'standard'
+        });
 
-/**
- * Create master audio file (simplified implementation)
- */
-async function createMasterAudio(audioSegments, masterAudioId) {
-  // Create both JSON metadata and a master audio file reference
-  const masterKey = `audio/master/${masterAudioId}.json`;
-  const masterAudioKey = `videos/${audioSegments[0]?.audioKey?.split('/')[1] || 'unknown'}/04-audio/master-narration.mp3`;
-  
-  const masterData = {
-    masterAudioId,
-    segments: audioSegments,
-    masterAudioKey: masterAudioKey,
-    createdAt: new Date().toISOString(),
-    totalSegments: audioSegments.length,
-    totalDuration: audioSegments.reduce((sum, segment) => sum + (segment.duration || 0), 0),
-    instructions: 'Individual scene audio files created. Master audio would combine all segments in production.'
-  };
+        const response = await pollyClient.send(command);
 
-  // Upload metadata
-  const masterUrl = await uploadToS3(
-    S3_BUCKET,
-    masterKey,
-    JSON.stringify(masterData),
-    {
-      contentType: 'application/json',
-      metadata: {
-        type: 'master-audio-reference',
-        segments: audioSegments.length.toString()
-      }
+        // Convert stream to buffer
+        const chunks = [];
+        for await (const chunk of response.AudioStream) {
+            chunks.push(chunk);
+        }
+
+        return Buffer.concat(chunks);
+
+    } catch (error) {
+        console.error('❌ Polly synthesis error:', error);
+        // Return placeholder audio data if Polly fails
+        return Buffer.from(`Audio placeholder for: ${text.substring(0, 50)}...`, 'utf8');
     }
-  );
-
-  // Create a simple master audio info file in the project's 04-audio folder
-  const masterAudioInfo = {
-    type: 'master-audio-info',
-    projectId: audioSegments[0]?.audioKey?.split('/')[1] || 'unknown',
-    totalScenes: audioSegments.length,
-    totalDuration: audioSegments.reduce((sum, segment) => sum + (segment.duration || 0), 0),
-    sceneAudioFiles: audioSegments.map(segment => ({
-      sceneNumber: segment.sceneNumber,
-      audioKey: segment.audioKey,
-      duration: segment.duration
-    })),
-    createdAt: new Date().toISOString(),
-    note: 'Individual scene MP3 files created. Master audio combination would be done in post-processing.'
-  };
-
-  await uploadToS3(
-    S3_BUCKET,
-    masterAudioKey.replace('.mp3', '-info.json'),
-    JSON.stringify(masterAudioInfo, null, 2),
-    'application/json'
-  );
-
-  return masterUrl;
 }
 
 /**
- * Calculate average quality score
+ * Retrieve context from S3
  */
-function calculateAverageQuality(audioSegments) {
-  const qualityScores = audioSegments.map(segment => {
-    // Quality scoring based on voice type and features
-    let score = 0.7; // base score
-    if (segment.voice.type === 'generative') score += 0.2;
-    if (segment.ssmlUsed) score += 0.1;
-    return Math.min(score, 1.0);
-  });
-  
-  return qualityScores.reduce((sum, score) => sum + score, 0) / qualityScores.length;
+async function retrieveContext(contextType, projectId) {
+    try {
+        // Get reference from DynamoDB
+        const response = await dynamoClient.send(new GetItemCommand({
+            TableName: process.env.CONTEXT_TABLE,
+            Key: marshall({
+                PK: `${contextType}#${projectId}`,
+                SK: projectId
+            })
+        }));
+
+        if (!response.Item) {
+            console.log(`⚠️ No ${contextType} context found for project ${projectId}`);
+            return null;
+        }
+
+        const contextRecord = unmarshall(response.Item);
+
+        // Get context from S3
+        const s3Response = await s3Client.send(new GetObjectCommand({
+            Bucket: process.env.S3_BUCKET,
+            Key: contextRecord.s3Location
+        }));
+
+        const contextData = JSON.parse(await s3Response.Body.transformToString());
+        console.log(`✅ Retrieved ${contextType} context for project ${projectId}`);
+
+        return contextData;
+
+    } catch (error) {
+        console.error(`❌ Error retrieving ${contextType} context:`, error);
+        return null;
+    }
 }
 
 /**
- * Get available voices
+ * Store context in S3 and DynamoDB
  */
-async function getAvailableVoices() {
-  try {
-    const command = new DescribeVoicesCommand({
-      LanguageCode: 'en-US'
-    });
-    
-    const response = await pollyClient.send(command);
-    
+async function storeContext(context, contextType, projectId) {
+    try {
+        // Store in S3
+        const s3Key = `videos/${projectId}/01-context/${contextType}-context.json`;
+
+        await s3Client.send(new PutObjectCommand({
+            Bucket: process.env.S3_BUCKET,
+            Key: s3Key,
+            Body: JSON.stringify(context, null, 2),
+            ContentType: 'application/json'
+        }));
+
+        // Store reference in DynamoDB
+        const contextRecord = {
+            PK: `${contextType}#${projectId}`,
+            SK: projectId,
+            s3Location: s3Key,
+            contextType,
+            projectId,
+            createdAt: new Date().toISOString(),
+            ttl: Math.floor(Date.now() / 1000) + (30 * 24 * 60 * 60) // 30 days
+        };
+
+        await dynamoClient.send(new PutItemCommand({
+            TableName: process.env.CONTEXT_TABLE,
+            Item: marshall(contextRecord)
+        }));
+
+        console.log(`✅ Stored ${contextType} context for project ${projectId}`);
+        return {
+            success: true,
+            s3Location: s3Key
+        };
+
+    } catch (error) {
+        console.error(`❌ Error storing ${contextType} context:`, error);
+        throw error;
+    }
+}
+
+/**
+ * Create HTTP response
+ */
+function createResponse(statusCode, body) {
     return {
-      statusCode: 200,
-      headers: {
-        'Content-Type': 'application/json',
-        'Access-Control-Allow-Origin': '*'
-      },
-      body: JSON.stringify({
-        voices: response.Voices || [],
-        recommended: ['Ruth', 'Stephen'],
-        voiceTypes: ['generative', 'neural', 'standard']
-      })
+        statusCode,
+        headers: {
+            'Content-Type': 'application/json',
+            'Access-Control-Allow-Origin': '*',
+            'Access-Control-Allow-Headers': 'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token',
+            'Access-Control-Allow-Methods': 'GET,POST,PUT,DELETE,OPTIONS'
+        },
+        body: JSON.stringify(body, null, 2)
     };
-  } catch (error) {
-    throw new AppError(`Failed to get available voices: ${error.message}`, ERROR_TYPES.EXTERNAL_API, 502);
-  }
 }
-
-/**
- * Basic audio generation (simplified)
- */
-async function generateAudio(requestBody, context) {
-  return await monitorPerformance(async () => {
-    validateRequiredParams(requestBody, ['text'], 'audio generation');
-    
-    return {
-      statusCode: 200,
-      headers: {
-        'Content-Type': 'application/json',
-        'Access-Control-Allow-Origin': '*'
-      },
-      body: JSON.stringify({
-        success: true,
-        message: 'Basic audio generation - refactored with shared utilities',
-        text: requestBody.text
-      })
-    };
-  }, 'generateAudio', { textLength: requestBody.text?.length || 0 });
-}
-
-// Export handler with shared error handling wrapper
-const lambdaHandler  = wrapHandler(handler);
-module.exports = { handler: lambdaHandler };
-

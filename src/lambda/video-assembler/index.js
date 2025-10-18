@@ -24,9 +24,44 @@ const s3Client = new S3Client({
 });
 const S3_BUCKET = process.env.S3_BUCKET_NAME || process.env.S3_BUCKET || 'automated-video-pipeline-v2-786673323159-us-east-1';
 
-// FFmpeg paths (Lambda Layer in production, local for testing)
-const FFMPEG_PATH = process.env.FFMPEG_PATH || (process.env.AWS_LAMBDA_FUNCTION_NAME ? '/opt/bin/ffmpeg' : 'ffmpeg');
-const FFPROBE_PATH = process.env.FFPROBE_PATH || (process.env.AWS_LAMBDA_FUNCTION_NAME ? '/opt/bin/ffprobe' : 'ffprobe');
+// FFmpeg paths with fallback options
+const POSSIBLE_FFMPEG_PATHS = [
+    process.env.FFMPEG_PATH,
+    '/opt/bin/ffmpeg',
+    '/opt/ffmpeg/ffmpeg',
+    '/usr/bin/ffmpeg',
+    'ffmpeg'
+];
+
+const POSSIBLE_FFPROBE_PATHS = [
+    process.env.FFPROBE_PATH,
+    '/opt/bin/ffprobe',
+    '/opt/ffmpeg/ffprobe',
+    '/usr/bin/ffprobe',
+    'ffprobe'
+];
+
+// Function to find working FFmpeg path
+function findWorkingFFmpegPath() {
+    for (const path of POSSIBLE_FFMPEG_PATHS) {
+        if (path && fs.existsSync(path)) {
+            return path;
+        }
+    }
+    return 'ffmpeg'; // fallback
+}
+
+function findWorkingFFprobePath() {
+    for (const path of POSSIBLE_FFPROBE_PATHS) {
+        if (path && fs.existsSync(path)) {
+            return path;
+        }
+    }
+    return 'ffprobe'; // fallback
+}
+
+const FFMPEG_PATH = findWorkingFFmpegPath();
+const FFPROBE_PATH = findWorkingFFprobePath();
 
 const handler = async (event, context) => {
     console.log('Video Assembler Enhanced invoked');
