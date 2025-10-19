@@ -34,13 +34,18 @@ exports.handler = async (event, context) => {
         body
     } = event;
 
-    // Health check
-    if (httpMethod === 'GET' && path === '/topics/health') {
+    // Health check and GET endpoint
+    if (httpMethod === 'GET' && (path === '/topics/health' || path === '/topics')) {
         return createResponse(200, {
             service: 'topic-management-simplified',
             status: 'healthy',
             timestamp: new Date().toISOString(),
-            architecture: 'simplified-no-shared-layer'
+            architecture: 'simplified-no-shared-layer',
+            endpoints: {
+                'POST /topics': 'Create new topic and generate context',
+                'GET /topics': 'Health check and service status'
+            },
+            version: '4.0.0'
         });
     }
 

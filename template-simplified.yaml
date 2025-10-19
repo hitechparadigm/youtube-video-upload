@@ -78,7 +78,7 @@ Resources:
   # Usage Plan
   UsagePlan:
     Type: AWS::ApiGateway::UsagePlan
-    DependsOn: VideoApiStage
+    DependsOn: VideoApi
     Properties:
       UsagePlanName: !Sub 'video-pipeline-${Environment}'
       ApiStages:
@@ -94,6 +94,26 @@ Resources:
       UsagePlanId: !Ref UsagePlan
 
   # Lambda Functions (Simplified - No Shared Layer)
+  HealthCheckFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub 'video-pipeline-health-check-${Environment}'
+      CodeUri: src/lambda/health-check/
+      Handler: index.handler
+      Events:
+        RootApi:
+          Type: Api
+          Properties:
+            RestApiId: !Ref VideoApi
+            Path: /
+            Method: GET
+        HealthApi:
+          Type: Api
+          Properties:
+            RestApiId: !Ref VideoApi
+            Path: /health
+            Method: GET
+
   TopicManagementFunction:
     Type: AWS::Serverless::Function
     Properties:
@@ -101,12 +121,18 @@ Resources:
       CodeUri: src/lambda/topic-management/
       Handler: index.handler
       Events:
-        Api:
+        PostApi:
           Type: Api
           Properties:
             RestApiId: !Ref VideoApi
             Path: /topics
             Method: POST
+        GetApi:
+          Type: Api
+          Properties:
+            RestApiId: !Ref VideoApi
+            Path: /topics
+            Method: GET
       Policies:
         - S3FullAccessPolicy:
             BucketName: !Ref VideoBucket
@@ -120,12 +146,18 @@ Resources:
       CodeUri: src/lambda/script-generator/
       Handler: index.handler
       Events:
-        Api:
+        PostApi:
           Type: Api
           Properties:
             RestApiId: !Ref VideoApi
             Path: /scripts/generate
             Method: POST
+        GetApi:
+          Type: Api
+          Properties:
+            RestApiId: !Ref VideoApi
+            Path: /scripts/generate
+            Method: GET
       Policies:
         - S3FullAccessPolicy:
             BucketName: !Ref VideoBucket

@@ -1,0 +1,20 @@
+{
+    "httpMethod": "POST",
+    "path": "/topics",
+    "headers": {
+        "x-api-key": "test-key-local",
+        "Content-Type": "application/json"
+    },
+    "queryStringParameters": null,
+    "body": "{\"topic\":\"Local SAM Testing Topic\",\"targetAudience\":\"developers\",\"videoDuration\":300}",
+    "isBase64Encoded": false,
+    "requestContext": {
+        "requestId": "test-request-id-topic",
+        "stage": "test",
+        "httpMethod": "POST",
+        "path": "/topics",
+        "protocol": "HTTP/1.1",
+        "requestTime": "18/Oct/2025:22:00:00 +0000",
+        "requestTimeEpoch": 1729288800
+    }
+}

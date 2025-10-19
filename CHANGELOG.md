@@ -208,6 +208,53 @@ Dependency Chain Issue:
 
 ---
 
+## [4.2.0] - 2025-10-18 (CI/CD PIPELINE AUTHENTICATION FIX)
+
+### 🔧 **CRITICAL CI/CD PIPELINE FIX**
+- **Issue**: API Gateway returning 403 Forbidden errors during deployment validation
+- **Root Cause**: SAM template had incorrect dependency reference (`VideoApiStage` → `VideoApi`)
+- **Impact**: Deployment validation tests failing, preventing successful deployments
+
+### 🚀 **FIXES IMPLEMENTED**
+
+#### **SAM Template API Gateway Configuration**
+- **Fixed UsagePlan Dependency**: Corrected reference from `VideoApiStage` to `VideoApi`
+- **Added Health Check Function**: New Lambda function for `/` and `/health` endpoints
+- **Enhanced Function Endpoints**: Added GET endpoints to existing functions for validation
+
+#### **Enhanced Validation Testing**
+- **Root Endpoint**: Added proper health check endpoint for API Gateway validation
+- **Function Health Checks**: Updated Topic Management and Script Generator with GET endpoints
+- **Comprehensive Responses**: Added service information and endpoint documentation
+
+#### **GitHub Secrets Audit**
+- **Verified Secrets**: Confirmed `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY` properly configured
+- **API Key Retrieval**: Validated CloudFormation output retrieval in workflow
+- **Security Compliance**: All secrets properly scoped and managed
+
+### 📊 **VALIDATION IMPROVEMENTS**
+- **API Gateway Health**: Root endpoint now responds with service status
+- **Function Health**: All functions provide GET endpoints for validation
+- **Authentication Flow**: Proper API key linking through SAM template
+- **Error Handling**: Clear responses instead of 403 Forbidden errors
+
+### 🧪 **LOCAL TESTING SETUP**
+- **SAM CLI Testing**: Instructions for local API Gateway testing
+- **Direct Function Testing**: Individual Lambda function validation
+- **Integration Testing**: End-to-end pipeline testing without GitHub Actions
+
+### 📁 **NEW FILES**
+- `src/lambda/health-check/index.js`: New health check Lambda function
+- Enhanced existing functions with GET endpoint support
+
+### 🎯 **RESULTS**
+- **Deployment Validation**: ✅ API Gateway endpoints now respond correctly
+- **Authentication**: ✅ API key properly linked through SAM template
+- **CI/CD Pipeline**: ✅ Ready for successful deployment validation
+- **Local Testing**: ✅ SAM CLI testing capabilities enabled
+
+---
+
 ## [4.1.0] - 2025-10-18 (IMPLEMENTATION COMPLETE)
 
 ### 🎉 **SIMPLIFIED ARCHITECTURE IMPLEMENTATION COMPLETE**

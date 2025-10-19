@@ -37,13 +37,18 @@ exports.handler = async (event, context) => {
         body
     } = event;
 
-    // Health check
-    if (httpMethod === 'GET' && path === '/scripts/health') {
+    // Health check and GET endpoint
+    if (httpMethod === 'GET' && (path === '/scripts/generate' || path === '/scripts/health')) {
         return createResponse(200, {
             service: 'script-generator-simplified',
             status: 'healthy',
             timestamp: new Date().toISOString(),
-            architecture: 'simplified-no-shared-layer'
+            architecture: 'simplified-no-shared-layer',
+            endpoints: {
+                'POST /scripts/generate': 'Generate script from topic context',
+                'GET /scripts/generate': 'Health check and service status'
+            },
+            version: '4.0.0'
         });
     }
 
