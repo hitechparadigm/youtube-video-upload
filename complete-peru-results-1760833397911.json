@@ -1,0 +1,68 @@
+{
+  "startTime": "2025-10-19T00:23:09.555Z",
+  "steps": [
+    {
+      "step": "Topic Management",
+      "status": "RUNNING",
+      "timestamp": "2025-10-19T00:23:09.559Z",
+      "details": "Creating Peru travel project"
+    },
+    {
+      "step": "Topic Management",
+      "status": "FAILED",
+      "timestamp": "2025-10-19T00:23:09.684Z",
+      "details": "Status: 403, Body: {\"message\":\"Forbidden\"}"
+    },
+    {
+      "step": "Script Generation",
+      "status": "RUNNING",
+      "timestamp": "2025-10-19T00:23:11.684Z",
+      "details": "Generating Peru travel script"
+    },
+    {
+      "step": "Script Generation",
+      "status": "FAILED",
+      "timestamp": "2025-10-19T00:23:11.733Z",
+      "details": "Status: 403, Body: {\"message\":\"Forbidden\"}"
+    },
+    {
+      "step": "Audio Generation",
+      "status": "RUNNING",
+      "timestamp": "2025-10-19T00:23:13.751Z",
+      "details": "Generating audio narration"
+    },
+    {
+      "step": "Audio Generation",
+      "status": "FAILED",
+      "timestamp": "2025-10-19T00:23:13.787Z",
+      "details": "Status: 403, Body: {\"message\":\"Forbidden\"}"
+    },
+    {
+      "step": "Manifest Builder",
+      "status": "RUNNING",
+      "timestamp": "2025-10-19T00:23:15.789Z",
+      "details": "Building video manifest"
+    },
+    {
+      "step": "Manifest Builder",
+      "status": "FAILED",
+      "timestamp": "2025-10-19T00:23:15.864Z",
+      "details": "Status: 403, Body: {\"message\":\"Forbidden\"}"
+    },
+    {
+      "step": "YouTube Publisher",
+      "status": "RUNNING",
+      "timestamp": "2025-10-19T00:23:17.867Z",
+      "details": "Testing YouTube authentication"
+    },
+    {
+      "step": "YouTube Publisher",
+      "status": "FAILED",
+      "timestamp": "2025-10-19T00:23:17.907Z",
+      "details": "Status: 403, Body: {\"message\":\"Forbidden\"}"
+    }
+  ],
+  "success": false,
+  "endTime": "2025-10-19T00:23:17.908Z",
+  "duration": 8353
+}
