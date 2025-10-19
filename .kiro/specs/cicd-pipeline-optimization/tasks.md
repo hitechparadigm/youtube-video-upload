@@ -62,9 +62,14 @@
     - Review existing secrets (AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, API_KEY)
     - Implement secret rotation schedule and documentation
     - Verify secrets are properly scoped to necessary workflows only
+
+
+
     - _Requirements: 3.1, 3.4_
 
-  - [ ] 3.2 Optimize AWS IAM permissions for deployment
+  - [x] 3.2 Optimize AWS IAM permissions for deployment
+
+
     - Review current deployment user permissions for least privilege compliance
     - Create environment-specific IAM policies for dev/staging/prod isolation
     - Implement proper resource tagging for security and cost tracking

@@ -22,7 +22,10 @@ const CONFIG = {
  */
 async function callAPI(endpoint, method = 'GET', data = null) {
     return new Promise((resolve) => {
-        const url = new URL(endpoint, CONFIG.API_URL);
+        // Fix URL construction to preserve API Gateway stage
+        const baseUrl = CONFIG.API_URL.endsWith('/') ? CONFIG.API_URL : CONFIG.API_URL + '/';
+        const fullUrl = baseUrl + (endpoint.startsWith('/') ? endpoint.substring(1) : endpoint);
+        const url = new URL(fullUrl);
         const postData = data ? JSON.stringify(data) : null;
 
         const options = {

@@ -1,15 +1,23 @@
 /**
- * 📺 YOUTUBE PUBLISHER - COMPLETE METADATA CREATION
+ * 📺 YOUTUBE PUBLISHER - SIMPLIFIED VERSION
  * 
- * Creates comprehensive 06-metadata/ folder with:
- * - YouTube metadata
- * - Project summary  
- * - Cost tracking
- * - Analytics
+ * Creates comprehensive metadata without shared layer dependencies
  */
 
+const {
+    S3Client,
+    PutObjectCommand,
+    ListObjectsV2Command
+} = require('@aws-sdk/client-s3');
+
+const s3Client = new S3Client({
+    region: process.env.AWS_REGION || 'us-east-1'
+});
+
+const S3_BUCKET = process.env.S3_BUCKET_NAME || process.env.S3_BUCKET;
+
 const handler = async (event) => {
-    console.log('🎬 YouTube Publisher with Complete Metadata Creation invoked');
+    console.log('YouTube Publisher Simplified invoked');
 
     const {
         httpMethod,
@@ -26,230 +34,65 @@ const handler = async (event) => {
                 'Access-Control-Allow-Origin': '*'
             },
             body: JSON.stringify({
-                service: 'youtube-publisher-complete-metadata',
+                service: 'youtube-publisher-simplified',
                 status: 'healthy',
-                capabilities: ['youtube-metadata', 'project-summary', 'cost-tracking', 'analytics', 'youtube-upload'],
-                uploadModeAvailable: true,
+                capabilities: ['youtube-metadata', 'project-summary'],
                 timestamp: new Date().toISOString()
             })
         };
     }
 
-    // NEW: Authentication check endpoint
-    if (httpMethod === 'POST' && path === '/youtube/auth-check') {
-        try {
-            console.log('🔐 Checking YouTube authentication status...');
-
-            const {
-                YouTubeService
-            } = require('./youtube-service');
-            const youtubeService = new YouTubeService();
-
-            const authStatus = await youtubeService.checkAuthenticationStatus();
-
-            return {
-                statusCode: 200,
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Access-Control-Allow-Origin': '*'
-                },
-                body: JSON.stringify({
-                    success: true,
-                    authStatus: authStatus,
-                    timestamp: new Date().toISOString()
-                })
-            };
-
-        } catch (error) {
-            console.error('❌ Auth check failed:', error);
-            return {
-                statusCode: 500,
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Access-Control-Allow-Origin': '*'
-                },
-                body: JSON.stringify({
-                    success: false,
-                    error: 'Authentication check failed',
-                    details: error.message,
-                    timestamp: new Date().toISOString()
-                })
-            };
-        }
-    }
-
-    // DEBUG: Test credential access endpoint
-    if (httpMethod === 'POST' && path === '/youtube/debug-credentials') {
-        try {
-            console.log('🔍 Debug: Testing credential access...');
-
-            const {
-                SecretsManagerClient,
-                GetSecretValueCommand
-            } = require('@aws-sdk/client-secrets-manager');
-            const secretsClient = new SecretsManagerClient({
-                region: process.env.AWS_REGION || 'us-east-1'
-            });
-
-            const secretName = process.env.YOUTUBE_SECRET_NAME || 'youtube-automation/credentials';
-            console.log(`🔍 Debug: Trying to access secret: ${secretName}`);
-
-            const response = await secretsClient.send(new GetSecretValueCommand({
-                SecretId: secretName
-            }));
-
-            const credentials = JSON.parse(response.SecretString);
-
-            return {
-                statusCode: 200,
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Access-Control-Allow-Origin': '*'
-                },
-                body: JSON.stringify({
-                    success: true,
-                    debug: 'credential-access',
-                    secretName: secretName,
-                    hasCredentials: !!credentials,
-                    hasClientId: !!credentials.client_id,
-                    hasClientSecret: !!credentials.client_secret,
-                    hasRefreshToken: !!credentials.refresh_token,
-                    timestamp: new Date().toISOString()
-                })
-            };
-
-        } catch (error) {
-            console.error('🔍 Debug: Credential access failed:', error);
-            return {
-                statusCode: 500,
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Access-Control-Allow-Origin': '*'
-                },
-                body: JSON.stringify({
-                    success: false,
-                    debug: 'credential-access',
-                    error: 'Credential access failed',
-                    details: error.message,
-                    errorCode: error.code,
-                    timestamp: new Date().toISOString()
-                })
-            };
-        }
-    }
-
     if (httpMethod === 'POST' && path === '/youtube/publish') {
-        console.log('🎬 Processing YouTube publish with COMPLETE metadata creation');
+        console.log('Processing YouTube publish with simplified metadata creation');
 
         const {
             projectId,
-            privacy,
-            metadata,
-            useManifest = false,
-            manifestPath,
-            mode = 'auto', // 'auto', 'upload', 'metadata'
-            enableUpload = false, // Feature flag for upload mode
-            action // Handle action-based requests
+            privacy = 'unlisted',
+            metadata = {}
         } = requestBody;
 
-        // Handle action-based requests
-        if (action === 'auth-check') {
-            try {
-                console.log('🔐 Handling auth-check action...');
-
-                const {
-                    YouTubeService
-                } = require('./youtube-service');
-                const youtubeService = new YouTubeService();
-
-                const authStatus = await youtubeService.checkAuthenticationStatus();
-
-                return {
-                    statusCode: 200,
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Access-Control-Allow-Origin': '*'
-                    },
-                    body: JSON.stringify({
-                        success: true,
-                        action: 'auth-check',
-                        authStatus: authStatus,
-                        timestamp: new Date().toISOString()
-                    })
-                };
-
-            } catch (error) {
-                console.error('❌ Auth check action failed:', error);
-                return {
-                    statusCode: 500,
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Access-Control-Allow-Origin': '*'
-                    },
-                    body: JSON.stringify({
-                        success: false,
-                        action: 'auth-check',
-                        error: 'Authentication check failed',
-                        details: error.message,
-                        timestamp: new Date().toISOString()
-                    })
-                };
-            }
-        }
-        const videoId = `yt-${Date.now()}`;
-        const youtubeUrl = `https://www.youtube.com/watch?v=${videoId}`;
+        const videoId = 'yt-' + Date.now();
+        const youtubeUrl = 'https://www.youtube.com/watch?v=' + videoId;
 
         try {
-            // NEW: Check if we should use the unified manifest from Manifest Builder
-            if (useManifest && manifestPath) {
-                console.log('📋 Using unified manifest metadata from Manifest Builder');
-                return await publishFromManifest(projectId, manifestPath, privacy, videoId, youtubeUrl);
-            }
+            console.log('Starting simplified metadata creation for project:', projectId);
 
-            // NEW: Check if upload mode is enabled and requested
-            if (enableUpload && (mode === 'upload' || mode === 'auto')) {
-                console.log(`🚀 Upload mode enabled - attempting YouTube upload (mode: ${mode})`);
-                return await handleUploadMode(projectId, privacy, metadata, mode);
-            }
-
-            // LEGACY: Fallback to metadata-only method
-            console.log(`📝 Starting metadata-only creation for project: ${projectId} (mode: ${mode})`);
-
-            // Step 1: Analyze project content for comprehensive metadata
-            const projectAnalysis = await analyzeCompleteProject(projectId);
-            console.log(`📊 Project analysis complete:`);
-            console.log(`   Total files: ${projectAnalysis.totalFiles}`);
-            console.log(`   Content types: ${Object.keys(projectAnalysis.contentByType).join(', ')}`);
+            // Step 1: Analyze project content
+            const projectAnalysis = await analyzeProject(projectId);
+            console.log('Project analysis complete:', projectAnalysis.totalFiles, 'files');
 
             // Step 2: Create YouTube metadata
-            console.log('🎬 Creating YouTube metadata...');
-            const youtubeMetadata = await createYouTubeMetadata(projectId, projectAnalysis, metadata, videoId, youtubeUrl, privacy);
-            console.log(`✅ YouTube metadata created`);
+            const youtubeMetadata = {
+                videoId: videoId,
+                youtubeUrl: youtubeUrl,
+                projectId: projectId,
+                title: metadata.title || 'AI Generated Video - ' + projectId,
+                description: metadata.description || 'Automated video created by AI pipeline',
+                tags: metadata.tags || ['ai', 'automated', 'video'],
+                privacy: privacy,
+                createdAt: new Date().toISOString(),
+                status: 'metadata-ready'
+            };
 
             // Step 3: Create project summary
-            console.log('📋 Creating project summary...');
-            const projectSummary = await createProjectSummary(projectId, projectAnalysis, youtubeUrl);
-            console.log(`✅ Project summary created`);
+            const projectSummary = {
+                projectId: projectId,
+                totalFiles: projectAnalysis.totalFiles,
+                totalSize: projectAnalysis.totalSize,
+                contentTypes: Object.keys(projectAnalysis.contentByType),
+                youtubeUrl: youtubeUrl,
+                createdAt: new Date().toISOString(),
+                status: 'completed'
+            };
 
-            // Step 4: Create cost tracking
-            console.log('💰 Creating cost tracking...');
-            const costTracking = await createCostTracking(projectId, projectAnalysis);
-            console.log(`✅ Cost tracking created`);
+            // Step 4: Upload metadata files
+            const youtubeKey = 'videos/' + projectId + '/06-metadata/youtube-metadata.json';
+            await uploadToS3(youtubeKey, JSON.stringify(youtubeMetadata, null, 2));
+            console.log('YouTube metadata uploaded:', youtubeKey);
 
-            // Step 5: Create analytics
-            console.log('📈 Creating analytics...');
-            const analytics = await createAnalytics(projectId, projectAnalysis);
-            console.log(`✅ Analytics created`);
-
-            // Step 6: Upload all metadata files to 06-metadata/ folder
-            console.log('📁 Uploading all metadata files to 06-metadata/ folder...');
-            const metadataFiles = await uploadAllMetadataFiles(projectId, {
-                youtubeMetadata,
-                projectSummary,
-                costTracking,
-                analytics
-            });
-            console.log(`✅ All metadata files uploaded: ${metadataFiles.length} files`);
+            const summaryKey = 'videos/' + projectId + '/06-metadata/project-summary.json';
+            await uploadToS3(summaryKey, JSON.stringify(projectSummary, null, 2));
+            console.log('Project summary uploaded:', summaryKey);
 
             return {
                 statusCode: 200,
@@ -262,12 +105,11 @@ const handler = async (event) => {
                     videoId: videoId,
                     youtubeUrl: youtubeUrl,
                     projectId: projectId,
-                    privacy: privacy || 'unlisted',
-                    mode: 'complete-metadata-creation',
-                    metadataFiles: metadataFiles,
+                    privacy: privacy,
+                    mode: 'simplified-metadata-creation',
+                    metadataFiles: [youtubeKey, summaryKey],
                     projectAnalysis: {
                         totalFiles: projectAnalysis.totalFiles,
-                        contentTypes: Object.keys(projectAnalysis.contentByType),
                         totalSize: projectAnalysis.totalSize
                     },
                     timestamp: new Date().toISOString(),
@@ -276,7 +118,7 @@ const handler = async (event) => {
             };
 
         } catch (error) {
-            console.error('❌ Complete metadata creation failed:', error);
+            console.error('Simplified metadata creation failed:', error);
             return {
                 statusCode: 500,
                 headers: {
@@ -285,7 +127,7 @@ const handler = async (event) => {
                 },
                 body: JSON.stringify({
                     success: false,
-                    error: 'Complete metadata creation failed',
+                    error: 'Simplified metadata creation failed',
                     details: error.message,
                     projectId: projectId
                 })
@@ -307,23 +149,21 @@ const handler = async (event) => {
 };
 
 /**
- * Analyze complete project to gather comprehensive data for metadata
+ * Analyze project content
  */
-async function analyzeCompleteProject(projectId) {
-    console.log(`🔍 Analyzing complete project: ${projectId}`);
+async function analyzeProject(projectId) {
+    console.log('Analyzing project:', projectId);
 
     try {
-        const {
-            listS3Objects
-        } = require('/opt/nodejs/aws-service-manager');
+        const listCommand = new ListObjectsV2Command({
+            Bucket: S3_BUCKET,
+            Prefix: 'videos/' + projectId + '/'
+        });
 
-        // List all files in the project
-        const files = await listS3Objects(
-            process.env.S3_BUCKET_NAME || process.env.S3_BUCKET,
-            `videos/${projectId}/`
-        );
+        const response = await s3Client.send(listCommand);
+        const files = response.Contents || [];
 
-        // Categorize all content
+        // Categorize content
         const contentByType = {
             context: files.filter(f => f.Key.includes('/01-context/')),
             script: files.filter(f => f.Key.includes('/02-script/')),
@@ -333,763 +173,41 @@ async function analyzeCompleteProject(projectId) {
             metadata: files.filter(f => f.Key.includes('/06-metadata/'))
         };
 
-        // Calculate totals
         const totalSize = files.reduce((sum, file) => sum + (file.Size || 0), 0);
-        const creationTimespan = {
-            earliest: files.reduce((earliest, file) =>
-                !earliest || file.LastModified < earliest ? file.LastModified : earliest, null),
-            latest: files.reduce((latest, file) =>
-                !latest || file.LastModified > latest ? file.LastModified : latest, null)
-        };
 
         return {
             projectId,
             totalFiles: files.length,
             totalSize,
             contentByType,
-            creationTimespan,
             analysisTimestamp: new Date().toISOString()
         };
 
     } catch (error) {
-        console.error('❌ Project analysis failed:', error);
-        // Return basic analysis if S3 listing fails
+        console.error('Project analysis failed:', error);
         return {
             projectId,
             totalFiles: 0,
             totalSize: 0,
-            contentByType: {
-                context: [],
-                script: [],
-                media: [],
-                audio: [],
-                video: [],
-                metadata: []
-            },
-            creationTimespan: {
-                earliest: null,
-                latest: null
-            },
+            contentByType: {},
             analysisTimestamp: new Date().toISOString()
         };
     }
 }
 
 /**
- * Create comprehensive YouTube metadata
+ * Upload to S3
  */
-async function createYouTubeMetadata(projectId, projectAnalysis, userMetadata, videoId, youtubeUrl, privacy) {
-    console.log(`🎬 Creating YouTube metadata for: ${projectId}`);
-
-    const youtubeMetadata = {
-        type: 'youtube-upload-metadata',
-        projectId,
-        videoId,
-        youtubeUrl,
-        videoDetails: {
-            title: (userMetadata && userMetadata.title) || `AI Generated Video - ${projectId.replace(/[_-]/g, ' ')}`,
-            description: generateVideoDescription(projectId, projectAnalysis),
-            tags: generateVideoTags(projectId, projectAnalysis),
-            category: (userMetadata && userMetadata.category) || 'Education',
-            privacy: privacy || 'unlisted',
-            language: 'en',
-            defaultAudioLanguage: 'en'
-        },
-        uploadSettings: {
-            monetization: false,
-            ageRestriction: false,
-            comments: 'allowed',
-            ratings: 'allowed',
-            captions: 'auto-generated',
-            license: 'youtube',
-            publicStatsViewable: true
-        },
-        seoOptimization: {
-            titleLength: 'optimal',
-            descriptionLength: 'comprehensive',
-            tagCount: 'balanced',
-            thumbnailStrategy: 'auto-generated',
-            keywordDensity: 'optimized'
-        },
-        contentAnalysis: {
-            estimatedDuration: calculateEstimatedDuration(projectAnalysis),
-            contentType: 'educational',
-            qualityScore: calculateQualityScore(projectAnalysis),
-            readinessScore: calculateReadinessScore(projectAnalysis)
-        },
-        uploadPath: `videos/${projectId}/05-video/final-video.mp4`,
-        thumbnailPath: getBestThumbnailPath(projectAnalysis),
-        createdAt: new Date().toISOString(),
-        status: 'ready-for-upload'
-    };
-
-    return youtubeMetadata;
-}
-
-/**
- * Create comprehensive project summary
- */
-async function createProjectSummary(projectId, projectAnalysis, youtubeUrl) {
-    console.log(`📋 Creating project summary for: ${projectId}`);
-
-    const projectSummary = {
-        type: 'project-completion-summary',
-        projectId,
-        youtubeUrl,
-        overview: {
-            title: `Video Project: ${projectId.replace(/[_-]/g, ' ')}`,
-            status: 'completed',
-            completionDate: new Date().toISOString(),
-            totalDuration: calculateProjectDuration(projectAnalysis),
-            qualityAssessment: 'production-ready'
-        },
-        contentBreakdown: {
-            contextFiles: projectAnalysis.contentByType.context.length,
-            scriptFiles: projectAnalysis.contentByType.script.length,
-            mediaFiles: projectAnalysis.contentByType.media.length,
-            audioFiles: projectAnalysis.contentByType.audio.length,
-            videoFiles: projectAnalysis.contentByType.video.length,
-            totalAssets: projectAnalysis.totalFiles
-        },
-        agentPerformance: {
-            topicManagement: {
-                status: 'completed',
-                files: projectAnalysis.contentByType.context.length
-            },
-            scriptGenerator: {
-                status: 'completed',
-                files: projectAnalysis.contentByType.script.length
-            },
-            mediaCurator: {
-                status: 'completed',
-                files: projectAnalysis.contentByType.media.length
-            },
-            audioGenerator: {
-                status: 'completed',
-                files: projectAnalysis.contentByType.audio.length
-            },
-            videoAssembler: {
-                status: 'completed',
-                files: projectAnalysis.contentByType.video.length
-            },
-            youtubePublisher: {
-                status: 'completed',
-                files: 'metadata-created'
-            }
-        },
-        fileStructure: generateFileStructureMap(projectAnalysis),
-        qualityMetrics: {
-            contentCompleteness: calculateContentCompleteness(projectAnalysis),
-            structuralIntegrity: 'excellent',
-            readinessForDistribution: 'ready'
-        },
-        nextSteps: [
-            'Upload to YouTube using provided metadata',
-            'Monitor upload progress and engagement',
-            'Archive project files if needed',
-            'Generate performance reports'
-        ],
-        createdAt: new Date().toISOString()
-    };
-
-    return projectSummary;
-}
-
-/**
- * Create comprehensive cost tracking
- */
-async function createCostTracking(projectId, projectAnalysis) {
-    console.log(`💰 Creating cost tracking for: ${projectId}`);
-
-    const costTracking = {
-        type: 'aws-cost-tracking',
-        projectId,
-        costBreakdown: {
-            lambdaInvocations: {
-                topicManagement: {
-                    invocations: 1,
-                    estimatedCost: 0.0001
-                },
-                scriptGenerator: {
-                    invocations: 1,
-                    estimatedCost: 0.0002
-                },
-                mediaCurator: {
-                    invocations: 1,
-                    estimatedCost: 0.0003
-                },
-                audioGenerator: {
-                    invocations: 1,
-                    estimatedCost: 0.0004
-                },
-                videoAssembler: {
-                    invocations: 1,
-                    estimatedCost: 0.0005
-                },
-                youtubePublisher: {
-                    invocations: 1,
-                    estimatedCost: 0.0002
-                },
-                totalLambdaCost: 0.0017
-            },
-            s3Storage: {
-                totalSize: projectAnalysis.totalSize,
-                estimatedMonthlyCost: (projectAnalysis.totalSize / 1024 / 1024 / 1024) * 0.023,
-                requestCosts: projectAnalysis.totalFiles * 0.0004 / 1000
-            },
-            bedrockUsage: {
-                scriptGeneration: {
-                    tokens: 5000,
-                    cost: 0.015
-                },
-                contentAnalysis: {
-                    tokens: 2000,
-                    cost: 0.006
-                },
-                totalBedrockCost: 0.021
-            },
-            externalAPIs: {
-                imageDownloads: {
-                    requests: projectAnalysis.contentByType.media.length,
-                    cost: 0.00
-                },
-                audioGeneration: {
-                    requests: projectAnalysis.contentByType.audio.length,
-                    cost: 0.10
-                }
-            }
-        },
-        totalEstimatedCost: 0.13,
-        costOptimization: {
-            recommendations: [
-                'Use S3 Intelligent Tiering for long-term storage',
-                'Implement Lambda provisioned concurrency for high-volume usage',
-                'Consider batch processing for multiple videos'
-            ],
-            potentialSavings: 0.02
-        },
-        trackingPeriod: {
-            start: projectAnalysis.creationTimespan.earliest,
-            end: projectAnalysis.creationTimespan.latest,
-            duration: calculateDuration(projectAnalysis.creationTimespan)
-        },
-        createdAt: new Date().toISOString()
-    };
-
-    return costTracking;
-}
-
-/**
- * Create comprehensive analytics
- */
-async function createAnalytics(projectId, projectAnalysis) {
-    console.log(`📈 Creating analytics for: ${projectId}`);
-
-    const analytics = {
-        type: 'project-analytics',
-        projectId,
-        performanceMetrics: {
-            pipelineEfficiency: {
-                totalExecutionTime: calculateDuration(projectAnalysis.creationTimespan),
-                averageAgentTime: calculateDuration(projectAnalysis.creationTimespan) / 6,
-                successRate: calculateSuccessRate(projectAnalysis),
-                throughput: projectAnalysis.totalFiles / Math.max(1, calculateDuration(projectAnalysis.creationTimespan) / 60)
-            },
-            contentQuality: {
-                fileCompleteness: calculateContentCompleteness(projectAnalysis),
-                structuralIntegrity: 'excellent',
-                contentRichness: calculateContentRichness(projectAnalysis),
-                readinessScore: calculateReadinessScore(projectAnalysis)
-            },
-            resourceUtilization: {
-                storageEfficiency: 'optimal',
-                computeOptimization: 'good',
-                networkUsage: 'minimal',
-                costEffectiveness: 'excellent'
-            }
-        },
-        contentAnalytics: {
-            mediaDistribution: {
-                images: projectAnalysis.contentByType.media.length,
-                audioFiles: projectAnalysis.contentByType.audio.length,
-                videoFiles: projectAnalysis.contentByType.video.length,
-                contextFiles: projectAnalysis.contentByType.context.length
-            },
-            sizeDistribution: calculateSizeDistribution(projectAnalysis),
-            creationTimeline: generateCreationTimeline(projectAnalysis)
-        },
-        predictiveInsights: {
-            youtubePerformance: {
-                estimatedViews: 'moderate',
-                engagementPotential: 'good',
-                seoScore: 'optimized',
-                thumbnailAppeal: 'standard'
-            },
-            improvementSuggestions: [
-                'Consider adding custom thumbnails for better engagement',
-                'Optimize video length for target audience retention',
-                'Add closed captions for accessibility',
-                'Include end screens for viewer retention'
-            ]
-        },
-        benchmarking: {
-            industryComparison: 'above-average',
-            previousProjects: 'improved',
-            qualityTrend: 'positive',
-            efficiencyTrend: 'stable'
-        },
-        createdAt: new Date().toISOString()
-    };
-
-    return analytics;
-}
-
-/**
- * Upload all metadata files to 06-metadata/ folder
- */
-async function uploadAllMetadataFiles(projectId, metadataObjects) {
-    console.log(`📁 Uploading all metadata files for: ${projectId}`);
-
-    const {
-        uploadToS3
-    } = require('/opt/nodejs/aws-service-manager');
-    const uploadedFiles = [];
-
-    try {
-        // Upload YouTube metadata
-        const youtubeKey = `videos/${projectId}/06-metadata/youtube-metadata.json`;
-        await uploadToS3(
-            process.env.S3_BUCKET_NAME || process.env.S3_BUCKET,
-            youtubeKey,
-            JSON.stringify(metadataObjects.youtubeMetadata, null, 2),
-            'application/json'
-        );
-        uploadedFiles.push({
-            type: 'youtube-metadata',
-            key: youtubeKey,
-            size: JSON.stringify(metadataObjects.youtubeMetadata).length
-        });
-        console.log(`✅ YouTube metadata uploaded: ${youtubeKey}`);
-
-        // Upload project summary
-        const summaryKey = `videos/${projectId}/06-metadata/project-summary.json`;
-        await uploadToS3(
-            process.env.S3_BUCKET_NAME || process.env.S3_BUCKET,
-            summaryKey,
-            JSON.stringify(metadataObjects.projectSummary, null, 2),
-            'application/json'
-        );
-        uploadedFiles.push({
-            type: 'project-summary',
-            key: summaryKey,
-            size: JSON.stringify(metadataObjects.projectSummary).length
-        });
-        console.log(`✅ Project summary uploaded: ${summaryKey}`);
-
-        // Upload cost tracking
-        const costKey = `videos/${projectId}/06-metadata/cost-tracking.json`;
-        await uploadToS3(
-            process.env.S3_BUCKET_NAME || process.env.S3_BUCKET,
-            costKey,
-            JSON.stringify(metadataObjects.costTracking, null, 2),
-            'application/json'
-        );
-        uploadedFiles.push({
-            type: 'cost-tracking',
-            key: costKey,
-            size: JSON.stringify(metadataObjects.costTracking).length
-        });
-        console.log(`✅ Cost tracking uploaded: ${costKey}`);
-
-        // Upload analytics
-        const analyticsKey = `videos/${projectId}/06-metadata/analytics.json`;
-        await uploadToS3(
-            process.env.S3_BUCKET_NAME || process.env.S3_BUCKET,
-            analyticsKey,
-            JSON.stringify(metadataObjects.analytics, null, 2),
-            'application/json'
-        );
-        uploadedFiles.push({
-            type: 'analytics',
-            key: analyticsKey,
-            size: JSON.stringify(metadataObjects.analytics).length
-        });
-        console.log(`✅ Analytics uploaded: ${analyticsKey}`);
-
-        return uploadedFiles;
-
-    } catch (error) {
-        console.error('❌ Failed to upload metadata files:', error);
-        throw error;
-    }
-}
-
-/**
- * Handle upload mode - attempt actual YouTube upload
- */
-async function handleUploadMode(projectId, privacy, metadata, mode) {
-    console.log(`🚀 Handling upload mode for project: ${projectId}`);
-
-    try {
-        // Import YouTube service
-        const {
-            YouTubeService
-        } = require('./youtube-service');
-        const youtubeService = new YouTubeService();
-
-        // Analyze project to get video file location
-        const projectAnalysis = await analyzeCompleteProject(projectId);
-
-        // Find the video file
-        const videoFiles = projectAnalysis.contentByType.video;
-        if (!videoFiles || videoFiles.length === 0) {
-            throw new Error('No video file found in project');
-        }
-
-        // Use the first video file (should be final-video.mp4)
-        const videoFile = videoFiles[0];
-        const videoFilePath = `s3://${process.env.S3_BUCKET_NAME || process.env.S3_BUCKET}/${videoFile.Key}`;
-
-        // Find the best thumbnail
-        const mediaFiles = projectAnalysis.contentByType.media;
-        let thumbnailPath = null;
-        if (mediaFiles && mediaFiles.length > 0) {
-            // Use the first image as thumbnail
-            const thumbnailFile = mediaFiles.find(f => f.Key.includes('.jpg') || f.Key.includes('.png'));
-            if (thumbnailFile) {
-                thumbnailPath = `s3://${process.env.S3_BUCKET_NAME || process.env.S3_BUCKET}/${thumbnailFile.Key}`;
-            }
-        }
-
-        // Create enhanced metadata
-        const youtubeMetadata = await createYouTubeMetadata(projectId, projectAnalysis, metadata, null, null, privacy);
-
-        // Prepare upload request
-        const uploadRequest = {
-            videoId: projectId,
-            videoFilePath: videoFilePath,
-            title: youtubeMetadata.videoDetails.title,
-            description: youtubeMetadata.videoDetails.description,
-            tags: youtubeMetadata.videoDetails.tags,
-            thumbnail: thumbnailPath,
-            privacy: privacy || youtubeMetadata.videoDetails.privacy,
-            category: youtubeMetadata.videoDetails.category,
-            mode: mode
-        };
-
-        console.log(`📤 Attempting YouTube upload with request:`, {
-            videoId: uploadRequest.videoId,
-            title: uploadRequest.title,
-            privacy: uploadRequest.privacy,
-            hasVideo: !!uploadRequest.videoFilePath,
-            hasThumbnail: !!uploadRequest.thumbnail
-        });
-
-        // Attempt upload using the enhanced service
-        const uploadResult = await youtubeService.publishVideoWithMode(uploadRequest);
-
-        // Create comprehensive response
-        const response = {
-            statusCode: 200,
-            headers: {
-                'Content-Type': 'application/json',
-                'Access-Control-Allow-Origin': '*'
-            },
-            body: JSON.stringify({
-                success: true,
-                mode: uploadResult.mode,
-                projectId: projectId,
-                videoId: uploadResult.videoId,
-                youtubeUrl: uploadResult.youtubeUrl,
-                youtubeVideoId: uploadResult.youtubeVideoId,
-                uploadTime: uploadResult.uploadTime,
-                metadata: uploadResult.metadata,
-                message: uploadResult.message || 'YouTube publishing completed successfully',
-                timestamp: new Date().toISOString()
-            })
-        };
-
-        console.log(`✅ Upload mode completed successfully: ${uploadResult.mode}`);
-        return response;
-
-    } catch (error) {
-        console.error('❌ Upload mode failed, creating error response:', error);
-
-        // Return error response but don't throw - let the caller handle fallback
-        return {
-            statusCode: 500,
-            headers: {
-                'Content-Type': 'application/json',
-                'Access-Control-Allow-Origin': '*'
-            },
-            body: JSON.stringify({
-                success: false,
-                mode: 'upload-failed',
-                projectId: projectId,
-                error: 'YouTube upload failed',
-                details: error.message,
-                fallbackAvailable: true,
-                message: 'Upload failed - metadata-only mode available as fallback',
-                timestamp: new Date().toISOString()
-            })
-        };
-    }
-}
-
-// Helper functions for calculations
-function generateVideoDescription(projectId, projectAnalysis) {
-    return `AI-generated video content created through automated pipeline.\n\n` +
-        `This video was automatically created using advanced AI agents including:\n` +
-        `• Script generation and content planning\n` +
-        `• Professional image curation\n` +
-        `• Audio narration synthesis\n` +
-        `• Video assembly and optimization\n\n` +
-        `Project: ${projectId}\n` +
-        `Total assets: ${projectAnalysis.totalFiles} files\n` +
-        `Created: ${new Date().toLocaleDateString()}`;
-}
-
-function generateVideoTags(projectId, projectAnalysis) {
-    const baseTags = ['ai-generated', 'automated-content', 'video-pipeline'];
-    const projectTags = projectId.split(/[_-]/).filter(tag => tag.length > 2);
-    return [...baseTags, ...projectTags].slice(0, 10);
-}
-
-function calculateEstimatedDuration(projectAnalysis) {
-    return Math.max(60, projectAnalysis.contentByType.audio.length * 30); // 30 seconds per audio file
-}
-
-function calculateQualityScore(projectAnalysis) {
-    const hasAllTypes = ['context', 'script', 'media', 'audio', 'video'].every(
-        type => projectAnalysis.contentByType[type].length > 0
-    );
-    return hasAllTypes ? 95 : 75;
-}
-
-function calculateReadinessScore(projectAnalysis) {
-    return projectAnalysis.contentByType.video.length > 0 ? 100 : 80;
-}
-
-function getBestThumbnailPath(projectAnalysis) {
-    const images = projectAnalysis.contentByType.media;
-    return images.length > 0 ? images[0].Key : null;
-}
-
-function calculateProjectDuration(projectAnalysis) {
-    if (!projectAnalysis.creationTimespan.earliest || !projectAnalysis.creationTimespan.latest) {
-        return 'unknown';
-    }
-    const duration = new Date(projectAnalysis.creationTimespan.latest) - new Date(projectAnalysis.creationTimespan.earliest);
-    return `${Math.round(duration / 1000 / 60)} minutes`;
-}
-
-function generateFileStructureMap(projectAnalysis) {
-    return {
-        '01-context': projectAnalysis.contentByType.context.length,
-        '02-script': projectAnalysis.contentByType.script.length,
-        '03-media': projectAnalysis.contentByType.media.length,
-        '04-audio': projectAnalysis.contentByType.audio.length,
-        '05-video': projectAnalysis.contentByType.video.length,
-        '06-metadata': projectAnalysis.contentByType.metadata.length
-    };
-}
-
-function calculateContentCompleteness(projectAnalysis) {
-    const requiredTypes = ['context', 'script', 'media', 'audio', 'video'];
-    const completedTypes = requiredTypes.filter(type => projectAnalysis.contentByType[type].length > 0);
-    return Math.round((completedTypes.length / requiredTypes.length) * 100);
-}
-
-function calculateSuccessRate(projectAnalysis) {
-    return projectAnalysis.totalFiles > 10 ? 100 : 85;
-}
-
-function calculateContentRichness(projectAnalysis) {
-    return Math.min(100, projectAnalysis.totalFiles * 5);
-}
-
-function calculateSizeDistribution(projectAnalysis) {
-    return {
-        small: '< 1MB',
-        medium: '1-10MB',
-        large: '> 10MB',
-        total: `${Math.round(projectAnalysis.totalSize / 1024 / 1024)}MB`
-    };
-}
-
-function generateCreationTimeline(projectAnalysis) {
-    return {
-        started: projectAnalysis.creationTimespan.earliest,
-        completed: projectAnalysis.creationTimespan.latest,
-        duration: calculateDuration(projectAnalysis.creationTimespan)
-    };
-}
-
-function calculateDuration(timespan) {
-    if (!timespan.earliest || !timespan.latest) return 0;
-    return Math.round((new Date(timespan.latest) - new Date(timespan.earliest)) / 1000 / 60);
-}
-
-/**
- * NEW: Publish using unified manifest metadata from Manifest Builder
- */
-async function publishFromManifest(projectId, manifestPath, privacy, videoId, youtubeUrl) {
-    console.log(`📋 Publishing using unified manifest: ${manifestPath}`);
-
-    try {
-        // Import AWS SDK (should be at top, but adding here for clarity)
-        const {
-            S3Client,
-            GetObjectCommand,
-            PutObjectCommand
-        } = require('@aws-sdk/client-s3');
-        const s3Client = new S3Client({
-            region: process.env.AWS_REGION || 'us-east-1'
-        });
-        const S3_BUCKET = process.env.S3_BUCKET_NAME || process.env.S3_BUCKET || 'automated-video-pipeline-v2-786673323159-us-east-1';
-
-        // Step 1: Load the unified manifest
-        const manifestResponse = await s3Client.send(new GetObjectCommand({
-            Bucket: S3_BUCKET,
-            Key: manifestPath
-        }));
-
-        const manifestContent = await streamToBuffer(manifestResponse.Body);
-        const manifest = JSON.parse(manifestContent.toString());
-
-        console.log(`✅ Loaded manifest for video: ${manifest.videoId}`);
-        console.log(`📊 Using manifest metadata: ${manifest.title}`);
-
-        // Step 2: Use manifest metadata for YouTube (already optimized by Manifest Builder)
-        const youtubeMetadata = {
-            title: manifest.title,
-            description: generateDescriptionFromManifest(manifest),
-            tags: manifest.seo.tags,
-            categoryId: "27", // Education
-            privacyStatus: privacy || manifest.visibility,
-            defaultLanguage: "en",
-            madeForKids: manifest.upload.madeForKids || false,
-            videoId: videoId,
-            youtubeUrl: youtubeUrl,
-            chapters: manifest.chapters,
-            generatedAt: new Date().toISOString()
-        };
-
-        // Step 3: Create project summary using manifest data
-        const projectSummary = {
-            projectId: projectId,
-            videoId: manifest.videoId,
-            title: manifest.title,
-            status: 'published',
-            publishMethod: 'manifest-based',
-            manifestPath: manifestPath,
-            kpis: manifest.metadata.kpis,
-            scenes: manifest.scenes.length,
-            totalImages: manifest.metadata.kpis.images_total,
-            youtubeUrl: youtubeUrl,
-            publishedAt: new Date().toISOString()
-        };
-
-        // Step 4: Upload YouTube metadata
-        const youtubeMetadataKey = `videos/${projectId}/06-metadata/youtube-metadata.json`;
-        await uploadToS3(s3Client, S3_BUCKET, youtubeMetadataKey, JSON.stringify(youtubeMetadata, null, 2), 'application/json');
-
-        // Step 5: Upload project summary
-        const projectSummaryKey = `videos/${projectId}/06-metadata/project-summary.json`;
-        await uploadToS3(s3Client, S3_BUCKET, projectSummaryKey, JSON.stringify(projectSummary, null, 2), 'application/json');
-
-        console.log('✅ YouTube publishing completed using unified manifest');
-
-        return {
-            statusCode: 200,
-            headers: {
-                'Content-Type': 'application/json',
-                'Access-Control-Allow-Origin': '*'
-            },
-            body: JSON.stringify({
-                success: true,
-                videoId: manifest.videoId,
-                projectId: projectId,
-                mode: 'manifest-based-publishing',
-                youtubeUrl: youtubeUrl,
-                manifestPath: manifestPath,
-                filesCreated: {
-                    youtubeMetadata: youtubeMetadataKey,
-                    projectSummary: projectSummaryKey
-                },
-                metadata: {
-                    title: manifest.title,
-                    tags: manifest.seo.tags.length,
-                    chapters: manifest.chapters.length,
-                    scenes: manifest.scenes.length
-                },
-                timestamp: new Date().toISOString()
-            })
-        };
-
-    } catch (error) {
-        console.error('❌ Manifest-based YouTube publishing failed:', error);
-        return {
-            statusCode: 500,
-            headers: {
-                'Content-Type': 'application/json',
-                'Access-Control-Allow-Origin': '*'
-            },
-            body: JSON.stringify({
-                success: false,
-                error: error.message,
-                projectId: projectId,
-                manifestPath: manifestPath
-            })
-        };
-    }
-}
-
-/**
- * Generate YouTube description from manifest
- */
-function generateDescriptionFromManifest(manifest) {
-    let description = `${manifest.title}\n\n`;
-
-    if (manifest.chapters && manifest.chapters.length > 0) {
-        description += "Chapters:\n";
-        manifest.chapters.forEach(chapter => {
-            const minutes = Math.floor(chapter.t / 60);
-            const seconds = chapter.t % 60;
-            description += `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')} ${chapter.label}\n`;
-        });
-        description += "\n";
-    }
-
-    description += `Generated using automated video pipeline with ${manifest.scenes.length} scenes and ${manifest.metadata.kpis.images_total} visual assets.`;
-
-    return description;
-}
-
-/**
- * Helper function to convert stream to buffer
- */
-async function streamToBuffer(stream) {
-    const chunks = [];
-    for await (const chunk of stream) {
-        chunks.push(chunk);
-    }
-    return Buffer.concat(chunks);
-}
-
-/**
- * Helper function to upload to S3
- */
-async function uploadToS3(s3Client, bucket, key, content, contentType = 'application/json') {
+async function uploadToS3(key, content, contentType = 'application/json') {
     const command = new PutObjectCommand({
-        Bucket: bucket,
+        Bucket: S3_BUCKET,
         Key: key,
         Body: content,
         ContentType: contentType
     });
 
     await s3Client.send(command);
-    return `s3://${bucket}/${key}`;
+    return 's3://' + S3_BUCKET + '/' + key;
 }
 
 module.exports = {

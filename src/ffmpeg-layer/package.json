@@ -1,0 +1,53 @@
+{
+    "name": "ffmpeg-lambda-layer",
+    "version": "1.0.0",
+    "description": "FFmpeg binary download and validation system for AWS Lambda layers",
+    "main": "ffmpeg-binary-manager.js",
+    "scripts": {
+        "test": "jest",
+        "test:watch": "jest --watch",
+        "test:coverage": "jest --coverage",
+        "download": "node ffmpeg-binary-manager.js",
+        "validate": "node -e \"require('./ffmpeg-binary-manager').checkFFmpegAvailability()\"",
+        "build-layer": "npm run download && npm run package",
+        "package": "node ../../build-ffmpeg-layer.js --clean",
+        "deploy": "node layer-deployment.js deploy",
+        "deploy:prod": "node layer-deployment.js deploy prod",
+        "list-versions": "node layer-deployment.js list",
+        "upload": "node ../../build-ffmpeg-layer.js --upload",
+        "full-deploy": "node ../../build-ffmpeg-layer.js --clean --upload --deploy",
+        "clean": "rm -rf ffmpeg-layer ffmpeg-temp *.zip"
+    },
+    "keywords": [
+        "ffmpeg",
+        "lambda",
+        "layer",
+        "video",
+        "processing",
+        "aws"
+    ],
+    "author": "Automated Video Pipeline",
+    "license": "MIT",
+    "devDependencies": {
+        "jest": "^29.0.0"
+    },
+    "jest": {
+        "testEnvironment": "node",
+        "collectCoverageFrom": [
+            "*.js",
+            "!**/__tests__/**",
+            "!**/node_modules/**"
+        ],
+        "coverageReporters": [
+            "text",
+            "lcov",
+            "html"
+        ],
+        "testMatch": [
+            "**/__tests__/**/*.test.js"
+        ]
+    },
+    "engines": {
+        "node": ">=18.0.0"
+    }
+}

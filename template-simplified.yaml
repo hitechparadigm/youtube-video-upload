@@ -28,6 +28,19 @@ Globals:
       Architecture: simplified
 
 Resources:
+  # FFmpeg Layer for video processing
+  FFmpegLayer:
+    Type: AWS::Lambda::LayerVersion
+    Properties:
+      LayerName: !Sub 'ffmpeg-layer-${Environment}'
+      Description: FFmpeg binaries for video processing
+      Content:
+        S3Bucket: !Sub 'automated-video-pipeline-deployments-${Environment}'
+        S3Key: layers/ffmpeg-layer.zip
+      CompatibleRuntimes:
+        - nodejs22.x
+      LicenseInfo: 'GPL-2.0-or-later'
+
   # S3 Bucket for video assets
   VideoBucket:
     Type: AWS::S3::Bucket
@@ -231,6 +244,14 @@ Resources:
       FunctionName: !Sub 'video-pipeline-video-assembler-${Environment}'
       CodeUri: src/lambda/video-assembler/
       Handler: index.handler
+      Layers:
+        - !Ref FFmpegLayer
+      Environment:
+        Variables:
+          FFMPEG_PATH: /opt/bin/ffmpeg
+          FFPROBE_PATH: /opt/bin/ffprobe
+      Timeout: 900
+      MemorySize: 3008
       Events:
         Api:
           Type: Api
