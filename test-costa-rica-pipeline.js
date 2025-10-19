@@ -92,7 +92,7 @@ async function testCostaRicaPipeline() {
     console.log('🌴 Testing Complete Pipeline: Travel to Costa Rica');
     console.log('================================================');
     console.log(`📍 API URL: ${CONFIG.apiUrl}`);
-    console.log(`🔑 API Key: ${CONFIG.apiKey.substring(0, 8)}...`);
+    console.log(`🔑 API Key: [SECURED - ${CONFIG.apiKey.substring(0, 8)}...]`);
     console.log('');
 
     const startTime = Date.now();

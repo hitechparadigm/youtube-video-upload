@@ -290,7 +290,7 @@ jobs:
         echo "api-key=$API_KEY_VALUE" >> $GITHUB_OUTPUT
         echo "API URL: $API_URL"
         echo "API Key ID: $API_KEY_ID"
-        echo "API Key Value: ${API_KEY_VALUE:0:8}..."
+        echo "API Key: [SECURED - First 8 chars: ${API_KEY_VALUE:0:8}...]"
 
     - name: Run deployment validation tests
       env:
