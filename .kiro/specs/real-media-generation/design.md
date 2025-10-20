@@ -104,13 +104,13 @@ class VideoProcessor {
     async createRealVideo(manifest) {
         // 1. Download real images from S3
         const images = await this.downloadImagesFromS3(manifest.scenes);
-        
+
         // 2. Validate images are real (not text placeholders)
         const validatedImages = await this.validateRealImages(images);
-        
+
         // 3. Create video using FFmpeg
         const videoPath = await this.assembleVideoWithFFmpeg(validatedImages, manifest.audio);
-        
+
         // 4. Upload real MP4 to S3
         return await this.uploadVideoToS3(videoPath, manifest.projectId);
     }
@@ -187,30 +187,93 @@ class RateLimitManager {
     async checkRateLimit(service) {
         const limit = this.limits[service];
         const now = Date.now();
-        
+
         if (now > limit.resetTime) {
             limit.current = 0;
             limit.resetTime = now + limit.window;
         }
-        
+
         if (limit.current >= limit.requests) {
             throw new Error(`Rate limit exceeded for ${service}. Reset at ${new Date(limit.resetTime)}`);
         }
-        
+
         limit.current++;
     }
 }
 ```
 
+### Multi-Scene Processing Enhancement
+
+#### Scene-Aware Rate Limiting
+```javascript
+class MultiSceneProcessor {
+    constructor() {
+        this.sceneDelays = {
+            1: 0,      // No delay for first scene
+            2: 2000,   // 2 second delay before Scene 2
+            3: 5000,   // 5 second delay before Scene 3
+            default: 8000  // 8 second delay for additional scenes
+        };
+        this.apiRotation = ['googlePlaces', 'pexels', 'pixabay'];
+        this.usedContent = new Set(); // Track content across scenes
+    }
+
+    async processSceneWithIntelligentDelay(sceneNumber, searchQuery) {
+        // Apply progressive delays to prevent rate limiting
+        const delay = this.sceneDelays[sceneNumber] || this.sceneDelays.default;
+        if (delay > 0) {
+            console.log(`Applying ${delay}ms delay before processing scene ${sceneNumber}`);
+            await new Promise(resolve => setTimeout(resolve, delay));
+        }
+
+        // Expand search criteria for later scenes to avoid duplicate filtering
+        const expandedQuery = this.expandSearchForScene(searchQuery, sceneNumber);
+
+        // Rotate API priority to distribute load
+        const apiPriority = this.getAPIRotationForScene(sceneNumber);
+
+        return await this.downloadWithFallback(expandedQuery, apiPriority);
+    }
+
+    expandSearchForScene(originalQuery, sceneNumber) {
+        const expansions = {
+            3: ['tips', 'guide', 'advice', 'mistakes', 'warnings', 'common errors'],
+            4: ['experience', 'journey', 'adventure', 'story', 'personal'],
+            5: ['culture', 'local', 'authentic', 'traditional', 'native']
+        };
+
+        if (sceneNumber >= 3) {
+            const additionalTerms = expansions[sceneNumber] || expansions[5];
+            const randomTerm = additionalTerms[Math.floor(Math.random() * additionalTerms.length)];
+            return `${originalQuery} ${randomTerm}`;
+        }
+
+        return originalQuery;
+    }
+
+    getAPIRotationForScene(sceneNumber) {
+        // Rotate starting API for each scene to distribute load
+        const startIndex = (sceneNumber - 1) % this.apiRotation.length;
+        return [
+            ...this.apiRotation.slice(startIndex),
+            ...this.apiRotation.slice(0, startIndex)
+        ];
+    }
+}
+```
+
 ### Fallback Strategy
-1. **Primary**: Download from Pexels API
-2. **Secondary**: Download from Pixabay API  
-3. **Tertiary**: Use high-quality placeholder images (not text)
-4. **Final**: Generate text placeholders with clear error logging
+1. **Primary**: Download from Google Places API (for location content)
+2. **Secondary**: Download from Pexels API with scene-specific delays
+3. **Tertiary**: Download from Pixabay API with expanded search terms
+4. **Quaternary**: Use high-quality placeholder images (not text)
+5. **Final**: Generate text placeholders with clear error logging
 
 ### Error Classification
 - **API_KEY_MISSING**: Clear error message, fall back to placeholders
-- **RATE_LIMIT_EXCEEDED**: Switch to alternative API or implement backoff
+- **RATE_LIMIT_EXCEEDED**: Apply scene delays and switch to alternative API
+- **SCENE_3_RATE_LIMIT**: Expand search criteria and use longer delays
+- **DUPLICATE_CONTENT_FILTERED**: Expand search terms and try alternative APIs
 - **NETWORK_TIMEOUT**: Retry with exponential backoff (3 attempts)
 - **INVALID_RESPONSE**: Log API response, try alternative search terms
 - **FFMPEG_UNAVAILABLE**: Create instruction file with clear indication
@@ -246,11 +309,11 @@ describe('Real Media Generation', () => {
 describe('End-to-End Real Content', () => {
     test('complete pipeline should generate real content', async () => {
         const result = await runCompletePipeline('travel to costa rica');
-        
+
         // Verify real images were downloaded
         expect(result.mediaStats.realImages).toBeGreaterThan(0);
         expect(result.mediaStats.placeholderImages).toBe(0);
-        
+
         // Verify real video was created
         expect(result.videoStats.fileSize).toBeGreaterThan(1000000); // > 1MB
         expect(result.videoStats.isRealMP4).toBe(true);
@@ -273,7 +336,7 @@ describe('End-to-End Real Content', () => {
 4. Add image validation and processing
 5. Update error handling and fallback logic
 
-### Phase 2: Video Assembler Enhancement  
+### Phase 2: Video Assembler Enhancement
 1. Enhance FFmpeg integration for real video creation
 2. Add image validation (detect text placeholders)
 3. Implement proper MP4 generation and validation

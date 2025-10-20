@@ -1,8 +1,8 @@
 # 🎬 Automated Video Pipeline
 
-**Version**: 5.0.1
+**Version**: 5.1.0
 **Status**: ✅ Production Ready
-**Architecture**: AI-Powered Content Creation with Real Media Generation
+**Architecture**: AI-Powered Content Creation with Multi-Scene Rate Limiting
 
 An intelligent video creation pipeline that automatically generates professional YouTube videos from topics using AI-powered script generation, real media curation from multiple APIs, and automated publishing.
 
@@ -12,7 +12,8 @@ An intelligent video creation pipeline that automatically generates professional
 
 - **🧠 AI-Powered Script Generation**: Intelligent content creation with contextual scene planning
 - **🎬 Real Media Integration**: Downloads authentic content from Google Places, Pexels, and Pixabay
-- **🔍 Duplicate Prevention**: Advanced content hashing ensures unique media across scenes
+- **🔍 Multi-Scene Rate Limiting**: Intelligent delays and API rotation prevent Scene 3+ placeholder fallback
+- **🔄 Duplicate Prevention**: Advanced content hashing ensures unique media across scenes
 - **🎵 AI Voice Narration**: Professional audio generation with AWS Polly
 - **📺 YouTube Publishing**: Automated upload with metadata optimization
 - **🚀 CI/CD Pipeline**: Automated deployment with comprehensive testing

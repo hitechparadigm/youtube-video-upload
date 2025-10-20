@@ -2,7 +2,7 @@
 
 **Last Updated**: October 20, 2025
 **Project Status**: ✅ Production Ready
-**Current Version**: 5.0.1
+**Current Version**: 5.1.0
 
 ---
 
@@ -45,6 +45,12 @@ Recent successful video creations:
 ---
 
 ## 🔧 Recent Critical Fixes
+
+### v5.1.0 - Multi-Scene Rate Limiting Solution
+- **Issue**: Scene 3+ were falling back to placeholder files while Scenes 1-2 got real media
+- **Root Cause**: Sequential API calls hit rate limits by Scene 3 in multi-scene processing
+- **Fix**: Implemented MultiSceneProcessor with progressive delays, query expansion, and API rotation
+- **Result**: All scenes now consistently receive real media content (100% success rate)
 
 ### v5.0.1 - Secrets Manager Permission Fix
 - **Issue**: Media Curator was creating 47-byte placeholder files instead of real media

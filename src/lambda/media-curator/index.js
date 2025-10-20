@@ -1,24 +1,24 @@
 /**
  * 🧠 INTELLIGENT MEDIA CURATOR - AI-POWERED CONTENT SELECTION
- * 
+ *
  * CORE AI INTELLIGENCE:
  * This Lambda implements sophisticated AI-driven media curation that transforms
  * contextual requirements from upstream AI agents into relevant visual content.
- * 
+ *
  * AI FLOW INTEGRATION:
  * 1. Receives AI-generated visual requirements from Script Generator
  * 2. Uses contextual search optimization to find relevant content
  * 3. Implements intelligent duplicate prevention across project
  * 4. Applies AI-powered relevance scoring and quality assessment
  * 5. Supports both images and video clips with smart content mixing
- * 
+ *
  * INTELLIGENCE FEATURES:
  * - Contextual Search Optimization: Transforms AI keywords into effective API queries
  * - Multi-Modal Content Support: Downloads both images and video clips from Pexels/Pixabay
  * - Duplicate Prevention: Uses perceptual hashing and metadata comparison
  * - Quality Assessment: AI-powered content scoring and brand safety filtering
  * - Scene-Aware Selection: Adapts content type based on scene purpose (hook/content/conclusion)
- * 
+ *
  * INPUT CONTEXT (from Script Generator AI):
  * {
  *   'visualRequirements': {
@@ -27,7 +27,7 @@
  *     'emotionalTone': 'engaging'       // AI-set content mood
  *   }
  * }
- * 
+ *
  * OUTPUT INTELLIGENCE:
  * - Real images and video clips organized by scene
  * - Duplicate-free content across entire project
@@ -56,6 +56,159 @@ const {
 
 // Use built-in fetch for Node.js 18+ Lambda environment
 const fetch = globalThis.fetch;
+
+/**
+ * 🎬 MULTI-SCENE PROCESSOR - INTELLIGENT SCENE PROCESSING WITH RATE LIMITING
+ *
+ * Implements progressive delays and intelligent API rotation to prevent Scene 3 rate limiting.
+ * Addresses the specific issue where Scenes 1-2 get real media but Scene 3+ fall back to placeholders.
+ */
+class MultiSceneProcessor {
+    constructor() {
+        this.sceneDelays = {
+            1: 0, // No delay for first scene
+            2: 2000, // 2 second delay before Scene 2
+            3: 5000, // 5 second delay before Scene 3
+            default: 8000 // 8 second delay for additional scenes
+        };
+        this.apiRotation = ['googlePlaces', 'pexels', 'pixabay'];
+        this.usedContent = new Set(); // Track content across scenes
+        this.sceneProcessingStats = new Map(); // Track processing stats per scene
+    }
+
+    async processSceneWithIntelligentDelay(sceneNumber, searchQuery, processingFunction) {
+        // Apply progressive delays to prevent rate limiting
+        const delay = this.sceneDelays[sceneNumber] || this.sceneDelays.default;
+        if (delay > 0) {
+            console.log(`⏱️ MultiSceneProcessor: Applying ${delay}ms delay before processing scene ${sceneNumber}`);
+            await new Promise(resolve => setTimeout(resolve, delay));
+        }
+
+        // Expand search criteria for later scenes to avoid duplicate filtering
+        const expandedQuery = this.expandSearchForScene(searchQuery, sceneNumber);
+
+        // Rotate API priority to distribute load
+        const apiPriority = this.getAPIRotationForScene(sceneNumber);
+
+        console.log(`🎯 Scene ${sceneNumber}: Query="${expandedQuery}", API Priority=[${apiPriority.join(', ')}]`);
+
+        // Record processing start
+        const startTime = Date.now();
+
+        try {
+            const result = await processingFunction(expandedQuery, apiPriority);
+
+            // Record successful processing
+            this.sceneProcessingStats.set(sceneNumber, {
+                success: true,
+                duration: Date.now() - startTime,
+                query: expandedQuery,
+                apiPriority: apiPriority,
+                resultCount: (result && result.length) || 0
+            });
+
+            return result;
+        } catch (error) {
+            // Record failed processing
+            this.sceneProcessingStats.set(sceneNumber, {
+                success: false,
+                duration: Date.now() - startTime,
+                query: expandedQuery,
+                apiPriority: apiPriority,
+                error: error.message
+            });
+
+            console.error(`❌ Scene ${sceneNumber} processing failed:`, error.message);
+            throw error;
+        }
+    }
+
+    expandSearchForScene(originalQuery, sceneNumber) {
+        // Scene-specific keyword expansions to avoid duplicate content filtering
+        const expansions = {
+            1: ['introduction', 'overview', 'getting started', 'basics'],
+            2: ['detailed', 'comprehensive', 'step by step', 'planning'],
+            3: ['tips', 'guide', 'advice', 'mistakes', 'warnings', 'common errors', 'pitfalls', 'avoid'],
+            4: ['experience', 'journey', 'adventure', 'story', 'personal', 'real life', 'actual'],
+            5: ['culture', 'local', 'authentic', 'traditional', 'native', 'insider', 'hidden'],
+            6: ['conclusion', 'summary', 'final thoughts', 'wrap up', 'takeaways']
+        };
+
+        // Always expand for scenes 3+ to combat duplicate filtering
+        if (sceneNumber >= 3) {
+            const sceneTerms = expansions[sceneNumber] || expansions[5];
+            const randomTerm = sceneTerms[Math.floor(Math.random() * sceneTerms.length)];
+            const expandedQuery = `${originalQuery} ${randomTerm}`;
+
+            console.log(`🔍 Scene ${sceneNumber} Query Expansion: "${originalQuery}" → "${expandedQuery}"`);
+            return expandedQuery;
+        }
+
+        // For scenes 1-2, optionally add variety terms
+        if (Math.random() > 0.5) {
+            const sceneTerms = expansions[sceneNumber] || ['detailed', 'comprehensive'];
+            const randomTerm = sceneTerms[Math.floor(Math.random() * sceneTerms.length)];
+            const expandedQuery = `${originalQuery} ${randomTerm}`;
+
+            console.log(`🔍 Scene ${sceneNumber} Optional Expansion: "${originalQuery}" → "${expandedQuery}"`);
+            return expandedQuery;
+        }
+
+        console.log(`🔍 Scene ${sceneNumber} No Expansion: "${originalQuery}"`);
+        return originalQuery;
+    }
+
+    getAPIRotationForScene(sceneNumber) {
+        // Rotate starting API for each scene to distribute load
+        const startIndex = (sceneNumber - 1) % this.apiRotation.length;
+        return [
+            ...this.apiRotation.slice(startIndex),
+            ...this.apiRotation.slice(0, startIndex)
+        ];
+    }
+
+    getProcessingStats() {
+        const stats = {};
+        for (const [sceneNumber, sceneStats] of this.sceneProcessingStats) {
+            stats[`scene${sceneNumber}`] = sceneStats;
+        }
+        return stats;
+    }
+
+    analyzeQueryEffectiveness() {
+        const analysis = {
+            totalScenes: this.sceneProcessingStats.size,
+            successfulScenes: 0,
+            failedScenes: 0,
+            averageProcessingTime: 0,
+            scenesWithExpansion: 0,
+            scenesWithoutExpansion: 0
+        };
+
+        let totalTime = 0;
+        for (const [sceneNumber, stats] of this.sceneProcessingStats) {
+            if (stats.success) {
+                analysis.successfulScenes++;
+            } else {
+                analysis.failedScenes++;
+            }
+
+            totalTime += stats.duration;
+
+            // Check if query was expanded (contains additional terms)
+            if (stats.query && stats.query.split(' ').length > 3) {
+                analysis.scenesWithExpansion++;
+            } else {
+                analysis.scenesWithoutExpansion++;
+            }
+        }
+
+        analysis.averageProcessingTime = analysis.totalScenes > 0 ? totalTime / analysis.totalScenes : 0;
+        analysis.successRate = analysis.totalScenes > 0 ? (analysis.successfulScenes / analysis.totalScenes) * 100 : 0;
+
+        return analysis;
+    }
+}
 
 /**
  * 🚦 RATE LIMITING MANAGER
@@ -420,27 +573,39 @@ async function curateMediaForScenes(projectId, sceneContext, baseTopic) {
     const usedContentHashes = new Set();
     const usedContentUrls = new Set();
 
+    // 🎬 MULTI-SCENE PROCESSOR: Initialize intelligent scene processing
+    const multiSceneProcessor = new MultiSceneProcessor();
+    console.log(`🎬 MultiSceneProcessor initialized for ${scenes.length} scenes`);
+
     for (const scene of scenes) {
         const sceneNumber = scene.sceneNumber;
-        const searchKeywords = scene.visualRequirements ?.searchKeywords || [baseTopic];
+        const searchKeywords = (scene.visualRequirements && scene.visualRequirements.searchKeywords) || [baseTopic];
+        const searchQuery = searchKeywords.join(' ');
 
         // Pass complete scene context for AI-powered media selection
-        const sceneContext = {
-            sceneType: scene.visualRequirements ?.sceneType || 'informative',
-            emotionalTone: scene.visualRequirements ?.emotionalTone || 'neutral',
+        const sceneContextData = {
+            sceneType: (scene.visualRequirements && scene.visualRequirements.sceneType) || 'informative',
+            emotionalTone: (scene.visualRequirements && scene.visualRequirements.emotionalTone) || 'neutral',
             purpose: scene.purpose || 'content',
             title: scene.title || `Scene ${sceneNumber}`,
             duration: scene.duration || 60
         };
 
-        // 🧠 AI-POWERED REAL MEDIA GENERATION with duplicate prevention
-        const sceneImages = await generatePlaceholderImages(
-            projectId,
+        // 🎬 INTELLIGENT SCENE PROCESSING with delays and API rotation
+        const sceneImages = await multiSceneProcessor.processSceneWithIntelligentDelay(
             sceneNumber,
-            searchKeywords,
-            sceneContext,
-            usedContentHashes,
-            usedContentUrls
+            searchQuery,
+            async (expandedQuery, apiPriority) => {
+                return await generatePlaceholderImages(
+                    projectId,
+                    sceneNumber,
+                    expandedQuery.split(' '),
+                    sceneContextData,
+                    usedContentHashes,
+                    usedContentUrls,
+                    apiPriority
+                );
+            }
         );
 
         sceneMediaMapping.push({
@@ -452,6 +617,16 @@ async function curateMediaForScenes(projectId, sceneContext, baseTopic) {
         totalImages += sceneImages.length;
     }
 
+    // Generate comprehensive processing report
+    const processingStats = multiSceneProcessor.getProcessingStats();
+    const queryAnalysis = multiSceneProcessor.analyzeQueryEffectiveness();
+
+    console.log(`🎬 MultiSceneProcessor Summary:`);
+    console.log(`   - Total Scenes: ${scenes.length}`);
+    console.log(`   - Success Rate: ${queryAnalysis.successRate.toFixed(1)}%`);
+    console.log(`   - Average Processing Time: ${queryAnalysis.averageProcessingTime.toFixed(0)}ms`);
+    console.log(`   - Scenes with Query Expansion: ${queryAnalysis.scenesWithExpansion}`);
+
     return {
         projectId: projectId,
         totalScenes: scenes.length,
@@ -459,8 +634,12 @@ async function curateMediaForScenes(projectId, sceneContext, baseTopic) {
         sceneMediaMapping: sceneMediaMapping,
         metadata: {
             generatedAt: new Date().toISOString(),
-            architecture: 'simplified',
-            approach: 'real-media-with-duplicate-prevention'
+            architecture: 'multi-scene-processor-v1',
+            approach: 'intelligent-rate-limiting-with-api-rotation',
+            multiSceneProcessingStats: processingStats,
+            queryEffectivenessAnalysis: queryAnalysis,
+            rateLimitingEnabled: true,
+            apiRotationEnabled: true
         }
     };
 }
@@ -468,7 +647,7 @@ async function curateMediaForScenes(projectId, sceneContext, baseTopic) {
 /**
  * Generate placeholder images for a scene (simplified approach)
  */
-async function generatePlaceholderImages(projectId, sceneNumber, keywords, sceneContext = {}, usedContentHashes = new Set(), usedContentUrls = new Set()) {
+async function generatePlaceholderImages(projectId, sceneNumber, keywords, sceneContext = {}, usedContentHashes = new Set(), usedContentUrls = new Set(), apiPriority = ['pexels', 'pixabay']) {
     console.log(`🧠 AI Media Curator: Processing scene ${sceneNumber} with keywords:`, keywords);
     console.log(`📋 Scene Context:`, sceneContext);
     console.log(`🚫 Duplicate Prevention: ${usedContentHashes.size} content hashes, ${usedContentUrls.size} URLs already used`);
@@ -478,7 +657,7 @@ async function generatePlaceholderImages(projectId, sceneNumber, keywords, scene
 
     try {
         // 🧠 INTELLIGENT REAL MEDIA DOWNLOAD with AI comparison and duplicate prevention
-        const realImages = await downloadRealImages(searchQuery, 4, sceneContext, usedContentHashes, usedContentUrls);
+        const realImages = await downloadRealImages(searchQuery, 4, sceneContext, usedContentHashes, usedContentUrls, apiPriority);
 
         for (let i = 0; i < realImages.length; i++) {
             // Determine correct file extension and content type based on media type
@@ -539,7 +718,7 @@ async function generatePlaceholderImages(projectId, sceneNumber, keywords, scene
 
 /**
  * 🧠 INTELLIGENT REAL MEDIA DOWNLOAD SYSTEM
- * 
+ *
  * This function implements the core AI intelligence for media curation:
  * 1. Searches Pexels first (higher quality, better API)
  * 2. Searches Pixabay as secondary source
@@ -547,7 +726,7 @@ async function generatePlaceholderImages(projectId, sceneNumber, keywords, scene
  * 4. Prevents duplicates across entire project
  * 5. Supports both images and video clips
  */
-async function downloadRealImages(searchQuery, count, sceneContext = {}, usedContentHashes = new Set(), usedContentUrls = new Set()) {
+async function downloadRealImages(searchQuery, count, sceneContext = {}, usedContentHashes = new Set(), usedContentUrls = new Set(), apiPriority = ['pexels', 'pixabay', 'googlePlaces']) {
     console.log(`🧠 AI Media Curator: Intelligent search for '${searchQuery}' (${count} items)`);
     console.log(`📋 Scene Context:`, sceneContext);
     console.log(`🚫 Duplicate Prevention: Avoiding ${usedContentHashes.size} content hashes, ${usedContentUrls.size} URLs`);
@@ -556,49 +735,79 @@ async function downloadRealImages(searchQuery, count, sceneContext = {}, usedCon
         // Step 1: Get API keys from Secrets Manager
         const apiKeys = await getApiKeys();
 
-        // Step 2: Search all APIs in parallel for comprehensive results
-        console.log(`🔍 Searching Pexels, Pixabay, and Google Places simultaneously...`);
-        const [pexelsResults, pixabayResults, googlePlacesResults] = await Promise.allSettled([
-            searchPexelsIntelligent(searchQuery, count * 2, apiKeys, sceneContext), // Get more for better selection
-            searchPixabayIntelligent(searchQuery, count * 2, apiKeys, sceneContext),
-            searchGooglePlacesIntelligent(searchQuery, Math.ceil(count * 0.5), sceneContext, apiKeys) // 50% from Google Places
-        ]);
+        // Step 2: Search APIs based on priority order for load distribution
+        console.log(`🔍 Searching APIs with priority order: [${apiPriority.join(', ')}]`);
 
-        // Step 3: Combine and process results
+        const apiSearchPromises = [];
+        const apiNames = [];
+
+        // Create search promises based on priority order
+        for (const api of apiPriority) {
+            switch (api) {
+                case 'pexels':
+                    apiSearchPromises.push(searchPexelsIntelligent(searchQuery, count * 2, apiKeys, sceneContext));
+                    apiNames.push('pexels');
+                    break;
+                case 'pixabay':
+                    apiSearchPromises.push(searchPixabayIntelligent(searchQuery, count * 2, apiKeys, sceneContext));
+                    apiNames.push('pixabay');
+                    break;
+                case 'googlePlaces':
+                    apiSearchPromises.push(searchGooglePlacesIntelligent(searchQuery, Math.ceil(count * 0.5), sceneContext, apiKeys));
+                    apiNames.push('googlePlaces');
+                    break;
+            }
+        }
+
+        const apiResults = await Promise.allSettled(apiSearchPromises);
+
+        // Step 3: Process results based on priority order
         const allCandidates = [];
+        const apiStats = {
+            successful: 0,
+            failed: 0,
+            rateLimited: 0
+        };
 
-        if (pexelsResults.status === 'fulfilled') {
-            allCandidates.push(...pexelsResults.value.map(item => ({
-                ...item,
-                source: 'pexels'
-            })));
-            console.log(`✅ Pexels: Found ${pexelsResults.value.length} candidates`);
-        } else {
-            console.log(`⚠️ Pexels search failed:`, pexelsResults.reason ?.message);
+        for (let i = 0; i < apiResults.length; i++) {
+            const result = apiResults[i];
+            const apiName = apiNames[i];
+
+            if (result.status === 'fulfilled') {
+                const candidates = result.value.map(item => ({
+                    ...item,
+                    source: apiName === 'googlePlaces' ? 'google-places' : apiName,
+                    priority: i + 1 // Lower number = higher priority
+                }));
+
+                allCandidates.push(...candidates);
+                apiStats.successful++;
+                console.log(`✅ ${apiName}: Found ${result.value.length} candidates (Priority ${i + 1})`);
+            } else {
+                const errorMessage = result.reason && result.reason.message;
+
+                // Enhanced error classification
+                if (errorMessage && errorMessage.includes('rate limit')) {
+                    apiStats.rateLimited++;
+                    console.log(`🚫 ${apiName}: Rate limited (Priority ${i + 1})`);
+                } else {
+                    apiStats.failed++;
+                    console.log(`⚠️ ${apiName}: Search failed - ${errorMessage} (Priority ${i + 1})`);
+                }
+            }
         }
 
-        if (pixabayResults.status === 'fulfilled') {
-            allCandidates.push(...pixabayResults.value.map(item => ({
-                ...item,
-                source: 'pixabay'
-            })));
-            console.log(`✅ Pixabay: Found ${pixabayResults.value.length} candidates`);
-        } else {
-            console.log(`⚠️ Pixabay search failed:`, pixabayResults.reason ?.message);
-        }
+        console.log(`📊 API Load Distribution Stats:`, apiStats);
 
-        if (googlePlacesResults.status === 'fulfilled') {
-            allCandidates.push(...googlePlacesResults.value.map(item => ({
-                ...item,
-                source: 'google-places'
-            })));
-            console.log(`✅ Google Places: Found ${googlePlacesResults.value.length} candidates`);
-        } else {
-            console.log(`⚠️ Google Places search failed:`, googlePlacesResults.reason ?.message);
-        }
-
+        // Enhanced error handling with new classifications
         if (allCandidates.length === 0) {
-            throw new Error('No content found from Pexels, Pixabay, or Google Places');
+            if (apiStats.rateLimited > 0 && apiStats.successful === 0) {
+                throw new Error('SCENE_3_RATE_LIMIT: All APIs rate limited, consider increasing delays');
+            } else if (apiStats.failed === apiResults.length) {
+                throw new Error('API_FAILURE: All API searches failed');
+            } else {
+                throw new Error('DUPLICATE_CONTENT_FILTERED: No unique content found after duplicate filtering');
+            }
         }
 
         // Step 4: AI-powered intelligent selection and comparison with duplicate prevention
@@ -677,7 +886,7 @@ async function searchPexelsIntelligent(query, count, apiKeys, sceneContext) {
 }
 
 /**
- * 🔍 INTELLIGENT PIXABAY SEARCH  
+ * 🔍 INTELLIGENT PIXABAY SEARCH
  * Searches images and videos with contextual optimization
  */
 async function searchPixabayIntelligent(query, count, apiKeys, sceneContext) {
@@ -775,11 +984,18 @@ async function intelligentContentSelection(candidates, targetCount, originalQuer
         filteredCandidates.map(async (candidate) => {
             const relevanceScore = calculateRelevanceScore(candidate, originalQuery, sceneContext);
             const qualityScore = calculateQualityScore(candidate);
-            // Enhanced source scoring with Google Places priority
+            // Enhanced source scoring with API priority and load distribution
             let sourceScore = 1.0;
-            if (candidate.source === 'google-places') sourceScore = 1.2; // Highest priority for authentic location photos
-            else if (candidate.source === 'pexels') sourceScore = 1.1; // Second priority for quality
-            else if (candidate.source === 'pixabay') sourceScore = 1.0; // Standard priority
+
+            // Use priority information if available (lower priority number = higher score)
+            if (candidate.priority) {
+                sourceScore = 1.3 - (candidate.priority * 0.1); // Priority 1 = 1.2, Priority 2 = 1.1, Priority 3 = 1.0
+            } else {
+                // Fallback to default scoring
+                if (candidate.source === 'google-places') sourceScore = 1.2;
+                else if (candidate.source === 'pexels') sourceScore = 1.1;
+                else if (candidate.source === 'pixabay') sourceScore = 1.0;
+            }
 
             return {
                 ...candidate,
@@ -1033,7 +1249,7 @@ async function searchPexelsVideos(query, count, apiKeys) {
     const data = await response.json();
     return data.videos.map(video => ({
         type: 'video',
-        downloadUrl: video.video_files.find(f => f.quality === 'hd' || f.quality === 'sd') ?.link || video.video_files[0] ?.link,
+        downloadUrl: (video.video_files.find(f => f.quality === 'hd' || f.quality === 'sd') && video.video_files.find(f => f.quality === 'hd' || f.quality === 'sd').link) || (video.video_files[0] && video.video_files[0].link),
         pageUrl: video.url,
         photographer: video.user.name,
         width: video.width,
@@ -1118,11 +1334,11 @@ async function searchPixabayVideos(query, count, apiKeys) {
 
     return data.hits.map(hit => ({
         type: 'video',
-        downloadUrl: hit.videos.medium ?.url || hit.videos.small ?.url || hit.videos.tiny ?.url,
+        downloadUrl: (hit.videos.medium && hit.videos.medium.url) || (hit.videos.small && hit.videos.small.url) || (hit.videos.tiny && hit.videos.tiny.url),
         pageUrl: hit.pageURL,
         photographer: hit.user,
-        width: hit.videos.medium ?.width || hit.videos.small ?.width,
-        height: hit.videos.medium ?.height || hit.videos.small ?.height,
+        width: (hit.videos.medium && hit.videos.medium.width) || (hit.videos.small && hit.videos.small.width),
+        height: (hit.videos.medium && hit.videos.medium.height) || (hit.videos.small && hit.videos.small.height),
         duration: hit.duration,
         description: hit.tags,
         views: hit.views,

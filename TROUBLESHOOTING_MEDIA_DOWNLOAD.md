@@ -242,13 +242,46 @@ If media download is completely broken:
 
 ---
 
+## 🎬 Multi-Scene Rate Limiting (v5.1.0+)
+
+### **New Issue: Scene 3+ Rate Limiting**
+**Symptoms:**
+- Scenes 1-2 get real media (MB-sized files)
+- Scene 3+ fall back to placeholder files (47-byte)
+- Mixed real/placeholder content in same project
+
+**Root Cause:**
+Sequential API calls in multi-scene processing hit rate limits by Scene 3.
+
+**Solution (v5.1.0):**
+The MultiSceneProcessor automatically handles this with:
+- **Progressive Delays**: 0ms → 2s → 5s → 8s between scenes
+- **Query Expansion**: Scene 3+ get expanded search terms
+- **API Rotation**: Load distribution across all APIs
+
+**Verification:**
+```bash
+# Check for MultiSceneProcessor in response metadata
+{
+  "metadata": {
+    "architecture": "multi-scene-processor-v1",
+    "multiSceneProcessingStats": { ... },
+    "queryEffectivenessAnalysis": { ... }
+  }
+}
+```
+
+---
+
 ## 🎯 Success Indicators
 
 **When everything is working correctly:**
-- Media files are 1MB+ in size (not 47-53 bytes)
+- **All scenes** have real media files (1MB+ in size, not 47-53 bytes)
 - Sources show "pexels", "pixabay", "google-places" (not "fallback")
 - Different scenes have different content (duplicate prevention working)
+- Scene 3+ processing includes delays and query expansion
 - Videos actually appear on YouTube channel
 - CloudWatch logs show successful API calls to external services
+- MultiSceneProcessor stats show high success rates
 
-**Remember**: The system will report "success" even with placeholder files. Always verify file sizes and sources to confirm real media download is working!
+**Remember**: The system will report "success" even with placeholder files. Always verify file sizes and sources across ALL scenes to confirm real media download is working!

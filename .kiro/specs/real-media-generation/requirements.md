@@ -65,3 +65,15 @@ The Automated Video Pipeline currently has a fully operational architecture with
 3. THE Media_Curator SHALL log file sizes and types to confirm real content generation
 4. THE Video_Assembler SHALL verify MP4 file headers to ensure valid video format
 5. WHERE validation fails, THE system SHALL clearly indicate placeholder content was used and why
+
+### Requirement 5
+
+**User Story:** As a content creator, I want multi-scene video processing to consistently generate real media for all scenes, so that Scene 3 and later scenes don't fall back to placeholder content due to rate limiting.
+
+#### Acceptance Criteria
+
+1. WHEN processing multiple scenes sequentially, THE Media_Curator SHALL implement intelligent delays between API calls to prevent rate limiting
+2. WHEN API rate limits are approached, THE Media_Curator SHALL automatically distribute requests across available APIs to maintain real content generation
+3. WHEN duplicate prevention filters too aggressively, THE Media_Curator SHALL expand search criteria for later scenes to ensure content availability
+4. THE Media_Curator SHALL track API usage across scenes and implement progressive backoff strategies for sustained processing
+5. WHERE Scene 3 or later scenes encounter rate limits, THE Media_Curator SHALL implement alternative search strategies before falling back to placeholders

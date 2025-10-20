@@ -132,20 +132,20 @@
   - Implement structured logging for monitoring and debugging
   - _Requirements: 3.2, 4.3, 4.5_
 
-- [ ]* 4. Create comprehensive test suite for real media generation
+- [ ] 4. Create comprehensive test suite for real media generation
   - Write unit tests for image download and validation functions
   - Create integration tests for complete real content pipeline
   - Add performance tests for API response times and processing speed
   - Implement error scenario testing for API failures and fallbacks
   - _Requirements: 1.1, 2.1, 3.1, 4.1_
 
-- [ ]* 4.1 Write unit tests for Media Curator enhancements
+- [ ] 4.1 Write unit tests for Media Curator enhancements
   - Test `downloadRealImages()` function with mock API responses
   - Test image validation functions with real and placeholder content
   - Test error handling and fallback scenarios
   - _Requirements: 1.1, 1.3, 1.4_
 
-- [ ]* 4.2 Write unit tests for Video Assembler enhancements
+- [ ] 4.2 Write unit tests for Video Assembler enhancements
   - Test real image processing and validation functions
   - Test FFmpeg integration with actual image files
   - Test MP4 validation and quality checks
@@ -189,3 +189,61 @@
   - Set up CloudWatch monitoring for success rates and API usage
   - Document the real content generation process and troubleshooting guide
   - _Requirements: 4.1, 4.2, 4.3, 4.4_
+
+- [x] 7. Implement multi-scene rate limiting and Scene 3 fix
+
+
+
+
+
+  - Create MultiSceneProcessor class with intelligent delay management
+  - Implement progressive delays between scenes to prevent API rate limiting
+  - Add scene-aware search query expansion to avoid duplicate content filtering
+  - Implement API rotation strategy to distribute load across multiple services
+  - _Requirements: 5.1, 5.2, 5.3, 5.4, 5.5_
+
+- [x] 7.1 Create MultiSceneProcessor class with intelligent delays
+
+
+
+  - Implement progressive delay system (0s, 2s, 5s, 8s for scenes 1-4+)
+  - Add scene-specific processing logic to prevent rate limit conflicts
+  - Create intelligent API rotation to distribute requests across services
+  - _Requirements: 5.1, 5.4_
+
+- [x] 7.2 Implement scene-aware search query expansion
+
+
+
+  - Create expandSearchForScene() function to modify queries for later scenes
+  - Add scene-specific keyword expansions (tips, guide, experience, culture)
+  - Implement randomized term selection to ensure content diversity
+  - _Requirements: 5.3, 5.5_
+
+- [x] 7.3 Add API load distribution and fallback enhancement
+
+
+
+  - Implement getAPIRotationForScene() to rotate starting API per scene
+  - Update fallback strategy to include Google Places as primary for location content
+  - Add enhanced error handling for SCENE_3_RATE_LIMIT and DUPLICATE_CONTENT_FILTERED
+  - _Requirements: 5.2, 5.4_
+
+- [x] 7.4 Update Media Curator to use MultiSceneProcessor
+
+
+
+  - Integrate MultiSceneProcessor into existing Media Curator workflow
+  - Update scene processing loop to use processSceneWithIntelligentDelay()
+  - Add logging for scene delays and API rotation decisions
+  - _Requirements: 5.1, 5.2, 5.3_
+
+- [x] 7.5 Create comprehensive multi-scene testing
+
+
+
+  - Write tests for progressive delay implementation
+  - Test scene-specific search query expansion
+  - Validate API rotation and load distribution
+  - Test complete 3+ scene pipeline for consistent real media generation
+  - _Requirements: 5.1, 5.2, 5.3, 5.4, 5.5_
