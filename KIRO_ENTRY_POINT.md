@@ -1,264 +1,110 @@
-# 🚀 KIRO ENTRY POINT - Simplified Video Pipeline
+# 🚀 KIRO Entry Point - Automated Video Pipeline
 
-**Last Updated**: October 20, 2025 (REAL MEDIA GENERATION IMPLEMENTATION - COMPLETE)  
-**Project Status**: ✅ **INTELLIGENT AI-POWERED CONTENT GENERATION** | 🧠 **PEXELS/PIXABAY INTEGRATION**  
-**Quick Start**: Complete AI pipeline with real media generation and smart duplicate prevention
+**Last Updated**: October 20, 2025
+**Project Status**: ✅ Production Ready
+**Current Version**: 5.0.1
 
 ---
 
-## 🎯 **CURRENT PROJECT STATE**
+## 🎯 Project Overview
 
-### ✅ **REAL MEDIA GENERATION COMPLETE**
-- **🧠 Intelligent Media Curator**: ✅ **Triple-API Integration** (Google Places + Pexels + Pixabay)
-- **🗺️ Google Places Integration**: ✅ **Authentic Location Photos** with Places API v1 for travel content
-- **🎬 Smart Content Mixing**: ✅ **Images + Video Clips** automatically selected based on scene context
-- **🔍 Duplicate Prevention**: ✅ **Advanced Hashing** prevents repeated content across projects
-- **📸 Multi-Source Intelligence**: ✅ **Smart Priority Scoring** across all three APIs
-- **📋 Quality Validation**: ✅ **Real Content Verification** with automatic fallback mechanisms
+The Automated Video Pipeline is a complete AI-powered system that creates professional YouTube videos from simple topics. It features real media generation, intelligent content curation, and automated publishing.
 
-### ✅ **FFMPEG LAMBDA LAYER IMPLEMENTATION (October 19 - COMPLETE)**
-- **Real MP4 Creation**: ✅ **FFmpeg Lambda layer deployed** - creates actual video files
-- **100% Pipeline Success**: ✅ **7/7 components operational** - complete end-to-end functionality
-- **Intelligent Processing**: ✅ **Automatic mode detection** - FFmpeg or fallback as needed
-- **Production Ready**: ✅ **Infrastructure as Code** - SAM template with layer integration
-- **Comprehensive Testing**: ✅ **35+ unit tests** - validated across all components
-- **Cross-Platform Support**: ✅ **Windows/macOS/Linux** - complete build automation
+### ✅ System Status
+- **Real Media Generation**: ✅ Fully operational with Google Places, Pexels, and Pixabay integration
+- **Duplicate Prevention**: ✅ Advanced content hashing prevents repeated media across scenes
+- **Video Assembly**: ✅ FFmpeg Lambda layer creates real MP4 files
+- **YouTube Publishing**: ✅ Automated upload with OAuth integration
+- **CI/CD Pipeline**: ✅ GitHub Actions with comprehensive testing
 
-### ✅ **PROOF OF SUCCESS - REAL YOUTUBE VIDEOS CREATED**
-- **Peru Pipeline Test**: https://www.youtube.com/watch?v=nLzZEu_Vbgs
-- **Audio Generator Fix**: https://www.youtube.com/watch?v=WzuudiPMyes
+### 🎬 Proven Results
+Recent successful video creations:
+- **Peru Travel Guide**: https://www.youtube.com/watch?v=nLzZEu_Vbgs
 - **Spain Travel Guide**: https://www.youtube.com/watch?v=9p_Lmxvhr4M
-- **Peru Travel Guide**: https://www.youtube.com/watch?v=SalSD5qPxeM
-
-### 🚀 **PRODUCTION READY WITH REAL VIDEO CREATION**
-- **All Components**: ✅ 7/7 Lambda functions operational with FFmpeg layer
-- **Complete Pipeline**: ✅ Topic → Script → Media → Audio → Manifest → **Real MP4 Video** → YouTube
-- **Quality Control**: ✅ Manifest Builder enforcing professional standards
-- **Real Video Processing**: ✅ FFmpeg Lambda layer creating actual MP4 files
-- **OAuth Integration**: ✅ YouTube publishing with full authentication
-- **Status**: **PRODUCTION READY WITH REAL VIDEO CREATION**
-
-### 🎯 **CI/CD PIPELINE FIX SUMMARY**
-**The Issue**: GitHub Actions deployment validation was failing with 403 Forbidden errors
-**The Root Cause**: JavaScript `new URL(endpoint, baseUrl)` strips API Gateway stage from base URL
-**The Fix**: Proper URL concatenation to preserve `/prod` stage in validation requests
-**The Result**: All deployment validations now pass with 200 OK responses
+- **Audio Generator Demo**: https://www.youtube.com/watch?v=WzuudiPMyes
 
 ---
 
-## 🧪 **FFMPEG LAYER TESTING & DEPLOYMENT**
+## 🚀 Quick Actions
 
-### **🚀 FFmpeg Layer Management**
-```bash
-# 1. Build and test FFmpeg layer
-node build-ffmpeg-layer.js --clean --environment prod
+### For New Users
+1. **Start Here**: [README.md](README.md) - Project overview and quick start
+2. **Deploy**: [DEPLOYMENT_GUIDE.md](DEPLOYMENT_GUIDE.md) - Complete setup instructions
+3. **Architecture**: [COMPLETE_ARCHITECTURE_GUIDE.md](COMPLETE_ARCHITECTURE_GUIDE.md) - Technical details
 
-# 2. Deploy layer to AWS
-node build-ffmpeg-layer.js --upload --deploy --environment prod
+### For Troubleshooting
+1. **Media Issues**: [TROUBLESHOOTING_MEDIA_DOWNLOAD.md](TROUBLESHOOTING_MEDIA_DOWNLOAD.md) - Fix placeholder images
+2. **Syntax Errors**: [SYNTAX_ERROR_PREVENTION.md](SYNTAX_ERROR_PREVENTION.md) - Prevent CI/CD failures
+3. **All Docs**: [DOCUMENTATION_INDEX.md](DOCUMENTATION_INDEX.md) - Complete documentation catalog
 
-# 3. Test real video processing
-node test-complete-pipeline-spain.js  # Now creates real MP4 files
-```
-
-### **🔧 Layer Development & Testing**
-```bash
-# FFmpeg layer development
-cd src/ffmpeg-layer
-npm test                    # Run all layer tests (35+ tests)
-npm run download           # Download FFmpeg binaries
-npm run full-deploy        # Complete build and deploy
-npm run list-versions      # List deployed layer versions
-```
-
-### **📋 Available Testing & Deployment Scripts**
-- `build-ffmpeg-layer.js` - Complete layer build and deployment automation
-- `src/ffmpeg-layer/layer-deployment.js` - Layer lifecycle management
-- `src/ffmpeg-layer/ffmpeg-binary-manager.js` - Binary download and validation
-- **35+ Unit Tests** - Comprehensive test coverage across all components
+### For Development
+1. **Specifications**: [.kiro/specs/real-media-generation/](.kiro/specs/real-media-generation/) - Technical requirements
+2. **CI/CD Setup**: [GITHUB_ACTIONS_SETUP.md](GITHUB_ACTIONS_SETUP.md) - GitHub Actions configuration
+3. **Version History**: [CHANGELOG.md](CHANGELOG.md) - Recent updates and fixes
 
 ---
 
-## 🎪 **QUICK START GUIDE**
+## 🔧 Recent Critical Fixes
 
-### **For Complete Pipeline (100% Working)**
-```bash
-# Test complete working pipeline
-node complete-peru-pipeline-skip-media.js
+### v5.0.1 - Secrets Manager Permission Fix
+- **Issue**: Media Curator was creating 47-byte placeholder files instead of real media
+- **Root Cause**: Missing `secretsmanager:GetSecretValue` IAM permission
+- **Fix**: Added Secrets Manager permission to Media Curator Lambda function
+- **Result**: Real MB-sized media files now downloaded successfully
 
-# Test all components individually
-node test-auth-quick.js
-node test-manifest-builder.js
-node test-correct-endpoints.js
-```
-
-### **For New Video Creation (All Working)**
-```bash
-# Create Bolivia travel video (complete pipeline)
-node create-bolivia-video-complete.js
-
-# Test individual components
-node test-audio-generator.js
-node test-media-curator.js
-```
-
-### **For System Validation (All Components)**
-```bash
-# Comprehensive system test
-node complete-system-validation.js
-
-# Test specific fixes
-node test-fixes-validation.js
-```
+### v5.0.0 - Real Media Generation Complete
+- **Triple-API Integration**: Google Places + Pexels + Pixabay working
+- **Duplicate Prevention**: Advanced content hashing implemented
+- **Quality Validation**: Real content verification with fallback mechanisms
+- **FFmpeg Integration**: Real MP4 video creation operational
 
 ---
 
-## 📁 **KEY FILES TO KNOW**
+## 🎯 Current Capabilities
 
-### **🎬 YouTube Publishing (Working)**
-- `src/lambda/youtube-publisher/index.js` - Main YouTube publisher
-- `src/lambda/youtube-publisher/oauth-manager.js` - OAuth 2.0 authentication
-- `test-auth-quick.js` - Quick authentication test
-- `YOUTUBE_PUBLISHING_COMPLETION.md` - Complete documentation
+### Content Generation
+- **AI Script Generation**: Contextual scene planning with visual requirements
+- **Real Media Curation**: Authentic images and videos from multiple APIs
+- **Professional Audio**: AWS Polly voice synthesis with timing optimization
+- **Video Assembly**: FFmpeg-powered MP4 creation with quality validation
 
-### **🔧 Media Curator (Debugging)**
-- `src/lambda/media-curator/index.js` - Media curation logic (syntax fixed)
-- `test-media-curator-fixed.js` - Testing script
-- `LESSONS_LEARNED_DEBUGGING.md` - Debugging session documentation
+### Intelligence Features
+- **Duplicate Prevention**: SHA-256 content hashing across scenes
+- **Smart API Selection**: Priority scoring (Google Places > Pexels > Pixabay)
+- **Content Relevance**: AI-powered scoring and quality assessment
+- **Automatic Fallbacks**: Graceful degradation when APIs are unavailable
 
-### **📋 Architecture & Documentation**
-- `COMPLETE_ARCHITECTURE_GUIDE.md` - Full system overview
-- `CHANGELOG.md` - All changes and updates
-- `template.yaml` - AWS SAM deployment configuration
-
-### **🧪 Testing & Debugging**
-- `test-*.js` - Various testing scripts
-- `debug-*.js` - Debugging utilities
-- `complete-peru-pipeline.js` - End-to-end pipeline test
+### Production Features
+- **YouTube Publishing**: Automated upload with metadata optimization
+- **Multi-Environment**: Dev/staging/prod deployment support
+- **Monitoring**: CloudWatch integration with comprehensive logging
+- **Error Recovery**: Robust error handling and retry mechanisms
 
 ---
 
-## 🎯 **IMMEDIATE NEXT STEPS**
+## 📋 Next Steps
 
-### **Priority 1: Investigate Runtime Issues**
-```bash
-# Check shared utilities layer
-aws lambda get-layer-version --layer-name "automated-video-pipeline-context" --version-number 56
+### For First-Time Setup
+1. Follow [DEPLOYMENT_GUIDE.md](DEPLOYMENT_GUIDE.md) for complete setup
+2. Configure API keys in AWS Secrets Manager (critical for real media)
+3. Test with `node run-france-pipeline.js`
 
-# Check CloudWatch logs for detailed errors
-aws logs filter-log-events --log-group-name "/aws/lambda/automated-video-pipeline-media-curator-v3"
-```
+### For Ongoing Development
+1. Review [Specifications](.kiro/specs/real-media-generation/) for technical details
+2. Use [TROUBLESHOOTING_MEDIA_DOWNLOAD.md](TROUBLESHOOTING_MEDIA_DOWNLOAD.md) for issues
+3. Follow [SYNTAX_ERROR_PREVENTION.md](SYNTAX_ERROR_PREVENTION.md) for clean code
 
-### **Priority 2: Test Audio Generator**
-```bash
-# Test Audio Generator (likely same issue as Media Curator)
-node test-audio-generator.js
-```
-
-### **Priority 3: Create Minimal Test**
-- Create simplified Media Curator without shared utilities
-- Test core functionality independently
-- Identify specific shared utility causing issues
+### For Production Use
+1. Ensure all IAM permissions are correctly configured
+2. Monitor CloudWatch logs for real media download confirmation
+3. Validate video output quality and YouTube publishing success
 
 ---
 
-## 🔍 **DEBUGGING CONTEXT**
+## 🆘 Support
 
-### **What We Know**
-- ✅ **Syntax**: All syntax errors fixed, code validates with `node -c`
-- ✅ **Deployment**: Lambda functions deploy successfully
-- ✅ **Basic Response**: Functions return proper HTTP responses
-- ❌ **Runtime**: Internal server errors suggest shared utilities issues
+**Critical Issues**: See [TROUBLESHOOTING_MEDIA_DOWNLOAD.md](TROUBLESHOOTING_MEDIA_DOWNLOAD.md)
+**Documentation**: See [DOCUMENTATION_INDEX.md](DOCUMENTATION_INDEX.md)
+**Architecture**: See [COMPLETE_ARCHITECTURE_GUIDE.md](COMPLETE_ARCHITECTURE_GUIDE.md)
 
-### **What We Suspect**
-- **Shared Utilities Layer**: `/opt/nodejs/` modules may have issues
-- **AWS Permissions**: Possible IAM or service access problems
-- **Environment Variables**: Missing or incorrect configuration
-- **Dependencies**: Version conflicts or missing packages
-
-### **Error Patterns**
-```json
-// Media Curator with test project (expected)
-{
-  "success": false,
-  "error": {
-    "message": "No scene context found for project. Script Generator AI must run first.",
-    "type": "VALIDATION"
-  }
-}
-
-// Media Curator with existing project (problematic)
-{
-  "success": false,
-  "error": {
-    "message": "Internal server error",
-    "type": "INTERNAL"
-  }
-}
-```
-
----
-
-## 🛠️ **DEVELOPMENT WORKFLOW**
-
-### **For New Features**
-1. **Start with YouTube Publisher**: It's fully working
-2. **Use existing patterns**: Follow OAuth manager structure
-3. **Test incrementally**: Use the established testing scripts
-
-### **For Debugging**
-1. **Syntax first**: Always run `node -c filename.js`
-2. **Deploy and test**: Use AWS CLI for quick updates
-3. **Check logs**: CloudWatch logs for runtime errors
-4. **Isolate issues**: Test components independently
-
-### **For Documentation**
-1. **Update CHANGELOG.md**: Document all changes
-2. **Update architecture guide**: Keep system overview current
-3. **Create lessons learned**: Document debugging sessions
-
----
-
-## 🎉 **SUCCESS METRICS**
-
-### **✅ Achieved**
-- **YouTube OAuth 2.0**: Working with live channel authentication
-- **Real Video Upload**: Proven with published YouTube video
-- **Syntax Resolution**: All Media Curator syntax errors fixed
-- **System Architecture**: Complete 7-function pipeline designed
-- **Quality Gatekeeper**: Manifest Builder preventing low-quality outputs
-
-### **🎯 In Progress**
-- **Media Curation**: Runtime issues being investigated
-- **Audio Generation**: Similar runtime issues expected
-- **Complete Automation**: End-to-end pipeline optimization
-
-### **📊 Overall Status**
-- **Core Goal**: ✅ **YouTube Publishing COMPLETE**
-- **System Reliability**: ⚠️ **Media components need runtime fixes**
-- **Production Ready**: ✅ **YouTube publishing ready for production use**
-
----
-
-## 🚨 **IMPORTANT NOTES**
-
-### **✅ What's Working (ALL COMPONENTS)**
-- ✅ **Topic Management**: Creating projects with correct endpoints
-- ✅ **Script Generator**: Generating scripts with authentication fixed
-- ✅ **Media Curator**: Downloading real images (21 per project)
-- ✅ **Audio Generator**: Runtime error fixed, generating audio successfully
-- ✅ **Manifest Builder**: Quality validation working perfectly
-- ✅ **Video Assembler**: Creating real MP4 videos
-- ✅ **YouTube Publisher**: OAuth 2.0 authentication and publishing working
-
-### **🎯 System Status**
-- **Components Working**: 7/7 (100%)
-- **Pipeline Success Rate**: 100%
-- **Production Ready**: Yes
-- **Real Videos Created**: Multiple YouTube videos published
-
-### **🎬 Bottom Line**
-**The complete automated video pipeline is now 100% operational with all 7 components working seamlessly together. Multiple real YouTube videos have been created as proof of the complete end-to-end functionality.**
-
----
-
-**🎯 ARCHITECTURAL SIMPLIFICATION MISSION COMPLETE! The automated video pipeline has been successfully transformed with simplified architecture, Infrastructure as Code, and self-contained functions. Core pipeline (Topic Management → Script Generator) is fully operational with perfect context synchronization. The root cause of recurring 403 errors and configuration drift has been permanently eliminated. System is now maintainable, scalable, and production-ready.**
+The system is production-ready with proven real video creation capabilities. All major issues have been resolved and documented for future reference.

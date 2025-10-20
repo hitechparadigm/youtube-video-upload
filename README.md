@@ -1,249 +1,153 @@
-# 🎬 Automated Video Pipeline - AI-Powered Real Media Generation
+# 🎬 Automated Video Pipeline
 
-**Version**: 5.0.0
-**Status**: ✅ **REAL MEDIA GENERATION IMPLEMENTED**
-**Architecture**: Intelligent AI-Powered Content Creation with External API Integration
-**Capabilities**: 🧠 **SMART PEXELS/PIXABAY INTEGRATION WITH DUPLICATE PREVENTION**
+**Version**: 5.0.1
+**Status**: ✅ Production Ready
+**Architecture**: AI-Powered Content Creation with Real Media Generation
 
----
-
-## 🎉 **REAL MEDIA GENERATION COMPLETE**
-
-The Automated Video Pipeline now features **intelligent AI-powered media generation** that creates professional videos with real images and video clips from **three integrated APIs: Google Places, Pexels, and Pixabay**, replacing placeholder content with authentic, high-quality visual assets.
-
-### **✅ ENHANCED CAPABILITIES**
-
-- **🧠 Intelligent Media Curator**: AI-powered content selection with **triple-API integration**
-- **🗺️ Google Places Integration**: Authentic location photos with Places API v1 for travel content
-- **🎬 Smart Content Mixing**: Automatic blend of images and video clips based on scene context
-- **🔍 Duplicate Prevention**: Advanced content hashing prevents repeated media across projects
-- **📸 Multi-Source Intelligence**: Google Places + Pexels + Pixabay with smart priority scoring
-- **� Quallity Validation**: Real content verification with automatic fallback to placeholders
+An intelligent video creation pipeline that automatically generates professional YouTube videos from topics using AI-powered script generation, real media curation from multiple APIs, and automated publishing.
 
 ---
 
-## 🚀 **QUICK START**
+## ✨ Key Features
 
-### **Current System Status**
-```
-✅ Topic Management: WORKING (Simplified architecture)
-✅ Script Generator: WORKING (Context synchronization confirmed)
-✅ Media Curator: FULLY WORKING (Triple-API integration complete)
-✅ Google Places API: INTEGRATED (API v1 with location intelligence)
-✅ Triple-API System: FULLY OPERATIONAL (Google Places + Pexels + Pixabay)
-✅ Real Media Generation: CONFIRMED (3MB+ videos and high-quality images)
-✅ Media Curator: DEPLOYED (Minor runtime issues to resolve)
-✅ Audio Generator: DEPLOYED (Minor runtime issues to resolve)
-✅ Manifest Builder: DEPLOYED (Quality gatekeeper)
-```
+- **🧠 AI-Powered Script Generation**: Intelligent content creation with contextual scene planning
+- **🎬 Real Media Integration**: Downloads authentic content from Google Places, Pexels, and Pixabay
+- **🔍 Duplicate Prevention**: Advanced content hashing ensures unique media across scenes
+- **🎵 AI Voice Narration**: Professional audio generation with AWS Polly
+- **📺 YouTube Publishing**: Automated upload with metadata optimization
+- **🚀 CI/CD Pipeline**: Automated deployment with comprehensive testing
 
-### **Deploy Enhanced System**
+---
+
+## 🚀 Quick Start
+
+### Prerequisites
+- AWS Account with appropriate permissions
+- API keys for Pexels, Pixabay, and Google Places
+- Node.js 18+ and AWS CLI
+
+### 1. Deploy Infrastructure
 ```bash
-# Deploy intelligent media generation system
+# Clone and deploy
+git clone <repository-url>
+cd automated-video-pipeline
 sam build --template-file template-simplified.yaml
 sam deploy --guided
-
-# ⚠️ CRITICAL: Ensure API keys are configured in AWS Secrets Manager
-# Secret name: automated-video-pipeline/api-keys
-# Required keys: pexels-api-key, pixabay-api-key, google-places-api-key
 ```
 
-### **🚨 CRITICAL SETUP REQUIREMENT**
-**Media Curator MUST have Secrets Manager permissions** to download real media:
-- IAM permission: `secretsmanager:GetSecretValue`
-- Resource: `arn:aws:secretsmanager:*:*:secret:automated-video-pipeline/api-keys*`
-- **Without this permission**: Media Curator falls back to 47-byte placeholder files
-- **With this permission**: Downloads MB-sized real images and videos
-
-### **Test Real Media Generation**
+### 2. Configure API Keys (CRITICAL)
 ```bash
-# Test complete pipeline with real content validation
-node test-real-media-pipeline.js
-
-# Verify real content in S3
-aws --profile hitechparadigm s3 ls s3://your-bucket/videos/project-id/03-media/ --recursive
+# Add external API keys to AWS Secrets Manager
+aws secretsmanager create-secret \
+  --name "automated-video-pipeline/api-keys" \
+  --secret-string '{
+    "pexels-api-key": "your-pexels-key",
+    "pixabay-api-key": "your-pixabay-key",
+    "google-places-api-key": "your-google-places-key"
+  }'
 ```
 
----
-
-## 📋 **ARCHITECTURE OVERVIEW**
-
-### **Simplified Design**
-```
-API Gateway (SAM-managed) → Self-Contained Lambda Functions → AWS Services
-```
-
-**Key Benefits**:
-- ✅ **No Configuration Drift**: Infrastructure as Code with SAM template
-- ✅ **No Shared Dependencies**: Self-contained functions with embedded utilities
-- ✅ **Unified Authentication**: SAM-managed API Gateway with consistent auth
-- ✅ **Context Synchronization**: Reliable inter-function communication
-- ✅ **Quality Validation**: Manifest Builder preventing low-quality outputs
-
-### **Function Architecture**
-Each Lambda function is self-contained with:
-- Embedded AWS SDK utilities (no shared layer dependencies)
-- Consistent error handling and response patterns
-- Standard resource allocation (300s timeout, 1024MB memory)
-- Clear, debuggable code structure
-
----
-
-## 🧪 **TESTING**
-
-### **Core Pipeline Test**
+### 3. Test the Pipeline
 ```bash
-# Test complete pipeline with quality validation
-node test-complete-pipeline-with-manifest.js
+# Run a test video creation
+node run-france-pipeline.js
 ```
 
-### **Individual Function Tests**
+## 🚨 Critical Requirements
+
+**Secrets Manager Permission**: The Media Curator Lambda function MUST have `secretsmanager:GetSecretValue` permission to access API keys. Without this:
+- ❌ Only 47-byte placeholder files are created
+- ❌ No real YouTube videos are generated
+- ✅ With permission: MB-sized real media files and actual video creation
+
+See [Troubleshooting Guide](TROUBLESHOOTING_MEDIA_DOWNLOAD.md) for complete setup validation.
+
+---
+
+## 🏗️ Architecture
+
+The pipeline consists of 7 Lambda functions orchestrated through API Gateway:
+
+1. **Topic Management** - Processes video topics and generates context
+2. **Script Generator** - Creates AI-powered video scripts with scene planning
+3. **Media Curator** - Downloads real media from external APIs with duplicate prevention
+4. **Audio Generator** - Creates professional narration using AWS Polly
+5. **Manifest Builder** - Validates content and creates video assembly instructions
+6. **Video Assembler** - Combines media and audio into final MP4 using FFmpeg
+7. **YouTube Publisher** - Uploads videos to YouTube with optimized metadata
+
+### Data Flow
+```
+Topic → Script → Media → Audio → Manifest → Video → YouTube
+```
+
+Each component stores context in S3 and DynamoDB for the next stage to consume.
+
+---
+
+## 📚 Documentation
+
+### Essential Reading
+- **[KIRO_ENTRY_POINT.md](KIRO_ENTRY_POINT.md)** - Current project status and overview
+- **[DEPLOYMENT_GUIDE.md](DEPLOYMENT_GUIDE.md)** - Complete deployment instructions
+- **[COMPLETE_ARCHITECTURE_GUIDE.md](COMPLETE_ARCHITECTURE_GUIDE.md)** - Detailed technical architecture
+
+### Troubleshooting
+- **[TROUBLESHOOTING_MEDIA_DOWNLOAD.md](TROUBLESHOOTING_MEDIA_DOWNLOAD.md)** - Fix placeholder image issues
+- **[SYNTAX_ERROR_PREVENTION.md](SYNTAX_ERROR_PREVENTION.md)** - Prevent CI/CD syntax errors
+
+### Reference
+- **[DOCUMENTATION_INDEX.md](DOCUMENTATION_INDEX.md)** - Complete documentation catalog
+- **[CHANGELOG.md](CHANGELOG.md)** - Version history and updates
+- **[Specifications](.kiro/specs/real-media-generation/)** - Technical requirements and design
+
+---
+
+## 🔧 Development
+
+### Local Testing
 ```bash
-# Test simplified architecture
-node test-simplified-pipeline.js
+# Validate syntax
+npm run test:syntax
 
-# Test end-to-end flow
-node test-complete-simplified-pipeline.js
+# Run linting
+npm run lint
+
+# Test individual components
+node debug-media-curator.js
+node debug-video-size.js
 ```
 
-### **Expected Results**
-- ✅ No 403 authentication errors
-- ✅ Context synchronization working (Topic → Script)
-- ✅ Self-contained functions operational
-- ✅ Quality validation through Manifest Builder
+### CI/CD Pipeline
+The project includes GitHub Actions workflows for:
+- Automated testing and validation
+- Multi-environment deployment (dev/staging/prod)
+- Syntax error prevention
+- Resource cleanup
+
+See [GitHub Actions Setup](GITHUB_ACTIONS_SETUP.md) for configuration details.
 
 ---
 
-## 📁 **PROJECT STRUCTURE**
+## 🤝 Contributing
 
-### **Core Implementation**
-```
-├── src/lambda/                    # Self-contained Lambda functions
-│   ├── topic-management/index.js  # ✅ Working (simplified architecture)
-│   ├── script-generator/index.js  # ✅ Working (context sync confirmed)
-│   ├── media-curator/index.js     # ✅ Deployed (minor runtime issues)
-│   ├── audio-generator/index.js   # ✅ Deployed (minor runtime issues)
-│   └── manifest-builder/index.js  # ✅ Deployed (quality gatekeeper)
-├── template-simplified.yaml       # SAM template (Infrastructure as Code)
-└── test-*.js                     # Comprehensive test suite
-```
-
-### **Documentation**
-```
-├── KIRO_ENTRY_POINT.md                    # Project status overview
-├── FINAL_IMPLEMENTATION_REPORT.md         # Complete results and achievements
-├── SIMPLIFIED_ARCHITECTURE_DESIGN.md      # Complete design document (50+ pages)
-├── DEPLOYMENT_GUIDE.md                    # Step-by-step deployment
-├── DOCUMENTATION_INDEX.md                 # Guide to all documentation
-└── .kiro/specs/context-synchronization-fix/ # Updated spec documents
-```
+1. Follow the syntax error prevention guidelines
+2. Ensure all Lambda functions have proper IAM permissions
+3. Test with real API keys before submitting
+4. Update documentation for any architectural changes
 
 ---
 
-## 🎯 **WHAT WAS ACHIEVED**
+## 📄 License
 
-### **Problems Solved**
-- ❌ **Recurring 403 Errors** → ✅ **Unified Authentication**
-- ❌ **Configuration Drift** → ✅ **Infrastructure as Code**
-- ❌ **Shared Layer Dependencies** → ✅ **Self-Contained Functions**
-- ❌ **Complex Debugging** → ✅ **Clear, Simple Architecture**
-- ❌ **Unreliable Context Flow** → ✅ **Working Context Synchronization**
-
-### **Benefits Realized**
-- **Maintainability**: Self-contained functions with clear dependencies
-- **Scalability**: SAM template supports multiple environments
-- **Reliability**: No configuration drift, consistent deployments
-- **Debuggability**: Clear error messages, simplified architecture
-- **Quality Assurance**: Manifest Builder preventing low-quality outputs
+MIT License - See LICENSE file for details.
 
 ---
 
-## 📊 **SUCCESS METRICS**
+## 🆘 Support
 
-### **Primary Objectives - ✅ ALL ACHIEVED**
-- **Eliminate 403 Errors**: ✅ No authentication errors in testing
-- **Context Synchronization**: ✅ Topic → Script flow confirmed working
-- **Configuration Drift**: ✅ Eliminated through Infrastructure as Code
-- **Simplified Architecture**: ✅ Self-contained functions deployed
-- **Quality Documentation**: ✅ Complete documentation set created
-
-### **Architecture Quality - ⭐⭐⭐⭐⭐**
-- **Maintainability**: ⭐⭐⭐⭐⭐ (Clear dependencies, comprehensive docs)
-- **Scalability**: ⭐⭐⭐⭐⭐ (SAM template, multiple environments)
-- **Reliability**: ⭐⭐⭐⭐⭐ (No configuration drift, consistent)
-- **Debuggability**: ⭐⭐⭐⭐⭐ (Self-contained, clear errors)
-- **Deployability**: ⭐⭐⭐⭐⭐ (Infrastructure as Code, automated)
-
----
-
-## 🔧 **NEXT STEPS**
-
-### **Minor Runtime Issues (Optional)**
-The core architectural problems are **completely solved**. Remaining tasks are minor:
-
-1. **Media Curator Runtime**: AWS SDK configuration (not architectural)
-2. **Audio Generator Runtime**: Polly permissions (not architectural)
-3. **Complete Video Pipeline**: Add Video Assembler and YouTube Publisher
-
-### **Future Enhancements**
-- **CI/CD Pipeline**: Automated testing and deployment
-- **Advanced Monitoring**: Custom dashboards and alerting
-- **Multi-Region**: Global availability and performance
-- **Batch Processing**: Multiple video creation capabilities
-
----
-
-## 📚 **DOCUMENTATION**
-
-### **Essential Reading**
-1. **`KIRO_ENTRY_POINT.md`** - Current project status and overview
-2. **`FINAL_IMPLEMENTATION_REPORT.md`** - Complete results and achievements
-3. **`SIMPLIFIED_ARCHITECTURE_DESIGN.md`** - Detailed technical design
-4. **`DEPLOYMENT_GUIDE.md`** - Step-by-step deployment instructions
-
-### **🚨 Critical Troubleshooting Guides**
-- **`TROUBLESHOOTING_MEDIA_DOWNLOAD.md`** - **CRITICAL: Fix for placeholder image issues (47-byte files)**
-- **`SYNTAX_ERROR_PREVENTION.md`** - Prevent optional chaining syntax errors in CI/CD
-
-### **Reference Materials**
-- **`DOCUMENTATION_INDEX.md`** - Complete guide to all documentation
-- **`REAL_MEDIA_GENERATION_COMPLETE.md`** - AI-powered content creation details
-- **`CHANGELOG.md`** - Version history and updates
-- **`.kiro/specs/`** - Updated specification documents
-
----
-
-## 🏆 **CONCLUSION**
-
-The Automated Video Pipeline has been **successfully transformed** from a complex, error-prone system to a **simplified, maintainable, and reliable architecture**:
-
-- **Core Pipeline**: ✅ **OPERATIONAL** (Topic Management → Script Generator working)
-- **Architecture**: ✅ **SIMPLIFIED** (Self-contained functions, no shared dependencies)
-- **Infrastructure**: ✅ **AUTOMATED** (Infrastructure as Code preventing drift)
-- **Quality**: ✅ **ASSURED** (Manifest Builder validating content)
-- **Documentation**: ✅ **COMPLETE** (Enterprise-grade docs for maintenance)
-
-**The system now provides a solid foundation for reliable development, scalable growth, and easy maintenance.**
-
----
-
-## 📞 **SUPPORT**
-
-### **Getting Started**
-- Read `KIRO_ENTRY_POINT.md` for current status
-- Follow `DEPLOYMENT_GUIDE.md` for setup
-- Run tests to validate your deployment
-
-### **Development**
-- Use `SIMPLIFIED_ARCHITECTURE_DESIGN.md` for technical details
-- Reference `FINAL_IMPLEMENTATION_REPORT.md` for implementation results
-- Check `DOCUMENTATION_INDEX.md` for complete documentation guide
-
-### **Troubleshooting**
-- Check test results for validation
-- Review CloudWatch logs for runtime issues
-- Use self-contained functions for easier debugging
-
----
-
-**🎯 The Automated Video Pipeline architectural simplification is complete and successful. The system is ready for reliable, maintainable development.**
+For issues related to:
+- **Placeholder images**: See [TROUBLESHOOTING_MEDIA_DOWNLOAD.md](TROUBLESHOOTING_MEDIA_DOWNLOAD.md)
+- **Syntax errors**: See [SYNTAX_ERROR_PREVENTION.md](SYNTAX_ERROR_PREVENTION.md)
+- **Deployment**: See [DEPLOYMENT_GUIDE.md](DEPLOYMENT_GUIDE.md)
+- **Architecture**: See [COMPLETE_ARCHITECTURE_GUIDE.md](COMPLETE_ARCHITECTURE_GUIDE.md)
