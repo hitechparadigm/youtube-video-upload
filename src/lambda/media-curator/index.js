@@ -67,9 +67,9 @@ class MultiSceneProcessor {
     constructor() {
         this.sceneDelays = {
             1: 0, // No delay for first scene
-            2: 4000, // 4 second delay before Scene 2 (increased)
-            3: 10000, // 10 second delay before Scene 3 (increased)
-            default: 15000 // 15 second delay for additional scenes (increased)
+            2: 3000, // 3 second delay before Scene 2 (balanced)
+            3: 6000, // 6 second delay before Scene 3 (balanced)
+            default: 8000 // 8 second delay for additional scenes (balanced)
         };
         // Prioritize Google Places heavily for travel content
         this.apiRotation = ['googlePlaces', 'googlePlaces', 'pexels', 'pixabay'];
