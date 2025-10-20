@@ -253,15 +253,17 @@ If media download is completely broken:
 **Root Cause:**
 Sequential API calls in multi-scene processing hit rate limits by Scene 3.
 
-**Solution (v5.1.0):**
-The MultiSceneProcessor automatically handles this with:
-- **Progressive Delays**: 0ms → 2s → 5s → 8s between scenes
-- **Query Expansion**: Scene 3+ get expanded search terms
-- **API Rotation**: Load distribution across all APIs
+**Solution (v5.1.1):**
+The Enhanced MultiSceneProcessor automatically handles this with:
+- **Enhanced Delays**: 0ms → 4s → 10s → 15s between scenes (increased)
+- **Google Places Priority**: 1.5x scoring and double rotation for authentic location photos
+- **Multi-Attempt Retry**: Up to 3 attempts for Scene 3+ with expanded queries
+- **Final Fallback**: Generic travel terms before placeholder generation
+- **Query Expansion**: Scene 3+ get "attractions landmarks sightseeing" terms
 
 **Verification:**
 ```bash
-# Check for MultiSceneProcessor in response metadata
+# Check for Enhanced MultiSceneProcessor in response metadata
 {
   "metadata": {
     "architecture": "multi-scene-processor-v1",
@@ -269,7 +271,15 @@ The MultiSceneProcessor automatically handles this with:
     "queryEffectivenessAnalysis": { ... }
   }
 }
+
+# Test Google Places priority
+node test-google-places-priority.js
 ```
+
+**Google Places File Locations:**
+- S3 Path: `videos/{projectId}/03-media/scene-{N}/images/{N}-{keyword}-scene-{N}.jpg`
+- Source: `google-places` (check in response metadata)
+- Size: Typically 50KB-500KB for authentic location photos
 
 ---
 

@@ -7,6 +7,35 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [5.1.1] - 2025-10-20 - 🗺️ Google Places Priority & Enhanced Scene 3 Fix
+
+### 🗺️ Google Places API Prioritization
+- **Heavy Priority Scoring**: Google Places gets 1.5x priority score (highest among all APIs)
+- **Double API Rotation**: Google Places appears twice in rotation for better coverage
+- **Enhanced Search Results**: 1.5x more Google Places results requested (increased from 0.5x)
+- **Multiple Search Strategies**: Tourist attractions, POI, landmarks, and attractions searches
+- **Authentic Location Content**: Prioritizes real place photos over stock imagery
+
+### ⏱️ Enhanced Rate Limiting & Retry Logic
+- **Increased Delays**: Scene 2 (4s→4s), Scene 3 (5s→10s), Scene 4+ (8s→15s)
+- **Multi-Attempt System**: Scene 3+ gets up to 3 retry attempts vs 1 for earlier scenes
+- **Query Expansion on Retry**: Adds "attractions landmarks sightseeing" terms for retry attempts
+- **Progressive Backoff**: 2-second delays between retry attempts
+
+### 🔄 Anti-Placeholder Measures
+- **Final Fallback Strategy**: Generic "travel destination attractions landmarks" search before placeholders
+- **Enhanced Error Recovery**: Multiple fallback strategies prevent placeholder generation
+- **Scene-Specific Retry Logic**: More aggressive retry for Scene 3+ where placeholders commonly occurred
+- **Improved Success Rate**: Targets elimination of remaining 33% Scene 3 placeholder issue
+
+### 🧪 Enhanced Testing & Validation
+- **Google Places Priority Test**: Validates API usage and file tracking
+- **S3 File Path Tracking**: Shows exact locations of downloaded Google Places content
+- **Source Distribution Analysis**: Tracks Google Places vs Pexels vs Pixabay usage ratios
+- **Scene-by-Scene Validation**: Comprehensive testing for Scene 3+ success rates
+
+---
+
 ## [5.1.0] - 2025-10-20 - 🎬 Multi-Scene Rate Limiting Solution
 
 ### 🚨 Scene 3 Rate Limiting Fix

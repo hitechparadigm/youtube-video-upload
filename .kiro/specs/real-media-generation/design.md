@@ -202,17 +202,17 @@ class RateLimitManager {
 }
 ```
 
-### Multi-Scene Processing Enhancement
+### Enhanced Multi-Scene Processing (v5.1.1)
 
-#### Scene-Aware Rate Limiting
+#### Google Places Priority & Enhanced Rate Limiting
 ```javascript
 class MultiSceneProcessor {
     constructor() {
         this.sceneDelays = {
             1: 0,      // No delay for first scene
-            2: 2000,   // 2 second delay before Scene 2
-            3: 5000,   // 5 second delay before Scene 3
-            default: 8000  // 8 second delay for additional scenes
+            2: 4000,   // 4 second delay before Scene 2 (enhanced)
+            3: 10000,  // 10 second delay before Scene 3 (enhanced)
+            default: 15000  // 15 second delay for additional scenes (enhanced)
         };
         this.apiRotation = ['googlePlaces', 'pexels', 'pixabay'];
         this.usedContent = new Set(); // Track content across scenes

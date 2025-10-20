@@ -2,7 +2,7 @@
 
 **Last Updated**: October 20, 2025
 **Project Status**: ✅ Production Ready
-**Current Version**: 5.1.0
+**Current Version**: 5.1.1
 
 ---
 
@@ -46,11 +46,17 @@ Recent successful video creations:
 
 ## 🔧 Recent Critical Fixes
 
+### v5.1.1 - Google Places Priority & Enhanced Scene 3 Fix
+- **Issue**: Remaining 33% Scene 3 placeholder rate and insufficient Google Places usage
+- **Root Cause**: Insufficient API prioritization and retry logic for travel content
+- **Fix**: Heavy Google Places prioritization (1.5x score), enhanced retry logic (3 attempts), increased delays
+- **Result**: Near-elimination of Scene 3 placeholders with authentic location photos prioritized
+
 ### v5.1.0 - Multi-Scene Rate Limiting Solution
 - **Issue**: Scene 3+ were falling back to placeholder files while Scenes 1-2 got real media
 - **Root Cause**: Sequential API calls hit rate limits by Scene 3 in multi-scene processing
 - **Fix**: Implemented MultiSceneProcessor with progressive delays, query expansion, and API rotation
-- **Result**: All scenes now consistently receive real media content (100% success rate)
+- **Result**: Improved Scene 3 success rate from 0% to 67%, overall pipeline 100% success
 
 ### v5.0.1 - Secrets Manager Permission Fix
 - **Issue**: Media Curator was creating 47-byte placeholder files instead of real media

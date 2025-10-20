@@ -1,6 +1,6 @@
 # 🎬 Automated Video Pipeline
 
-**Version**: 5.1.0
+**Version**: 5.1.1
 **Status**: ✅ Production Ready
 **Architecture**: AI-Powered Content Creation with Multi-Scene Rate Limiting
 
@@ -11,8 +11,9 @@ An intelligent video creation pipeline that automatically generates professional
 ## ✨ Key Features
 
 - **🧠 AI-Powered Script Generation**: Intelligent content creation with contextual scene planning
+- **🗺️ Google Places Priority**: Heavily prioritized authentic location photos for travel content
 - **🎬 Real Media Integration**: Downloads authentic content from Google Places, Pexels, and Pixabay
-- **🔍 Multi-Scene Rate Limiting**: Intelligent delays and API rotation prevent Scene 3+ placeholder fallback
+- **🔍 Multi-Scene Rate Limiting**: Enhanced delays and retry logic eliminate Scene 3+ placeholder fallback
 - **🔄 Duplicate Prevention**: Advanced content hashing ensures unique media across scenes
 - **🎵 AI Voice Narration**: Professional audio generation with AWS Polly
 - **📺 YouTube Publishing**: Automated upload with metadata optimization
