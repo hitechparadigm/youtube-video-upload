@@ -15,9 +15,9 @@
  * AI OUTPUT INTELLIGENCE:
  * The AI generates structured context that feeds into Script Generator AI:
  * {
- *   "subtopic": "Complete 7-day Madrid-Barcelona-Seville itinerary with exact routes",
- *   "valueProposition": "Save 20+ hours of planning with ready-to-use daily schedules",
- *   "visualNeeds": ["route maps", "train stations", "timing charts"] // ← Critical for Media Curator AI
+ *   'subtopic': 'Complete 7-day Madrid-Barcelona-Seville itinerary with exact routes',
+ *   'valueProposition': 'Save 20+ hours of planning with ready-to-use daily schedules',
+ *   'visualNeeds': ['route maps', 'train stations', 'timing charts'] // ← Critical for Media Curator AI
  * }
  * 
  * DOWNSTREAM AI IMPACT:
@@ -55,7 +55,7 @@ const dynamoClient = new DynamoDBClient({
 /**
  * Main Lambda handler
  */
-exports.handler = async (event, context) => {
+exports.handler = async (event) => {
     console.log('Simplified Topic Management invoked:', JSON.stringify(event, null, 2));
 
     const {

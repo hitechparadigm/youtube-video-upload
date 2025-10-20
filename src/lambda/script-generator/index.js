@@ -14,24 +14,24 @@
  * 
  * AI INPUT PROCESSING (from Topic Management AI):
  * {
- *   "expandedTopics": [
+ *   'expandedTopics': [
  *     {
- *       "subtopic": "Complete 7-day Madrid-Barcelona-Seville itinerary",
- *       "visualNeeds": ["route maps", "train stations", "timing charts"], // ← AI-generated
- *       "valueProposition": "Save 20+ hours of planning"
+ *       'subtopic': 'Complete 7-day Madrid-Barcelona-Seville itinerary',
+ *       'visualNeeds': ['route maps', 'train stations', 'timing charts'], // ← AI-generated
+ *       'valueProposition': 'Save 20+ hours of planning'
  *     }
  *   ]
  * }
  * 
  * AI OUTPUT INTELLIGENCE (for Media Curator AI):
  * {
- *   "scenes": [
+ *   'scenes': [
  *     {
- *       "sceneNumber": 1,
- *       "visualRequirements": {
- *         "searchKeywords": ["route maps", "train stations", "timing charts"], // ← From Topic AI
- *         "sceneType": "dynamic_intro",     // ← AI determines visual style
- *         "emotionalTone": "engaging"       // ← AI sets content mood
+ *       'sceneNumber': 1,
+ *       'visualRequirements': {
+ *         'searchKeywords': ['route maps', 'train stations', 'timing charts'], // ← From Topic AI
+ *         'sceneType': 'dynamic_intro',     // ← AI determines visual style
+ *         'emotionalTone': 'engaging'       // ← AI sets content mood
  *       }
  *     }
  *   ]
@@ -76,7 +76,7 @@ const dynamoClient = new DynamoDBClient({
 /**
  * Main Lambda handler
  */
-exports.handler = async (event, context) => {
+exports.handler = async (event) => {
     console.log('Simplified Script Generator invoked:', JSON.stringify(event, null, 2));
 
     const {

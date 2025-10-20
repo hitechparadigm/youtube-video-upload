@@ -1,55 +1,55 @@
 /**
  * 🧠 AUDIO GENERATOR AI - INTELLIGENT NARRATION SYNTHESIS
- * 
+ *
  * CORE AI INTELLIGENCE:
  * This Lambda transforms Script Generator AI output into professional, natural-sounding
  * narration using AWS Polly's advanced neural voices with intelligent audio optimization.
- * 
+ *
  * AI AUDIO PROCESSING:
  * 1. Script Analysis: Processes scene-specific scripts from Script Generator AI
  * 2. Voice Intelligence: Selects optimal voice characteristics for content type and audience
  * 3. Prosody Optimization: Applies intelligent emphasis, pacing, and tone adjustments
  * 4. Scene Synchronization: Creates audio segments perfectly timed to visual content
  * 5. Quality Enhancement: Applies audio processing for professional broadcast quality
- * 
+ *
  * AI INPUT PROCESSING (from Script Generator AI):
  * {
- *   "scenes": [
+ *   'scenes': [
  *     {
- *       "sceneNumber": 1,
- *       "script": "What if you could see Madrid, Barcelona, and Seville in 7 days...",
- *       "duration": 15,
- *       "purpose": "hook"  // ← AI uses this for voice modulation
+ *       'sceneNumber': 1,
+ *       'script': 'What if you could see Madrid, Barcelona, and Seville in 7 days...',
+ *       'duration': 15,
+ *       'purpose': 'hook'  // ← AI uses this for voice modulation
  *     }
  *   ]
  * }
- * 
+ *
  * AI VOICE INTELLIGENCE:
  * - Hook Scenes: Dynamic, engaging tone with emphasis and excitement
  * - Content Scenes: Clear, informative delivery with natural pacing
  * - Conclusion Scenes: Confident, call-to-action tone with authority
- * 
+ *
  * AI AUDIO OPTIMIZATION:
  * {
- *   "voiceSelection": "Neural voice based on content analysis",
- *   "prosodyAdjustments": "Intelligent emphasis and pacing",
- *   "sceneTransitions": "Smooth audio flow between segments",
- *   "qualityEnhancement": "Professional audio processing"
+ *   'voiceSelection': 'Neural voice based on content analysis',
+ *   'prosodyAdjustments': 'Intelligent emphasis and pacing',
+ *   'sceneTransitions': 'Smooth audio flow between segments',
+ *   'qualityEnhancement': 'Professional audio processing'
  * }
- * 
+ *
  * AI OUTPUT INTELLIGENCE (for Video Assembler AI):
  * - Individual scene audio files with precise timing
  * - Master narration file with seamless scene transitions
  * - Audio metadata with synchronization data for video assembly
  * - Quality metrics and processing logs for optimization
- * 
+ *
  * INTELLIGENCE FEATURES:
  * - Content-Aware Voice Selection: Chooses optimal voice for topic and audience
  * - Prosody Intelligence: Applies natural emphasis and emotional tone
  * - Scene-Synchronized Timing: Perfect audio-visual synchronization
  * - Quality Optimization: Professional audio processing and enhancement
  * - Multi-Language Support: Intelligent voice selection for different languages
- * 
+ *
  * DOWNSTREAM AI IMPACT:
  * - Video Assembler AI uses audio timing for precise visual synchronization
  * - Manifest Builder AI validates audio quality and completeness
@@ -88,7 +88,7 @@ const pollyClient = new PollyClient({
 /**
  * Main Lambda handler
  */
-exports.handler = async (event, context) => {
+exports.handler = async (event) => {
     console.log('Simplified Audio Generator invoked:', JSON.stringify(event, null, 2));
 
     const {
@@ -113,7 +113,6 @@ exports.handler = async (event, context) => {
             const requestBody = body ? JSON.parse(body) : {};
             const {
                 projectId,
-                text,
                 voiceId = 'Joanna'
             } = requestBody;
 

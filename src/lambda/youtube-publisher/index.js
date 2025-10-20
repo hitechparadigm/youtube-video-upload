@@ -15,28 +15,28 @@
  * 
  * AI INPUT PROCESSING (from Manifest Builder AI):
  * {
- *   "videoContent": "Professional MP4 from Video Assembler AI",
- *   "metadata": "AI-optimized title, description, tags from all upstream agents",
- *   "qualityMetrics": "AI quality scores and performance predictions",
- *   "seoContext": "Keyword strategies from Topic Management AI"
+ *   'videoContent': 'Professional MP4 from Video Assembler AI',
+ *   'metadata': 'AI-optimized title, description, tags from all upstream agents',
+ *   'qualityMetrics': 'AI quality scores and performance predictions',
+ *   'seoContext': 'Keyword strategies from Topic Management AI'
  * }
  * 
  * AI METADATA GENERATION:
  * {
- *   "titleOptimization": {
- *     "clickworthiness": "AI-generated compelling titles with emotional triggers",
- *     "seoKeywords": "Strategic keyword placement for search optimization",
- *     "lengthOptimization": "Optimal character count for platform algorithms"
+ *   'titleOptimization': {
+ *     'clickworthiness': 'AI-generated compelling titles with emotional triggers',
+ *     'seoKeywords': 'Strategic keyword placement for search optimization',
+ *     'lengthOptimization': 'Optimal character count for platform algorithms'
  *   },
- *   "descriptionIntelligence": {
- *     "engagementHooks": "AI-crafted opening lines for viewer retention",
- *     "keywordDensity": "Optimal keyword distribution for discoverability",
- *     "callToAction": "Intelligent CTAs based on content analysis"
+ *   'descriptionIntelligence': {
+ *     'engagementHooks': 'AI-crafted opening lines for viewer retention',
+ *     'keywordDensity': 'Optimal keyword distribution for discoverability',
+ *     'callToAction': 'Intelligent CTAs based on content analysis'
  *   },
- *   "tagStrategy": {
- *     "primaryKeywords": "High-volume, relevant search terms",
- *     "longTailKeywords": "Specific, targeted phrases for niche audiences",
- *     "trendingTags": "AI-identified trending topics for increased visibility"
+ *   'tagStrategy': {
+ *     'primaryKeywords': 'High-volume, relevant search terms',
+ *     'longTailKeywords': 'Specific, targeted phrases for niche audiences',
+ *     'trendingTags': 'AI-identified trending topics for increased visibility'
  *   }
  * }
  * 

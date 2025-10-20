@@ -4,7 +4,7 @@
  * CORE AI INTELLIGENCE:
  * This Lambda serves as the intelligent quality control center that validates,
  * optimizes, and orchestrates all AI-generated content before final video assembly.
- * It acts as the "AI supervisor" ensuring professional quality standards.
+ * It acts as the 'AI supervisor' ensuring professional quality standards.
  * 
  * AI QUALITY INTELLIGENCE:
  * 1. Content Validation: AI-powered analysis of all generated content for completeness
@@ -15,17 +15,17 @@
  * 
  * AI VALIDATION PROCESS:
  * {
- *   "contentAnalysis": {
- *     "mediaQuality": "AI assessment of image/video resolution, relevance, and diversity",
- *     "audioQuality": "Analysis of narration clarity, timing, and professional standards",
- *     "scriptCoherence": "Evaluation of narrative flow and engagement potential",
- *     "brandSafety": "AI-powered content appropriateness and safety validation"
+ *   'contentAnalysis': {
+ *     'mediaQuality': 'AI assessment of image/video resolution, relevance, and diversity',
+ *     'audioQuality': 'Analysis of narration clarity, timing, and professional standards',
+ *     'scriptCoherence': 'Evaluation of narrative flow and engagement potential',
+ *     'brandSafety': 'AI-powered content appropriateness and safety validation'
  *   },
- *   "qualityGates": {
- *     "minimumVisuals": "≥3 high-quality visuals per scene",
- *     "audioSync": "Perfect audio-visual timing alignment",
- *     "contentRelevance": "AI relevance score ≥80% for all media",
- *     "professionalStandards": "Broadcast-quality audio and visual standards"
+ *   'qualityGates': {
+ *     'minimumVisuals': '≥3 high-quality visuals per scene',
+ *     'audioSync': 'Perfect audio-visual timing alignment',
+ *     'contentRelevance': 'AI relevance score ≥80% for all media',
+ *     'professionalStandards': 'Broadcast-quality audio and visual standards'
  *   }
  * }
  * 
@@ -36,7 +36,7 @@
  * - Platform Adaptation: Optimizes content structure for YouTube algorithm preferences
  * 
  * AI MANIFEST GENERATION:
- * Creates the definitive "single source of truth" that includes:
+ * Creates the definitive 'single source of truth' that includes:
  * - AI-optimized scene sequencing and timing
  * - Quality-validated media with fallback options
  * - Professional metadata with SEO optimization
@@ -87,7 +87,7 @@ const dynamoClient = new DynamoDBClient({
 /**
  * Main Lambda handler
  */
-exports.handler = async (event, context) => {
+exports.handler = async (event) => {
     console.log('Simplified Manifest Builder invoked:', JSON.stringify(event, null, 2));
 
     const {
@@ -248,8 +248,7 @@ async function loadAllContexts(projectId) {
 
     for (const contextType of contextTypes) {
         try {
-            const context = await retrieveContext(contextType, projectId);
-            contexts[contextType] = context;
+                        contexts[contextType] = context;
         } catch (error) {
             console.log(`⚠️ Could not load ${contextType} context:`, error.message);
             contexts[contextType] = null;
@@ -377,7 +376,7 @@ async function generateUnifiedManifest(projectId, validation) {
     const manifest = {
         videoId: contexts.topic ?.mainTopic ?.replace(/[^a-z0-9]/gi, '-').toLowerCase() || projectId,
         title: contexts.topic ?.mainTopic || `Video ${projectId}`,
-        visibility: "unlisted",
+        visibility: 'unlisted',
         seo: {
             tags: [
                 ...(contexts.topic ?.seoContext ?.primaryKeywords || []),
@@ -387,13 +386,13 @@ async function generateUnifiedManifest(projectId, validation) {
         chapters: generateChaptersFromScenes(contexts.scene ?.scenes || []),
         scenes: buildScenesFromContexts(projectId, contexts),
         export: {
-            resolution: "1920x1080",
+            resolution: '1920x1080',
             fps: 30,
-            codec: "h264",
-            preset: "medium"
+            codec: 'h264',
+            preset: 'medium'
         },
         upload: {
-            category: "Education",
+            category: 'Education',
             madeForKids: false,
             finalVideoPath: `videos/${projectId}/05-video/final-video.mp4`,
             masterAudioPath: `videos/${projectId}/04-audio/narration.mp3`
@@ -401,7 +400,7 @@ async function generateUnifiedManifest(projectId, validation) {
         metadata: {
             generatedAt: new Date().toISOString(),
             projectId: projectId,
-            manifestVersion: "1.0.0",
+            manifestVersion: '1.0.0',
             validationPassed: true,
             kpis: validation.kpis,
             architecture: 'simplified'
@@ -434,13 +433,13 @@ function buildScenesFromContexts(projectId, contexts) {
 
         return {
             id: sceneNumber,
-            script: scene.content ?.script || scene.script || "",
+            script: scene.content ?.script || scene.script || '',
             audio: {
                 path: `videos/${projectId}/04-audio/audio-segments/scene-${sceneNumber}.mp3`,
                 durationHintSec: scene.duration || 30
             },
             visuals: [{
-                type: "image",
+                type: 'image',
                 key: `videos/${projectId}/03-media/scene-${sceneNumber}/images/1-placeholder.jpg`,
                 durationHint: 5
             }]

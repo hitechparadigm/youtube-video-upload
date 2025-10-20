@@ -1,58 +1,58 @@
 /**
  * 🧠 VIDEO ASSEMBLER AI - INTELLIGENT VIDEO COMPOSITION
- * 
+ *
  * CORE AI INTELLIGENCE:
  * This Lambda represents the culmination of the AI pipeline, intelligently assembling
  * all AI-generated content (visuals, audio, metadata) into professional video content
  * using advanced FFmpeg processing with AI-optimized composition techniques.
- * 
+ *
  * AI COMPOSITION INTELLIGENCE:
  * 1. Content Analysis: Processes all upstream AI outputs for optimal video assembly
  * 2. Visual Synchronization: Intelligently times images/videos to audio narration
  * 3. Transition Intelligence: Creates smooth, contextually appropriate scene transitions
  * 4. Quality Optimization: Applies AI-driven video processing for professional output
  * 5. Format Intelligence: Optimizes output for target platforms (YouTube, social media)
- * 
+ *
  * AI INPUT INTEGRATION (from all upstream AI agents):
  * - Media Curator AI: Real images and video clips with quality scores and metadata
  * - Audio Generator AI: Scene-synchronized narration with precise timing
  * - Script Generator AI: Scene structure and visual requirements
  * - Manifest Builder AI: Quality validation and assembly instructions
- * 
+ *
  * AI VIDEO COMPOSITION PROCESS:
  * {
- *   "visualIntelligence": {
- *     "imageSequencing": "AI-optimized image display timing based on content complexity",
- *     "videoClipIntegration": "Smart insertion of video clips for dynamic scenes",
- *     "transitionSelection": "Context-aware transitions (fade, crossfade, cut)",
- *     "aspectRatioOptimization": "Intelligent cropping and scaling for platform requirements"
+ *   'visualIntelligence': {
+ *     'imageSequencing': 'AI-optimized image display timing based on content complexity',
+ *     'videoClipIntegration': 'Smart insertion of video clips for dynamic scenes',
+ *     'transitionSelection': 'Context-aware transitions (fade, crossfade, cut)',
+ *     'aspectRatioOptimization': 'Intelligent cropping and scaling for platform requirements'
  *   },
- *   "audioSynchronization": {
- *     "preciseAlignment": "Frame-perfect audio-visual synchronization",
- *     "naturalPacing": "AI-adjusted timing for optimal viewer engagement",
- *     "sceneTransitions": "Seamless audio flow between visual segments"
+ *   'audioSynchronization': {
+ *     'preciseAlignment': 'Frame-perfect audio-visual synchronization',
+ *     'naturalPacing': 'AI-adjusted timing for optimal viewer engagement',
+ *     'sceneTransitions': 'Seamless audio flow between visual segments'
  *   }
  * }
- * 
+ *
  * AI QUALITY INTELLIGENCE:
  * - Content Validation: Ensures all inputs are real media (not placeholders)
  * - Resolution Optimization: Upscales/optimizes media for consistent quality
  * - Compression Intelligence: Balances file size with visual quality
  * - Platform Optimization: Adapts output for YouTube algorithm preferences
- * 
+ *
  * AI OUTPUT OPTIMIZATION:
  * - Professional MP4 files with optimal encoding settings
  * - YouTube-optimized metadata and chapter markers
  * - Quality metrics and processing logs for continuous improvement
  * - Fallback handling for various input quality scenarios
- * 
+ *
  * INTELLIGENCE FEATURES:
  * - Multi-Modal Assembly: Seamlessly combines images, video clips, and audio
  * - Context-Aware Transitions: Selects appropriate transitions based on scene content
  * - Quality Enhancement: AI-driven upscaling and optimization of input media
  * - Platform Intelligence: Optimizes output for specific distribution channels
  * - Real-Time Processing: Efficient FFmpeg utilization for fast video generation
- * 
+ *
  * FINAL AI PIPELINE OUTPUT:
  * Professional video content ready for YouTube publishing with:
  * - High-quality visuals from intelligent media curation
@@ -822,7 +822,7 @@ async function validateRealImagesInTimeline(videoTimeline) {
     }
 
     if (realImageCount < videoTimeline.length * 0.5) {
-        console.log(`⚠️ Warning: Only ${Math.round(realImageCount/videoTimeline.length*100)}% real content`);
+        console.log(`⚠️ Warning: Only ${Math.round(realImageCount / videoTimeline.length * 100)}% real content`);
     }
 
     return validatedTimeline;

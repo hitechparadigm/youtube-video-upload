@@ -21,10 +21,10 @@
  * 
  * INPUT CONTEXT (from Script Generator AI):
  * {
- *   "visualRequirements": {
- *     "searchKeywords": ["route maps", "train stations", "timing charts"], // AI-generated
- *     "sceneType": "dynamic_intro",     // AI-determined visual style
- *     "emotionalTone": "engaging"       // AI-set content mood
+ *   'visualRequirements': {
+ *     'searchKeywords': ['route maps', 'train stations', 'timing charts'], // AI-generated
+ *     'sceneType': 'dynamic_intro',     // AI-determined visual style
+ *     'emotionalTone': 'engaging'       // AI-set content mood
  *   }
  * }
  * 
@@ -49,7 +49,6 @@ const {
     marshall,
     unmarshall
 } = require('@aws-sdk/util-dynamodb');
-const https = require('https');
 const {
     SecretsManagerClient,
     GetSecretValueCommand
@@ -97,8 +96,8 @@ class RateLimitManager {
         // Check if we're at the limit
         if (limit.current >= limit.requests) {
             const waitTime = limit.resetTime - now;
-            console.log(`⚠️ Rate limit reached for ${service}. Waiting ${Math.ceil(waitTime/1000)}s`);
-            throw new Error(`Rate limit exceeded for ${service}. Reset in ${Math.ceil(waitTime/1000)} seconds`);
+            console.log(`⚠️ Rate limit reached for ${service}. Waiting ${Math.ceil(waitTime / 1000)}s`);
+            throw new Error(`Rate limit exceeded for ${service}. Reset in ${Math.ceil(waitTime / 1000)} seconds`);
         }
 
         // Enforce minimum delay between requests (especially for Pixabay)
@@ -195,7 +194,7 @@ class GooglePlacesManager {
 
         const url = `${this.baseUrlLegacy}/place/textsearch/json?query=${encodeURIComponent(query)}&type=${type}&key=${this.apiKey}&fields=place_id,name,formatted_address,photos,rating,types`;
 
-        console.log(`🗺️ Google Places search: "${query}" (type: ${type})`);
+        console.log(`🗺️ Google Places search: '${query}' (type: ${type})`);
 
         try {
             const response = await fetch(url);
@@ -265,7 +264,7 @@ class GooglePlacesManager {
                             downloads: 0
                         });
 
-                        console.log(`✅ Downloaded Google Places photo: ${place.name} (${Math.round(photoBuffer.byteLength/1024)}KB)`);
+                        console.log(`✅ Downloaded Google Places photo: ${place.name} (${Math.round(photoBuffer.byteLength / 1024)}KB)`);
                     } else {
                         console.log(`⚠️ Photo too small for ${place.name}, skipping`);
                     }
@@ -281,14 +280,14 @@ class GooglePlacesManager {
     }
 
     async searchLocationPhotos(query, maxResults = 6) {
-        console.log(`🗺️ Searching Google Places photos for: "${query}"`);
+        console.log(`🗺️ Searching Google Places photos for: '${query}'`);
 
         try {
             // Search for places related to the query
             const places = await this.searchPlaces(query);
 
             if (places.length === 0) {
-                console.log(`⚠️ No places found for query: "${query}"`);
+                console.log(`⚠️ No places found for query: '${query}'`);
                 return [];
             }
 
@@ -329,7 +328,7 @@ const secretsClient = new SecretsManagerClient({
 /**
  * Main Lambda handler
  */
-exports.handler = async (event, context) => {
+exports.handler = async (event) => {
     console.log('Simplified Media Curator invoked:', JSON.stringify(event, null, 2));
 
     const {
@@ -549,7 +548,7 @@ async function generatePlaceholderImages(projectId, sceneNumber, keywords, scene
  * 5. Supports both images and video clips
  */
 async function downloadRealImages(searchQuery, count, sceneContext = {}, usedContentHashes = new Set(), usedContentUrls = new Set()) {
-    console.log(`🧠 AI Media Curator: Intelligent search for "${searchQuery}" (${count} items)`);
+    console.log(`🧠 AI Media Curator: Intelligent search for '${searchQuery}' (${count} items)`);
     console.log(`📋 Scene Context:`, sceneContext);
     console.log(`🚫 Duplicate Prevention: Avoiding ${usedContentHashes.size} content hashes, ${usedContentUrls.size} URLs`);
 
@@ -662,7 +661,7 @@ async function downloadRealImages(searchQuery, count, sceneContext = {}, usedCon
  */
 async function searchPexelsIntelligent(query, count, apiKeys, sceneContext) {
     const optimizedQuery = optimizeSearchQuery(query, sceneContext);
-    console.log(`🔍 Pexels search: "${optimizedQuery}"`);
+    console.log(`🔍 Pexels search: '${optimizedQuery}'`);
 
     // Search both photos and videos
     const [photosPromise, videosPromise] = await Promise.allSettled([
@@ -683,7 +682,7 @@ async function searchPexelsIntelligent(query, count, apiKeys, sceneContext) {
  */
 async function searchPixabayIntelligent(query, count, apiKeys, sceneContext) {
     const optimizedQuery = optimizeSearchQuery(query, sceneContext);
-    console.log(`🔍 Pixabay search: "${optimizedQuery}"`);
+    console.log(`🔍 Pixabay search: '${optimizedQuery}'`);
 
     // Search both images and videos
     const [imagesPromise, videosPromise] = await Promise.allSettled([
@@ -703,7 +702,7 @@ async function searchPixabayIntelligent(query, count, apiKeys, sceneContext) {
  * Searches location-specific photos with contextual optimization
  */
 async function searchGooglePlacesIntelligent(query, count, sceneContext, apiKeys) {
-    console.log(`🗺️ Google Places intelligent search: "${query}"`);
+    console.log(`🗺️ Google Places intelligent search: '${query}'`);
 
     try {
         // Initialize Google Places manager with API keys
@@ -742,13 +741,13 @@ function extractLocationFromQuery(query, sceneContext) {
         const match = query.match(pattern);
         if (match && match[1]) {
             const location = match[1].trim();
-            console.log(`🎯 Extracted location: "${location}" from query: "${query}"`);
+            console.log(`🎯 Extracted location: '${location}' from query: '${query}'`);
             return location;
         }
     }
 
     // If no location found, use the original query
-    console.log(`🔍 Using original query for location search: "${query}"`);
+    console.log(`🔍 Using original query for location search: '${query}'`);
     return query;
 }
 
@@ -1151,7 +1150,7 @@ function optimizeSearchQuery(originalQuery, sceneContext = {}) {
 
     // Clean up and optimize
     optimized = optimized.replace(/\s+/g, ' ').trim();
-    console.log(`🔍 Query optimization: "${originalQuery}" → "${optimized}"`);
+    console.log(`🔍 Query optimization: '${originalQuery}' → '${optimized}'`);
 
     return optimized;
 }
