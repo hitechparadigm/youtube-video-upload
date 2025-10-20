@@ -67,9 +67,9 @@ class MultiSceneProcessor {
     constructor() {
         this.sceneDelays = {
             1: 0, // No delay for first scene
-            2: 3000, // 3 second delay before Scene 2 (balanced)
-            3: 6000, // 6 second delay before Scene 3 (balanced)
-            default: 8000 // 8 second delay for additional scenes (balanced)
+            2: 2000, // 2 second delay before Scene 2 (conservative)
+            3: 4000, // 4 second delay before Scene 3 (conservative)
+            default: 6000 // 6 second delay for additional scenes (conservative)
         };
         // Prioritize Google Places heavily for travel content
         this.apiRotation = ['googlePlaces', 'googlePlaces', 'pexels', 'pixabay'];
@@ -437,6 +437,19 @@ class GooglePlacesManager {
         console.log(`🗺️ Searching Google Places photos for: '${query}' (requesting ${maxResults} photos)`);
 
         try {
+            // Add timeout to prevent hanging
+            return await Promise.race([
+                this._searchLocationPhotosInternal(query, maxResults),
+                new Promise((_, reject) => setTimeout(() => reject(new Error('Google Places search timeout')), 15000))
+            ]);
+        } catch (error) {
+            console.error(`❌ Google Places location search failed:`, error.message);
+            return [];
+        }
+    }
+
+    async _searchLocationPhotosInternal(query, maxResults = 6) {
+        try {
             // Try multiple search strategies for better coverage
             const searchStrategies = [{
                 query: query,
@@ -470,7 +483,7 @@ class GooglePlacesManager {
                 });
 
                 // Small delay between searches
-                await new Promise(resolve => setTimeout(resolve, 200));
+                await new Promise(resolve => setTimeout(resolve, 100));
             }
 
             const uniquePlaces = Array.from(allPlaces).map(placeStr => JSON.parse(placeStr));
@@ -494,7 +507,7 @@ class GooglePlacesManager {
 
                 // Small delay between photo downloads
                 if (placePhotos.length > 0) {
-                    await new Promise(resolve => setTimeout(resolve, 300));
+                    await new Promise(resolve => setTimeout(resolve, 150));
                 }
             }
 
@@ -502,7 +515,7 @@ class GooglePlacesManager {
             return allPhotos;
 
         } catch (error) {
-            console.error(`❌ Google Places location search failed:`, error.message);
+            console.error(`❌ Google Places internal search failed:`, error.message);
             return [];
         }
     }
@@ -702,7 +715,7 @@ async function generatePlaceholderImages(projectId, sceneNumber, keywords, scene
         // 🧠 INTELLIGENT REAL MEDIA DOWNLOAD with retry logic for Scene 3+
         let realImages = [];
         let attempts = 0;
-        const maxAttempts = sceneNumber >= 3 ? 3 : 1; // More attempts for Scene 3+
+        const maxAttempts = sceneNumber >= 3 ? 2 : 1; // Reduced attempts for Scene 3+ to prevent timeout
 
         while (attempts < maxAttempts && realImages.length === 0) {
             attempts++;
