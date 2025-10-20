@@ -194,6 +194,11 @@ Resources:
             BucketName: !Ref VideoBucket
         - DynamoDBCrudPolicy:
             TableName: !Ref ContextTable
+        - Statement:
+            Effect: Allow
+            Action:
+              - secretsmanager:GetSecretValue
+            Resource: !Sub 'arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:automated-video-pipeline/api-keys*'
 
   AudioGeneratorFunction:
     Type: AWS::Serverless::Function
