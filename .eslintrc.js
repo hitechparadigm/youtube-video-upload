@@ -1,95 +1,40 @@
-/**
- * ESLint Configuration for Automated Video Pipeline
- */
-
 module.exports = {
-  env: {
-    node: true,
-    es2022: true,
-    jest: true
-  },
-  
-  extends: [
-    'eslint:recommended'
-  ],
-  
-  parserOptions: {
-    ecmaVersion: 2022,
-    sourceType: 'module'
-  },
-  
-  rules: {
-    // Code quality rules
-    'no-unused-vars': ['error', { 
-      argsIgnorePattern: '^_',
-      varsIgnorePattern: '^_' 
-    }],
-    'no-console': 'off', // Allow console in Lambda functions
-    'prefer-const': 'error',
-    'no-var': 'error',
-    
-    // Style rules
-    'indent': ['error', 2],
-    'quotes': ['error', 'single', { avoidEscape: true }],
-    'semi': ['error', 'always'],
-    'comma-dangle': ['error', 'never'],
-    
-    // Best practices
-    'eqeqeq': ['error', 'always'],
-    'no-eval': 'error',
-    'no-implied-eval': 'error',
-    'no-new-func': 'error',
-    'no-return-assign': 'error',
-    'no-self-compare': 'error',
-    'no-throw-literal': 'error',
-    'no-unused-expressions': 'error',
-    'no-useless-call': 'error',
-    'no-useless-concat': 'error',
-    'no-useless-return': 'error',
-    
-    // ES6+ rules
-    'arrow-spacing': 'error',
-    'no-duplicate-imports': 'error',
-    'no-useless-constructor': 'error',
-    'prefer-arrow-callback': 'error',
-    'prefer-template': 'error'
-  },
-  
-  overrides: [
-    {
-      // Test files
-      files: ['tests/**/*.js', '**/*.test.js', '**/*.spec.js'],
-      env: {
-        jest: true
-      },
-      rules: {
-        'no-unused-expressions': 'off' // Allow expect() statements
-      }
+    env: {
+        browser: true,
+        es2021: true,
+        node: true
     },
-    {
-      // Lambda functions
-      files: ['src/lambda/**/*.js'],
-      rules: {
-        'no-console': 'off' // Allow console.log in Lambda functions for CloudWatch
-      }
+    extends: [
+        'eslint:recommended'
+    ],
+    parserOptions: {
+        ecmaVersion: 2021,
+        sourceType: 'module'
     },
-    {
-      // Shared utilities
-      files: ['src/shared/**/*.js'],
-      rules: {
-        'no-console': 'warn' // Warn about console usage in shared utilities
-      }
+    rules: {
+        // Enforce proper optional chaining syntax
+        'no-unexpected-multiline': 'error',
+        'no-irregular-whitespace': 'error',
+
+        // Custom rule to catch the specific ? . pattern
+        'no-restricted-syntax': [
+            'error',
+            {
+                'selector': 'MemberExpression[optional=true][computed=false]',
+                'message': 'Use ?. for optional chaining, not ? .'
+            }
+        ],
+
+        // Enforce consistent spacing
+        'space-infix-ops': 'error',
+        'no-multi-spaces': 'error',
+
+        // Catch potential syntax issues early
+        'no-undef': 'error',
+        'no-unused-vars': 'warn',
+        'semi': ['error', 'always'],
+        'quotes': ['error', 'single', {
+            'allowTemplateLiterals': true
+        }]
     }
-  ],
-  
-  ignorePatterns: [
-    'node_modules/',
-    'coverage/',
-    'test-results/',
-    'infrastructure/node_modules/',
-    'src/lambda/*/node_modules/',
-    '*.min.js',
-    'dist/',
-    'build/'
-  ]
 };

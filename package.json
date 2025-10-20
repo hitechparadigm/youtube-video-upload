@@ -6,6 +6,7 @@
     "scripts": {
         "test": "npm run test:syntax && npm run test:pipeline",
         "test:syntax": "node scripts/validate-syntax.js",
+        "pre-commit": "npm run test:syntax && npm run lint",
         "test:pipeline": "node test-simplified-pipeline.js",
         "test:full": "node test-final-working-pipeline.js",
         "build": "sam build --template-file template-simplified.yaml",

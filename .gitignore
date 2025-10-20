@@ -145,3 +145,13 @@ src/layers/*/nodejs/package-lock.json
 # Local development
 local-config.json
 dev-settings.json
+
+# IDE and editor files
+.vscode/
+!.vscode/settings.json
+.idea/
+*.swp
+*.swo
+
+# Git hooks
+.husky/_

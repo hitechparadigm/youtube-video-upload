@@ -1,0 +1,15 @@
+#!/usr/bin/env sh
+. "$(dirname -- "$0")/_/husky.sh"
+
+echo "🔍 Running pre-commit syntax validation..."
+
+# Run our custom syntax validator
+node scripts/validate-syntax.js
+
+# If validation passes, continue with commit
+if [ $? -eq 0 ]; then
+    echo "✅ Pre-commit validation passed"
+else
+    echo "❌ Pre-commit validation failed - commit blocked"
+    exit 1
+fi

@@ -1,8 +1,7 @@
 #!/usr/bin/env node
 
 /**
- * Syntax Validation Script for CI/CD
- * Validates all Lambda function syntax before deployment
+ * Syntax validation script to catch optional chaining errors early
  */
 
 const fs = require('fs');
@@ -11,64 +10,86 @@ const {
     execSync
 } = require('child_process');
 
-console.log('🔍 VALIDATING LAMBDA FUNCTION SYNTAX');
-console.log('===================================');
+console.log('🔍 Running comprehensive syntax validation...\n');
 
+// Find all JavaScript files in Lambda functions
 const lambdaDir = path.join(__dirname, '..', 'src', 'lambda');
-let totalFunctions = 0;
-let validFunctions = 0;
-let errors = [];
+const lambdaFunctions = fs.readdirSync(lambdaDir);
 
-// Get all Lambda function directories
-const functionDirs = fs.readdirSync(lambdaDir, {
-        withFileTypes: true
-    })
-    .filter(dirent => dirent.isDirectory())
-    .map(dirent => dirent.name);
+let totalErrors = 0;
+let totalWarnings = 0;
 
-console.log(`Found ${functionDirs.length} Lambda functions to validate\n`);
+for (const functionName of lambdaFunctions) {
+    const functionPath = path.join(lambdaDir, functionName);
+    const indexPath = path.join(functionPath, 'index.js');
 
-for (const funcDir of functionDirs) {
-    const indexPath = path.join(lambdaDir, funcDir, 'index.js');
+    if (!fs.existsSync(indexPath)) continue;
 
-    if (fs.existsSync(indexPath)) {
-        totalFunctions++;
-        console.log(`Validating ${funcDir}/index.js...`);
+    console.log(`📁 Validating: ${functionName}`);
 
+    try {
+        // 1. Check for the specific ?. pattern
+        const content = fs.readFileSync(indexPath, 'utf8');
+        const badPatterns = content.match(/\?\s+\./g);
+
+        if (badPatterns) {
+            console.log(`   ❌ Found ${badPatterns.length} instances of "?." instead of "?."`);
+            totalErrors += badPatterns.length;
+
+            // Show line numbers
+            const lines = content.split('\n');
+            lines.forEach((line, index) => {
+                if (line.match(/\?\s+\./)) {
+                    console.log(`      Line ${index + 1}: ${line.trim()}`);
+                }
+            });
+        }
+
+        // 2. Node.js syntax validation
         try {
-            // Use Node.js to check syntax
             execSync(`node -c "${indexPath}"`, {
                 stdio: 'pipe'
             });
-            console.log(`  ✅ ${funcDir}: Syntax valid`);
-            validFunctions++;
+            console.log(`   ✅ Node.js syntax validation passed`);
         } catch (error) {
-            console.log(`  ❌ ${funcDir}: Syntax error`);
-            console.log(`     ${error.message}`);
-            errors.push({
-                function: funcDir,
-                error: error.message
-            });
+            console.log(`   ❌ Node.js syntax error: ${error.message}`);
+            totalErrors++;
         }
-    } else {
-        console.log(`  ⚠️ ${funcDir}: No index.js found`);
+
+        // 3. ESLint validation (if available)
+        try {
+            execSync(`npx eslint "${indexPath}"`, {
+                stdio: 'pipe'
+            });
+            console.log(`   ✅ ESLint validation passed`);
+        } catch (error) {
+            const output = error.stdout ?.toString() || error.message;
+            if (output.includes('warning')) {
+                console.log(`   ⚠️  ESLint warnings found`);
+                totalWarnings++;
+            } else {
+                console.log(`   ❌ ESLint errors found`);
+                totalErrors++;
+            }
+        }
+
+    } catch (error) {
+        console.log(`   ❌ Validation failed: ${error.message}`);
+        totalErrors++;
     }
+
+    console.log('');
 }
 
-console.log('\n📊 VALIDATION SUMMARY');
-console.log('====================');
-console.log(`✅ Valid functions: ${validFunctions}/${totalFunctions}`);
-console.log(`❌ Invalid functions: ${errors.length}`);
+// Summary
+console.log('📊 Validation Summary:');
+console.log(`   Errors: ${totalErrors}`);
+console.log(`   Warnings: ${totalWarnings}`);
 
-if (errors.length > 0) {
-    console.log('\n❌ SYNTAX ERRORS FOUND:');
-    errors.forEach(error => {
-        console.log(`   - ${error.function}: ${error.error}`);
-    });
-    console.log('\n🔧 Please fix syntax errors before deployment');
+if (totalErrors > 0) {
+    console.log('\n🚨 Syntax errors found! Please fix before committing.');
     process.exit(1);
 } else {
-    console.log('\n🎉 All Lambda functions have valid syntax!');
-    console.log('✅ Ready for deployment');
+    console.log('\n✅ All syntax validation passed!');
     process.exit(0);
 }
