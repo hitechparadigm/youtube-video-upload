@@ -1,6 +1,6 @@
 # 📚 Documentation Index - Automated Video Pipeline
 
-**Last Updated**: October 20, 2025  
+**Last Updated**: October 20, 2025
 **Status**: ✅ **Real Media Generation Complete**
 
 ## 🎯 **Quick Start (Read These First)**
@@ -9,11 +9,16 @@
 2. **[KIRO_ENTRY_POINT.md](KIRO_ENTRY_POINT.md)** - Current system status and capabilities
 3. **[REAL_MEDIA_GENERATION_COMPLETE.md](REAL_MEDIA_GENERATION_COMPLETE.md)** - Latest enhancement summary
 
+## 🚨 **Critical Troubleshooting**
+
+- **[TROUBLESHOOTING_MEDIA_DOWNLOAD.md](TROUBLESHOOTING_MEDIA_DOWNLOAD.md)** - **CRITICAL: Fix for placeholder image issues**
+- **[SYNTAX_ERROR_PREVENTION.md](SYNTAX_ERROR_PREVENTION.md)** - Prevent optional chaining syntax errors
+
 ## 📋 **Core Documentation**
 
 ### **Architecture & Design**
 - **[COMPLETE_ARCHITECTURE_GUIDE.md](COMPLETE_ARCHITECTURE_GUIDE.md)** - Comprehensive system architecture with AI intelligence documentation
-- **[DEPLOYMENT_GUIDE.md](DEPLOYMENT_GUIDE.md)** - Step-by-step deployment instructions
+- **[DEPLOYMENT_GUIDE.md](DEPLOYMENT_GUIDE.md)** - Step-by-step deployment instructions with critical IAM requirements
 
 ### **Implementation Specs**
 - **[Real Media Generation Spec](.kiro/specs/real-media-generation/)** - Complete specification for intelligent media generation

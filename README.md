@@ -1,8 +1,8 @@
 # 🎬 Automated Video Pipeline - AI-Powered Real Media Generation
 
-**Version**: 5.0.0  
-**Status**: ✅ **REAL MEDIA GENERATION IMPLEMENTED**  
-**Architecture**: Intelligent AI-Powered Content Creation with External API Integration  
+**Version**: 5.0.0
+**Status**: ✅ **REAL MEDIA GENERATION IMPLEMENTED**
+**Architecture**: Intelligent AI-Powered Content Creation with External API Integration
 **Capabilities**: 🧠 **SMART PEXELS/PIXABAY INTEGRATION WITH DUPLICATE PREVENTION**
 
 ---
@@ -33,20 +33,27 @@ The Automated Video Pipeline now features **intelligent AI-powered media generat
 ✅ Triple-API System: FULLY OPERATIONAL (Google Places + Pexels + Pixabay)
 ✅ Real Media Generation: CONFIRMED (3MB+ videos and high-quality images)
 ✅ Media Curator: DEPLOYED (Minor runtime issues to resolve)
-✅ Audio Generator: DEPLOYED (Minor runtime issues to resolve)  
+✅ Audio Generator: DEPLOYED (Minor runtime issues to resolve)
 ✅ Manifest Builder: DEPLOYED (Quality gatekeeper)
 ```
 
 ### **Deploy Enhanced System**
 ```bash
 # Deploy intelligent media generation system
-node deploy-real-media-generation.js
+sam build --template-file template-simplified.yaml
+sam deploy --guided
 
-# Expected results:
-# ✅ Media Curator: Enhanced with Pexels/Pixabay integration
-# ✅ Video Assembler: Real MP4 validation implemented
-# ✅ All Functions: AI documentation and optimization complete
+# ⚠️ CRITICAL: Ensure API keys are configured in AWS Secrets Manager
+# Secret name: automated-video-pipeline/api-keys
+# Required keys: pexels-api-key, pixabay-api-key, google-places-api-key
 ```
+
+### **🚨 CRITICAL SETUP REQUIREMENT**
+**Media Curator MUST have Secrets Manager permissions** to download real media:
+- IAM permission: `secretsmanager:GetSecretValue`
+- Resource: `arn:aws:secretsmanager:*:*:secret:automated-video-pipeline/api-keys*`
+- **Without this permission**: Media Curator falls back to 47-byte placeholder files
+- **With this permission**: Downloads MB-sized real images and videos
 
 ### **Test Real Media Generation**
 ```bash
@@ -194,9 +201,13 @@ The core architectural problems are **completely solved**. Remaining tasks are m
 3. **`SIMPLIFIED_ARCHITECTURE_DESIGN.md`** - Detailed technical design
 4. **`DEPLOYMENT_GUIDE.md`** - Step-by-step deployment instructions
 
+### **🚨 Critical Troubleshooting Guides**
+- **`TROUBLESHOOTING_MEDIA_DOWNLOAD.md`** - **CRITICAL: Fix for placeholder image issues (47-byte files)**
+- **`SYNTAX_ERROR_PREVENTION.md`** - Prevent optional chaining syntax errors in CI/CD
+
 ### **Reference Materials**
 - **`DOCUMENTATION_INDEX.md`** - Complete guide to all documentation
-- **`ARCHITECTURAL_SIMPLIFICATION_SUMMARY.md`** - Problem analysis and solution
+- **`REAL_MEDIA_GENERATION_COMPLETE.md`** - AI-powered content creation details
 - **`CHANGELOG.md`** - Version history and updates
 - **`.kiro/specs/`** - Updated specification documents
 

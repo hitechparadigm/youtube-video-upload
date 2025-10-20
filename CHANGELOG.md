@@ -7,6 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [5.0.1] - 2025-10-20 - 🔧 Critical Secrets Manager Fix
+
+### 🚨 Critical Bug Fix
+- **FIXED: Media Curator Secrets Manager Permission Issue**
+  - **Root Cause**: Media Curator Lambda function lacked `secretsmanager:GetSecretValue` IAM permission
+  - **Symptom**: All media downloads fell back to 47-53 byte placeholder text files instead of real content
+  - **Impact**: Pipeline reported "success" but generated tiny placeholder files, no real YouTube videos
+  - **Solution**: Added Secrets Manager IAM permission to Media Curator in SAM template
+  - **Result**: Real media download now works (MB-sized files), duplicate prevention functions properly
+
+### 📚 Documentation Updates
+- Added comprehensive troubleshooting guide for media download failures
+- Updated deployment guide with complete IAM permission requirements
+- Enhanced architecture documentation with permission matrix
+- Created debugging procedures for future media download issues
+
+---
+
 ## [5.0.0] - 2025-10-20 - 🧠 Real Media Generation Complete
 
 ### 🎯 Major Features Added
@@ -14,7 +32,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Google Places API v1**: Authentic location photos with Places API v1 for enhanced travel content
 - **Smart Priority Scoring**: Intelligent ranking system (Google Places > Pexels > Pixabay) for optimal content
 - **Location Intelligence**: Automatic location extraction and context-aware place photo selection
-- **Smart Content Mixing**: Automatic blend of images and video clips based on scene context  
+- **Smart Content Mixing**: Automatic blend of images and video clips based on scene context
 - **Duplicate Prevention**: Advanced content hashing prevents repeated media across projects
 - **Multi-API Intelligence**: Google Places → Pexels → Pixabay → Compare workflow with intelligent selection
 - **Quality Validation**: Real content verification with automatic fallback mechanisms
@@ -176,7 +194,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### 🎉 Added
 - **Complete 6-Agent System**: Full pipeline implementation
   - Topic Management AI
-  - Script Generator AI  
+  - Script Generator AI
   - Media Curator AI
   - Audio Generator AI
   - Video Assembler AI
@@ -361,7 +379,7 @@ FFmpegLayer:
   Properties:
     LayerName: !Sub 'ffmpeg-layer-${Environment}'
     CompatibleRuntimes: [nodejs22.x]
-    
+
 VideoAssemblerFunction:
   Properties:
     Layers: [!Ref FFmpegLayer]
@@ -403,7 +421,7 @@ VideoAssemblerFunction:
 - **Solution**: Removed redundant dependency (implicit dependency already exists via `!Ref`)
 - **Result**: SAM template validation now passes without warnings
 
-#### **2. JavaScript URL Construction Bug** 
+#### **2. JavaScript URL Construction Bug**
 - **Problem**: `new URL(endpoint, baseUrl)` strips API Gateway stage from base URL
 - **Example**: `new URL('/', 'https://api.com/prod')` → `https://api.com/` (missing `/prod`)
 - **Solution**: Fixed URL concatenation to preserve API Gateway stage
@@ -420,7 +438,7 @@ VideoAssemblerFunction:
 #### **Before Fix (Failing)**
 ```
 🔒 API Gateway Root Check: FORBIDDEN (403)
-🔒 Topic Management Health: FORBIDDEN (403)  
+🔒 Topic Management Health: FORBIDDEN (403)
 🔒 Script Generation Health: FORBIDDEN (403)
 📊 Validation Summary: 0/4 tests passed
 ```
@@ -429,7 +447,7 @@ VideoAssemblerFunction:
 ```
 ✅ API Gateway Root Check: PASSED (200 OK)
 ✅ Topic Management Health: PASSED (200 OK)
-✅ Script Generation Health: PASSED (200 OK)  
+✅ Script Generation Health: PASSED (200 OK)
 ✅ Topic Creation Test: PASSED (200 OK)
 📊 Validation Summary: 4/4 tests passed
 ```

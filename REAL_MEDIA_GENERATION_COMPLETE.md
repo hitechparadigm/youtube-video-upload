@@ -96,6 +96,32 @@ aws --profile hitechparadigm s3 ls s3://automated-video-pipeline-v2-786673323159
 
 ### **Common Issues and Solutions**
 
+## 🚨 **CRITICAL FIX: Secrets Manager Permission**
+
+**DISCOVERED ISSUE**: Media Curator was falling back to placeholder images due to missing IAM permission.
+
+**Root Cause**: Media Curator Lambda function lacked `secretsmanager:GetSecretValue` permission to access API keys.
+
+**Symptoms**:
+- ❌ 47-53 byte placeholder text files instead of MB-sized real media
+- ❌ All media sources show "fallback" instead of "pexels"/"pixabay"/"google-places"
+- ❌ Pipeline reports "success" but creates no actual YouTube videos
+
+**Fix Applied**: Added Secrets Manager IAM permission to Media Curator in SAM template:
+```yaml
+- Statement:
+    Effect: Allow
+    Action:
+      - secretsmanager:GetSecretValue
+    Resource: !Sub 'arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:automated-video-pipeline/api-keys*'
+```
+
+**Result**: Real media download now works properly with duplicate prevention on actual unique content.
+
+**See**: [TROUBLESHOOTING_MEDIA_DOWNLOAD.md](TROUBLESHOOTING_MEDIA_DOWNLOAD.md) for complete diagnostic procedures.
+
+---
+
 **Issue**: Still getting placeholder images
 ```bash
 # Check API keys in Secrets Manager

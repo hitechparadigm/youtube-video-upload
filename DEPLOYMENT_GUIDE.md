@@ -8,8 +8,8 @@
 
 # 🚀 DEPLOYMENT GUIDE - Simplified Architecture
 
-**Version**: 4.0.0  
-**Date**: October 17, 2025  
+**Version**: 4.0.0
+**Date**: October 17, 2025
 **Architecture**: Infrastructure as Code with SAM Template
 
 ---
@@ -47,6 +47,7 @@ Your AWS credentials need permissions for:
 - S3 buckets (create, read, write)
 - DynamoDB tables (create, read, write)
 - IAM roles (create for Lambda execution)
+- **🚨 CRITICAL: Secrets Manager (read access for API keys)**
 
 ---
 
@@ -140,6 +141,36 @@ export API_URL="https://your-api-id.execute-api.us-east-1.amazonaws.com/prod"
 # From SAM deployment output or AWS Console
 export API_KEY="your-api-key-here"
 ```
+
+### **🚨 CRITICAL Step 2.5: Configure External API Keys**
+**REQUIRED for real media generation (not placeholder files):**
+
+```bash
+# Create the required secret in AWS Secrets Manager
+aws secretsmanager create-secret \
+  --name "automated-video-pipeline/api-keys" \
+  --description "API keys for external media services" \
+  --secret-string '{
+    "pexels-api-key": "your-pexels-api-key",
+    "pixabay-api-key": "your-pixabay-api-key",
+    "google-places-api-key": "your-google-places-api-key"
+  }'
+
+# Verify the secret was created
+aws secretsmanager get-secret-value \
+  --secret-id "automated-video-pipeline/api-keys"
+```
+
+**⚠️ Without these API keys:**
+- Media Curator will generate 47-53 byte placeholder text files
+- No real images or videos will be downloaded
+- YouTube videos will not be created
+- Pipeline will report "success" but produce no actual content
+
+**✅ With these API keys:**
+- Media Curator downloads MB-sized real images and videos
+- Duplicate prevention works with actual unique content
+- Real MP4 videos are created and uploaded to YouTube
 
 ### **Step 3: Run Simplified Test**
 ```bash
