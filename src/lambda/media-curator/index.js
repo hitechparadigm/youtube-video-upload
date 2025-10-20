@@ -423,12 +423,12 @@ async function curateMediaForScenes(projectId, sceneContext, baseTopic) {
 
     for (const scene of scenes) {
         const sceneNumber = scene.sceneNumber;
-        const searchKeywords = scene.visualRequirements ? .searchKeywords || [baseTopic];
+        const searchKeywords = scene.visualRequirements ?.searchKeywords || [baseTopic];
 
         // Pass complete scene context for AI-powered media selection
         const sceneContext = {
-            sceneType: scene.visualRequirements ? .sceneType || 'informative',
-            emotionalTone: scene.visualRequirements ? .emotionalTone || 'neutral',
+            sceneType: scene.visualRequirements ?.sceneType || 'informative',
+            emotionalTone: scene.visualRequirements ?.emotionalTone || 'neutral',
             purpose: scene.purpose || 'content',
             title: scene.title || `Scene ${sceneNumber}`,
             duration: scene.duration || 60
@@ -575,7 +575,7 @@ async function downloadRealImages(searchQuery, count, sceneContext = {}, usedCon
             })));
             console.log(`✅ Pexels: Found ${pexelsResults.value.length} candidates`);
         } else {
-            console.log(`⚠️ Pexels search failed:`, pexelsResults.reason ? .message);
+            console.log(`⚠️ Pexels search failed:`, pexelsResults.reason ?.message);
         }
 
         if (pixabayResults.status === 'fulfilled') {
@@ -585,7 +585,7 @@ async function downloadRealImages(searchQuery, count, sceneContext = {}, usedCon
             })));
             console.log(`✅ Pixabay: Found ${pixabayResults.value.length} candidates`);
         } else {
-            console.log(`⚠️ Pixabay search failed:`, pixabayResults.reason ? .message);
+            console.log(`⚠️ Pixabay search failed:`, pixabayResults.reason ?.message);
         }
 
         if (googlePlacesResults.status === 'fulfilled') {
@@ -595,7 +595,7 @@ async function downloadRealImages(searchQuery, count, sceneContext = {}, usedCon
             })));
             console.log(`✅ Google Places: Found ${googlePlacesResults.value.length} candidates`);
         } else {
-            console.log(`⚠️ Google Places search failed:`, googlePlacesResults.reason ? .message);
+            console.log(`⚠️ Google Places search failed:`, googlePlacesResults.reason ?.message);
         }
 
         if (allCandidates.length === 0) {
@@ -1034,7 +1034,7 @@ async function searchPexelsVideos(query, count, apiKeys) {
     const data = await response.json();
     return data.videos.map(video => ({
         type: 'video',
-        downloadUrl: video.video_files.find(f => f.quality === 'hd' || f.quality === 'sd') ? .link || video.video_files[0] ? .link,
+        downloadUrl: video.video_files.find(f => f.quality === 'hd' || f.quality === 'sd') ?.link || video.video_files[0] ?.link,
         pageUrl: video.url,
         photographer: video.user.name,
         width: video.width,
@@ -1119,11 +1119,11 @@ async function searchPixabayVideos(query, count, apiKeys) {
 
     return data.hits.map(hit => ({
         type: 'video',
-        downloadUrl: hit.videos.medium ? .url || hit.videos.small ? .url || hit.videos.tiny ? .url,
+        downloadUrl: hit.videos.medium ?.url || hit.videos.small ?.url || hit.videos.tiny ?.url,
         pageUrl: hit.pageURL,
         photographer: hit.user,
-        width: hit.videos.medium ? .width || hit.videos.small ? .width,
-        height: hit.videos.medium ? .height || hit.videos.small ? .height,
+        width: hit.videos.medium ?.width || hit.videos.small ?.width,
+        height: hit.videos.medium ?.height || hit.videos.small ?.height,
         duration: hit.duration,
         description: hit.tags,
         views: hit.views,
