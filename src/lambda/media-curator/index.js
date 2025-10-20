@@ -67,11 +67,12 @@ class MultiSceneProcessor {
     constructor() {
         this.sceneDelays = {
             1: 0, // No delay for first scene
-            2: 2000, // 2 second delay before Scene 2
-            3: 5000, // 5 second delay before Scene 3
-            default: 8000 // 8 second delay for additional scenes
+            2: 4000, // 4 second delay before Scene 2 (increased)
+            3: 10000, // 10 second delay before Scene 3 (increased)
+            default: 15000 // 15 second delay for additional scenes (increased)
         };
-        this.apiRotation = ['googlePlaces', 'pexels', 'pixabay'];
+        // Prioritize Google Places heavily for travel content
+        this.apiRotation = ['googlePlaces', 'googlePlaces', 'pexels', 'pixabay'];
         this.usedContent = new Set(); // Track content across scenes
         this.sceneProcessingStats = new Map(); // Track processing stats per scene
     }
@@ -433,29 +434,71 @@ class GooglePlacesManager {
     }
 
     async searchLocationPhotos(query, maxResults = 6) {
-        console.log(`🗺️ Searching Google Places photos for: '${query}'`);
+        console.log(`🗺️ Searching Google Places photos for: '${query}' (requesting ${maxResults} photos)`);
 
         try {
-            // Search for places related to the query
-            const places = await this.searchPlaces(query);
+            // Try multiple search strategies for better coverage
+            const searchStrategies = [{
+                query: query,
+                type: 'tourist_attraction'
+            },
+            {
+                query: query,
+                type: 'point_of_interest'
+            },
+            {
+                query: `${query} landmarks`,
+                type: 'tourist_attraction'
+            },
+            {
+                query: `${query} attractions`,
+                type: 'point_of_interest'
+            }
+            ];
 
-            if (places.length === 0) {
-                console.log(`⚠️ No places found for query: '${query}'`);
+            const allPlaces = new Set(); // Use Set to avoid duplicates
+
+            // Try each search strategy
+            for (const strategy of searchStrategies) {
+                if (allPlaces.size >= maxResults * 2) break; // Stop if we have enough places
+
+                const places = await this.searchPlaces(strategy.query, strategy.type);
+                places.forEach(place => {
+                    if (place.place_id) {
+                        allPlaces.add(JSON.stringify(place)); // Use JSON string to ensure uniqueness
+                    }
+                });
+
+                // Small delay between searches
+                await new Promise(resolve => setTimeout(resolve, 200));
+            }
+
+            const uniquePlaces = Array.from(allPlaces).map(placeStr => JSON.parse(placeStr));
+            console.log(`🔍 Found ${uniquePlaces.length} unique places from ${searchStrategies.length} search strategies`);
+
+            if (uniquePlaces.length === 0) {
+                console.log(`⚠️ No places found for any search strategy with query: '${query}'`);
                 return [];
             }
 
             const allPhotos = [];
-            const placesToProcess = places.slice(0, Math.ceil(maxResults / 2)); // Process top places
+            // Process more places for better photo coverage
+            const placesToProcess = uniquePlaces.slice(0, Math.min(uniquePlaces.length, maxResults));
 
             for (const place of placesToProcess) {
                 if (allPhotos.length >= maxResults) break;
 
-                const photosNeeded = Math.min(2, maxResults - allPhotos.length);
+                const photosNeeded = Math.min(3, maxResults - allPhotos.length); // Increased from 2 to 3
                 const placePhotos = await this.getPlacePhotos(place, photosNeeded);
                 allPhotos.push(...placePhotos);
+
+                // Small delay between photo downloads
+                if (placePhotos.length > 0) {
+                    await new Promise(resolve => setTimeout(resolve, 300));
+                }
             }
 
-            console.log(`🎯 Google Places: Retrieved ${allPhotos.length} location photos`);
+            console.log(`🎯 Google Places: Retrieved ${allPhotos.length} location photos from ${placesToProcess.length} places`);
             return allPhotos;
 
         } catch (error) {
@@ -656,8 +699,31 @@ async function generatePlaceholderImages(projectId, sceneNumber, keywords, scene
     const searchQuery = keywords.join(' ') + ' travel';
 
     try {
-        // 🧠 INTELLIGENT REAL MEDIA DOWNLOAD with AI comparison and duplicate prevention
-        const realImages = await downloadRealImages(searchQuery, 4, sceneContext, usedContentHashes, usedContentUrls, apiPriority);
+        // 🧠 INTELLIGENT REAL MEDIA DOWNLOAD with retry logic for Scene 3+
+        let realImages = [];
+        let attempts = 0;
+        const maxAttempts = sceneNumber >= 3 ? 3 : 1; // More attempts for Scene 3+
+
+        while (attempts < maxAttempts && realImages.length === 0) {
+            attempts++;
+            console.log(`🔄 Attempt ${attempts}/${maxAttempts} for scene ${sceneNumber}`);
+
+            try {
+                realImages = await downloadRealImages(searchQuery, 4, sceneContext, usedContentHashes, usedContentUrls, apiPriority);
+
+                if (realImages.length === 0 && attempts < maxAttempts) {
+                    console.log(`⚠️ No images found on attempt ${attempts}, retrying with expanded query...`);
+                    // Expand search query for retry
+                    const expandedQuery = `${searchQuery} attractions landmarks sightseeing`;
+                    realImages = await downloadRealImages(expandedQuery, 4, sceneContext, usedContentHashes, usedContentUrls, ['googlePlaces', 'googlePlaces', 'pexels']);
+                }
+            } catch (error) {
+                console.error(`❌ Attempt ${attempts} failed:`, error.message);
+                if (attempts < maxAttempts) {
+                    await new Promise(resolve => setTimeout(resolve, 2000)); // Wait 2s before retry
+                }
+            }
+        }
 
         for (let i = 0; i < realImages.length; i++) {
             // Determine correct file extension and content type based on media type
@@ -709,9 +775,47 @@ async function generatePlaceholderImages(projectId, sceneNumber, keywords, scene
 
     } catch (error) {
         console.error(`❌ Failed to download real images for scene ${sceneNumber}:`, error.message);
-        console.log(`🔄 Falling back to placeholder images for scene ${sceneNumber}`);
 
-        // Fallback to placeholder images if real download fails
+        // For Scene 3+, try one final attempt with generic travel terms before falling back
+        if (sceneNumber >= 3) {
+            console.log(`🚨 Final attempt for Scene ${sceneNumber} with generic travel terms...`);
+            try {
+                const genericQuery = `travel destination attractions landmarks`;
+                const finalAttempt = await downloadRealImages(genericQuery, 4, sceneContext, new Set(), new Set(), ['googlePlaces', 'pexels']);
+
+                if (finalAttempt.length > 0) {
+                    console.log(`✅ Final attempt succeeded with ${finalAttempt.length} images`);
+
+                    const images = [];
+                    for (let i = 0; i < finalAttempt.length; i++) {
+                        const s3Key = `videos/${projectId}/03-media/scene-${sceneNumber}/images/${i + 1}-${keywords[0] || 'travel'}-scene-${sceneNumber}.jpg`;
+
+                        await s3Client.send(new PutObjectCommand({
+                            Bucket: process.env.S3_BUCKET,
+                            Key: s3Key,
+                            Body: finalAttempt[i].buffer,
+                            ContentType: 'image/jpeg'
+                        }));
+
+                        images.push({
+                            imageNumber: i + 1,
+                            s3Key: s3Key,
+                            keywords: keywords,
+                            size: finalAttempt[i].buffer.length,
+                            source: finalAttempt[i].source,
+                            type: finalAttempt[i].type || 'image'
+                        });
+                    }
+
+                    return images;
+                }
+            } catch (finalError) {
+                console.error(`❌ Final attempt also failed:`, finalError.message);
+            }
+        }
+
+        console.log(`🔄 All attempts failed, falling back to placeholder images for scene ${sceneNumber}`);
+        // Fallback to placeholder images if all attempts fail
         return await generateFallbackImages(projectId, sceneNumber, keywords);
     }
 }
@@ -753,7 +857,9 @@ async function downloadRealImages(searchQuery, count, sceneContext = {}, usedCon
                     apiNames.push('pixabay');
                     break;
                 case 'googlePlaces':
-                    apiSearchPromises.push(searchGooglePlacesIntelligent(searchQuery, Math.ceil(count * 0.5), sceneContext, apiKeys));
+                    // Increase Google Places results for better coverage, especially for Scene 3+
+                    const googlePlacesCount = Math.ceil(count * 1.5); // Increased from 0.5 to 1.5
+                    apiSearchPromises.push(searchGooglePlacesIntelligent(searchQuery, googlePlacesCount, sceneContext, apiKeys));
                     apiNames.push('googlePlaces');
                     break;
             }
@@ -987,14 +1093,16 @@ async function intelligentContentSelection(candidates, targetCount, originalQuer
             // Enhanced source scoring with API priority and load distribution
             let sourceScore = 1.0;
 
-            // Use priority information if available (lower priority number = higher score)
-            if (candidate.priority) {
+            // Heavily prioritize Google Places for travel content
+            if (candidate.source === 'google-places') {
+                sourceScore = 1.5; // Highest priority for authentic location photos
+            } else if (candidate.priority) {
                 sourceScore = 1.3 - (candidate.priority * 0.1); // Priority 1 = 1.2, Priority 2 = 1.1, Priority 3 = 1.0
             } else {
                 // Fallback to default scoring
-                if (candidate.source === 'google-places') sourceScore = 1.2;
-                else if (candidate.source === 'pexels') sourceScore = 1.1;
+                if (candidate.source === 'pexels') sourceScore = 1.1;
                 else if (candidate.source === 'pixabay') sourceScore = 1.0;
+                else sourceScore = 0.8; // Lower score for unknown sources
             }
 
             return {
