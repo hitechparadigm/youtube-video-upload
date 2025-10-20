@@ -1,6 +1,36 @@
 /**
- * SIMPLIFIED Topic Management Lambda - No Shared Layer Dependencies
- * Eliminates architectural complexity and configuration drift
+ * 🧠 TOPIC MANAGEMENT AI - INTELLIGENT CONTENT FOUNDATION
+ * 
+ * CORE AI INTELLIGENCE:
+ * This Lambda serves as the foundational AI agent that transforms raw topics into
+ * structured, contextual requirements that drive the entire video generation pipeline.
+ * 
+ * AI RESPONSIBILITIES:
+ * 1. Topic Analysis & Expansion: Breaks down broad topics into specific, actionable subtopics
+ * 2. Visual Needs Generation: Creates AI-powered visual requirements for each subtopic
+ * 3. Value Proposition Creation: Generates compelling value statements for audience engagement
+ * 4. SEO Context Building: Develops keyword strategies and search optimization context
+ * 5. Content Structure Planning: Establishes the foundation for downstream AI agents
+ * 
+ * AI OUTPUT INTELLIGENCE:
+ * The AI generates structured context that feeds into Script Generator AI:
+ * {
+ *   "subtopic": "Complete 7-day Madrid-Barcelona-Seville itinerary with exact routes",
+ *   "valueProposition": "Save 20+ hours of planning with ready-to-use daily schedules",
+ *   "visualNeeds": ["route maps", "train stations", "timing charts"] // ← Critical for Media Curator AI
+ * }
+ * 
+ * DOWNSTREAM AI IMPACT:
+ * - Script Generator AI uses subtopics and value propositions for scene creation
+ * - Media Curator AI uses visualNeeds for intelligent image/video selection
+ * - Audio Generator AI uses value propositions for engaging narration
+ * - All agents benefit from the structured context and SEO optimization
+ * 
+ * AI INTELLIGENCE FEATURES:
+ * - Contextual Topic Expansion: Creates specific, actionable subtopics from broad themes
+ * - Visual Requirements Generation: AI-powered prediction of optimal visual content
+ * - Audience-Aware Content: Tailors content structure to target audience preferences
+ * - SEO Intelligence: Generates keyword strategies for maximum discoverability
  */
 
 const {

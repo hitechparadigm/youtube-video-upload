@@ -105,6 +105,114 @@ Topic Management → Script Generator → Media Curator → Audio Generator
 
 ---
 
+## 🧠 **AI INTELLIGENCE ARCHITECTURE**
+
+### **The Complete AI Chain: From Topic to Visual Content**
+
+The Automated Video Pipeline implements a sophisticated AI chain where each agent contributes specialized intelligence to create contextually relevant, high-quality video content:
+
+```
+🎯 Topic Management AI → 📝 Script Generator AI → 🖼️ Media Curator AI → 🎬 Video Assembler AI
+```
+
+#### **1. AI Context Flow and Intelligence Transfer**
+
+**Topic Management AI** generates:
+```javascript
+{
+  "subtopic": "Complete 7-day Madrid-Barcelona-Seville itinerary with exact routes",
+  "valueProposition": "Save 20+ hours of planning with ready-to-use daily schedules",
+  "visualNeeds": ["route maps", "train stations", "timing charts"] // ← AI-generated visual keywords
+}
+```
+
+**Script Generator AI** transforms this into scene-specific requirements:
+```javascript
+{
+  "sceneNumber": 1,
+  "title": "Complete 7-day Madrid-Barcelona-Seville itinerary",
+  "visualRequirements": {
+    "searchKeywords": ["route maps", "train stations", "timing charts"], // ← From Topic AI
+    "sceneType": "dynamic_intro", // ← AI determines visual style
+    "emotionalTone": "engaging" // ← AI sets content mood
+  }
+}
+```
+
+**Media Curator AI** uses this intelligence for:
+```javascript
+// AI-powered search optimization
+const contextualQuery = optimizeSearchQuery(
+  scene.visualRequirements.searchKeywords, // AI-generated keywords
+  scene.visualRequirements.sceneType,      // AI-determined style
+  topicContext.mainTopic                   // Overall context
+);
+// Result: "madrid barcelona train route map atocha sants station travel guide"
+
+// AI-powered content selection with relevance scoring
+const scoredContent = await scoreContentRelevance(candidates, sceneContext);
+const selectedMedia = await selectBestContent(scoredContent, duplicateHashes);
+```
+
+#### **2. AI-Powered Duplicate Prevention**
+
+**Cross-Project Intelligence**:
+```javascript
+class DuplicatePreventionAI {
+  async preventDuplicates(mediaBuffer, projectId, sceneNumber) {
+    // 1. Generate perceptual hash for images
+    const imageHash = await generatePerceptualHash(mediaBuffer);
+    
+    // 2. Generate content fingerprint for videos
+    const videoFingerprint = await generateVideoFingerprint(mediaBuffer);
+    
+    // 3. Check against project-wide content database
+    const isDuplicate = await checkProjectDuplicates(imageHash, videoFingerprint, projectId);
+    
+    // 4. Check against scene-specific content to ensure variety
+    const isSceneDuplicate = await checkSceneDuplicates(imageHash, projectId, sceneNumber);
+    
+    return !isDuplicate && !isSceneDuplicate;
+  }
+}
+```
+
+#### **3. Multi-Modal AI Content Selection**
+
+**Intelligent Media Type Selection**:
+```javascript
+// AI determines optimal media mix per scene
+const mediaStrategy = await determineMediaStrategy(scene);
+// Returns: { images: 3, videoClips: 1, preferredRatio: "70% images, 30% video" }
+
+// Scene-specific AI logic:
+if (scene.purpose === 'hook') {
+  // Dynamic content: 50% video clips, 50% striking images
+  return await selectDynamicContent(searchKeywords);
+} else if (scene.purpose === 'content') {
+  // Informative content: 80% specific images, 20% explanatory clips
+  return await selectInformativeContent(searchKeywords);
+}
+```
+
+#### **4. AI Quality and Brand Safety**
+
+**Content Intelligence Filtering**:
+```javascript
+class ContentIntelligenceFilter {
+  async assessContent(mediaBuffer, metadata) {
+    return {
+      qualityScore: await assessVisualQuality(mediaBuffer),     // 0-100 technical quality
+      relevanceScore: await assessRelevance(metadata, context), // 0-100 contextual match
+      brandSafetyScore: await assessBrandSafety(mediaBuffer),   // 0-100 appropriateness
+      uniquenessScore: await assessUniqueness(mediaBuffer)      // 0-100 originality
+    };
+  }
+}
+```
+
+---
+
 ## 🤖 **ALL LAMBDA FUNCTIONS DETAILED**
 
 ### **1. 📋 Topic Management AI (`automated-video-pipeline-topic-management-v3`)**
@@ -199,14 +307,109 @@ REQUIREMENTS:
 
 ### **3. 🖼️ Media Curator AI (`automated-video-pipeline-media-curator-v3`)**
 
-**Role**: Scene-specific media sourcing with proper organization  
+**Role**: Intelligent scene-specific media sourcing with AI-powered content selection  
 **Layers Used**: Context Layer  
-**Key Enhancement**: Fixed to use `scene-N/images/` structure, enhanced visual matching
+**AI Intelligence**: Advanced content curation using contextual search optimization and duplicate prevention
+
+#### **🧠 AI-Powered Media Intelligence**
+
+The Media Curator represents the most sophisticated AI component in the pipeline, implementing:
+
+**1. Triple-API Integration Strategy**:
+```javascript
+// AI Flow: Topic → Script → Media Curator → Triple API Search
+const [pexelsResults, pixabayResults, googlePlacesResults] = await Promise.allSettled([
+    searchPexelsIntelligent(searchQuery, count * 2, apiKeys, sceneContext),
+    searchPixabayIntelligent(searchQuery, count * 2, apiKeys, sceneContext),
+    searchGooglePlacesIntelligent(searchQuery, Math.ceil(count * 0.5), sceneContext)
+]);
+```
+
+**2. Google Places API v1 Integration**:
+- **Authentic Location Photos**: Real place photos for travel and location-based content
+- **Places API v1**: Uses latest Google Places API format for enhanced photo quality
+- **Location Intelligence**: Automatic location extraction from search queries
+- **Priority Scoring**: Highest priority for authentic location content
+
+**3. Multi-Modal Content Selection**:
+- **Google Places**: Authentic location photos with place metadata
+- **Pexels**: High-resolution photos and video clips with quality scoring
+- **Pixabay**: Diverse content library with comprehensive coverage
+- **Smart Filtering**: Brand safety, quality assessment, and contextual relevance
+
+**3. Duplicate Prevention Intelligence**:
+```javascript
+// Perceptual hashing for images + metadata comparison for videos
+const contentHash = await generateContentHash(mediaBuffer);
+const isDuplicate = await checkDuplicateAcrossProject(contentHash, projectId);
+```
+
+**4. Intelligent Priority Scoring System**:
+```javascript
+// Enhanced source scoring with Google Places priority
+let sourceScore = 1.0;
+if (candidate.source === 'google-places') sourceScore = 1.2; // Highest priority for authentic location photos
+else if (candidate.source === 'pexels') sourceScore = 1.1;   // Second priority for quality
+else if (candidate.source === 'pixabay') sourceScore = 1.0;  // Standard priority
+```
+
+**5. Scene-Aware Content Matching**:
+- **Hook Scenes**: Dynamic visuals with Google Places landmarks for travel content
+- **Content Scenes**: Mix of authentic place photos and informative illustrations
+- **Conclusion Scenes**: Summary visuals with location-specific call-to-action imagery
+
+**6. Location Intelligence**:
+```javascript
+// Automatic location extraction for Google Places integration
+function extractLocationFromQuery(query, sceneContext) {
+    // Intelligently identifies location context for authentic place photos
+    const locationQuery = detectTravelDestination(query) || extractPlaceNames(query);
+    return locationQuery + ' tourist attraction landmark';
+}
+```
 
 **What it creates**:
-- `03-media/scene-1/images/` - Organized by scene with proper folder structure
-- `03-media/scene-2/images/` - Multiple images per scene
-- `01-context/media-context.json` - Media inventory and mapping
+- `03-media/scene-1/images/` - High-quality images from Pexels/Pixabay with AI selection
+- `03-media/scene-1/videos/` - Relevant video clips for dynamic scenes
+- `01-context/media-context.json` - Comprehensive media inventory with quality scores
+
+#### **🎯 Intelligent Content Selection Process**
+
+**Step 1: Dual-API Search Strategy**
+```javascript
+// Searches Pexels first (higher quality), then Pixabay
+const [pexelsResults, pixabayResults] = await Promise.allSettled([
+    searchPexelsIntelligent(query, count * 2, apiKeys, sceneContext),
+    searchPixabayIntelligent(query, count * 2, apiKeys, sceneContext)
+]);
+```
+
+**Step 2: AI-Powered Comparison and Selection**
+```javascript
+// Intelligent scoring system compares all candidates
+const scoredCandidates = await Promise.all(candidates.map(async (candidate) => {
+    const relevanceScore = calculateRelevanceScore(candidate, originalQuery, sceneContext);
+    const qualityScore = calculateQualityScore(candidate);
+    const sourceScore = candidate.source === 'pexels' ? 1.1 : 1.0; // Pexels preference
+    
+    return {
+        ...candidate,
+        totalScore: (relevanceScore * 0.5) + (qualityScore * 0.3) + (sourceScore * 0.2)
+    };
+}));
+```
+
+**Step 3: Smart Content Mix Optimization**
+- **Hook Scenes**: 50% video clips, 50% striking images
+- **Content Scenes**: 70% specific images, 30% explanatory clips  
+- **Conclusion Scenes**: 80% summary images, 20% call-to-action videos
+
+**Step 4: Duplicate Prevention**
+```javascript
+// Prevents duplicates across entire project using content hashing
+const isDuplicate = await checkProjectDuplicates(contentHash, projectId);
+const isSceneDuplicate = await checkSceneDuplicates(contentHash, projectId, sceneNumber);
+```
 
 **Real Example - Travel to Spain Media Organization**:
 ```

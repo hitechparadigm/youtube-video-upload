@@ -107,9 +107,20 @@ Thumbs.db
 **/secrets.json
 **/*-credentials.json
 
-# Local test files
+# Local test files and temporary artifacts
 test-*.json
+test-*.js
 sample-*.json
+sample-*.jpg
+sample-*.png
+*-backup.js
+*.js.backup
+*-v[0-9]*.zip
+media-curator-*.zip
+video-assembler-*.zip
+youtube-publisher-*.zip
+deploy-*.js
+*-test-*.js
 
 # Build artifacts
 build/

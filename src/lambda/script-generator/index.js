@@ -1,6 +1,54 @@
 /**
- * SIMPLIFIED Script Generator Lambda - No Shared Layer Dependencies
- * Eliminates architectural complexity and configuration drift
+ * 🧠 SCRIPT GENERATOR AI - INTELLIGENT NARRATIVE CREATION
+ * 
+ * CORE AI INTELLIGENCE:
+ * This Lambda transforms Topic Management AI output into structured, engaging video scripts
+ * with scene-specific visual requirements that drive intelligent media curation.
+ * 
+ * AI TRANSFORMATION PROCESS:
+ * 1. Context Analysis: Processes Topic Management AI output for narrative structure
+ * 2. Scene Intelligence: Creates scene-specific content with timing and visual requirements
+ * 3. Visual Requirements Generation: Transforms topic visualNeeds into scene-specific searchKeywords
+ * 4. Narrative Flow Optimization: Ensures engaging hook → content → conclusion structure
+ * 5. Timing Intelligence: Calculates optimal scene durations for audience retention
+ * 
+ * AI INPUT PROCESSING (from Topic Management AI):
+ * {
+ *   "expandedTopics": [
+ *     {
+ *       "subtopic": "Complete 7-day Madrid-Barcelona-Seville itinerary",
+ *       "visualNeeds": ["route maps", "train stations", "timing charts"], // ← AI-generated
+ *       "valueProposition": "Save 20+ hours of planning"
+ *     }
+ *   ]
+ * }
+ * 
+ * AI OUTPUT INTELLIGENCE (for Media Curator AI):
+ * {
+ *   "scenes": [
+ *     {
+ *       "sceneNumber": 1,
+ *       "visualRequirements": {
+ *         "searchKeywords": ["route maps", "train stations", "timing charts"], // ← From Topic AI
+ *         "sceneType": "dynamic_intro",     // ← AI determines visual style
+ *         "emotionalTone": "engaging"       // ← AI sets content mood
+ *       }
+ *     }
+ *   ]
+ * }
+ * 
+ * AI INTELLIGENCE FEATURES:
+ * - Scene-Aware Visual Requirements: Adapts visual needs to scene purpose (hook/content/conclusion)
+ * - Contextual Search Optimization: Transforms broad topics into specific, searchable keywords
+ * - Narrative Flow Intelligence: Creates engaging progression with optimal timing
+ * - Multi-Modal Content Planning: Determines when to use images vs video clips
+ * - Audience Engagement Optimization: Structures content for maximum viewer retention
+ * 
+ * DOWNSTREAM AI IMPACT:
+ * - Media Curator AI uses visualRequirements for intelligent content selection
+ * - Audio Generator AI uses script content for natural narration generation
+ * - Video Assembler AI uses scene structure for optimal video composition
+ * - Manifest Builder AI uses scene data for quality validation and optimization
  */
 
 const {
