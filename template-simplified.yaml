@@ -257,6 +257,7 @@ Resources:
         Variables:
           FFMPEG_PATH: /opt/bin/ffmpeg
           FFPROBE_PATH: /opt/bin/ffprobe
+          LAYER_VERSION: "2"
       Timeout: 900
       MemorySize: 3008
       Events:
