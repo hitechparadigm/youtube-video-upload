@@ -211,7 +211,7 @@ jobs:
         cat > ffmpeg-layer/layer-metadata.json << EOF
         {
           "layerVersion": "1.0.0-production",
-          "ffmpegVersion": "$(ffmpeg-layer/bin/ffmpeg -version | head -1 | cut -d' ' -f3)",
+          "ffmpegVersion": "$(ffmpeg-layer/opt/bin/ffmpeg -version | head -1 | cut -d' ' -f3)",
           "buildDate": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
           "architecture": "x86_64",
           "runtime": "amazon-linux-2",
@@ -219,13 +219,13 @@ jobs:
           "binaries": {
             "ffmpeg": {
               "path": "/opt/bin/ffmpeg",
-              "size": $(stat -c%s ffmpeg-layer/bin/ffmpeg),
-              "version": "$(ffmpeg-layer/bin/ffmpeg -version | head -1)"
+              "size": $(stat -c%s ffmpeg-layer/opt/bin/ffmpeg),
+              "version": "$(ffmpeg-layer/opt/bin/ffmpeg -version | head -1)"
             },
             "ffprobe": {
               "path": "/opt/bin/ffprobe",
-              "size": $(stat -c%s ffmpeg-layer/bin/ffprobe),
-              "version": "$(ffmpeg-layer/bin/ffprobe -version | head -1)"
+              "size": $(stat -c%s ffmpeg-layer/opt/bin/ffprobe),
+              "version": "$(ffmpeg-layer/opt/bin/ffprobe -version | head -1)"
             }
           }
         }
