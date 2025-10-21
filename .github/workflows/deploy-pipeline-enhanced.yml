@@ -207,11 +207,11 @@ jobs:
 
         cd ../..
 
-        # Create layer metadata
-        cat > ffmpeg-layer/layer-metadata.json << EOF
+        # Create layer metadata (we're now in ffmpeg-layer/ directory)
+        cat > layer-metadata.json << EOF
         {
           "layerVersion": "1.0.0-production",
-          "ffmpegVersion": "$(ffmpeg-layer/opt/bin/ffmpeg -version | head -1 | cut -d' ' -f3)",
+          "ffmpegVersion": "$(opt/bin/ffmpeg -version | head -1 | cut -d' ' -f3)",
           "buildDate": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
           "architecture": "x86_64",
           "runtime": "amazon-linux-2",
@@ -219,20 +219,21 @@ jobs:
           "binaries": {
             "ffmpeg": {
               "path": "/opt/bin/ffmpeg",
-              "size": $(stat -c%s ffmpeg-layer/opt/bin/ffmpeg),
-              "version": "$(ffmpeg-layer/opt/bin/ffmpeg -version | head -1)"
+              "size": $(stat -c%s opt/bin/ffmpeg),
+              "version": "$(opt/bin/ffmpeg -version | head -1)"
             },
             "ffprobe": {
               "path": "/opt/bin/ffprobe",
-              "size": $(stat -c%s ffmpeg-layer/opt/bin/ffprobe),
-              "version": "$(ffmpeg-layer/opt/bin/ffprobe -version | head -1)"
+              "size": $(stat -c%s opt/bin/ffprobe),
+              "version": "$(opt/bin/ffprobe -version | head -1)"
             }
           }
         }
         EOF
 
-        # Package the layer
+        # Package the layer (we're in ffmpeg-layer/ directory, so package current directory)
         echo "📦 Creating layer package..."
+        cd ..
         zip -r ffmpeg-layer.zip ffmpeg-layer/
 
         # Display package info
