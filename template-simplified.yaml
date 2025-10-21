@@ -28,18 +28,20 @@ Globals:
       Architecture: simplified
 
 Resources:
-  # FFmpeg Layer for video processing (Using external pre-built layer)
-  # FFmpegLayer:
-  #   Type: AWS::Lambda::LayerVersion
-  #   Properties:
-  #     LayerName: !Sub 'ffmpeg-layer-${Environment}'
-  #     Description: FFmpeg binaries for video processing
-  #     Content:
-  #       S3Bucket: !Sub 'automated-video-pipeline-deployments-${Environment}'
-  #       S3Key: layers/ffmpeg-layer.zip
-  #     CompatibleRuntimes:
-  #       - nodejs22.x
-  #     LicenseInfo: 'GPL-2.0-or-later'
+  # FFmpeg Layer for video processing (Built by CI/CD Pipeline)
+  FFmpegLayer:
+    Type: AWS::Lambda::LayerVersion
+    Properties:
+      LayerName: !Sub 'ffmpeg-layer-${Environment}'
+      Description: FFmpeg binaries for video processing (Built by CI/CD)
+      Content:
+        S3Bucket: !Sub 'automated-video-pipeline-deployments-${Environment}'
+        S3Key: layers/ffmpeg-layer.zip
+      CompatibleRuntimes:
+        - nodejs18.x
+        - nodejs20.x
+        - nodejs22.x
+      LicenseInfo: 'GPL-2.0-or-later'
 
   # S3 Bucket for video assets
   VideoBucket:
@@ -250,7 +252,7 @@ Resources:
       CodeUri: src/lambda/video-assembler/
       Handler: index.handler
       Layers:
-        - arn:aws:lambda:us-east-1:898466741470:layer:ffmpeg:2
+        - !Ref FFmpegLayer
       Environment:
         Variables:
           FFMPEG_PATH: /opt/bin/ffmpeg

@@ -19,7 +19,7 @@ async function fixCloudFormationStack() {
     try {
         // Check current stack status
         console.log('📊 Checking current stack status...');
-        const statusCmd = `aws cloudformation describe-stacks --stack-name ${stackName} --query 'Stacks[0].StackStatus' --output text`;
+        const statusCmd = `aws cloudformation describe-stacks --stack-name ${stackName} --query "Stacks[0].StackStatus" --output text --profile hitechparadigm`;
         const currentStatus = execSync(statusCmd, {
             encoding: 'utf8'
         }).trim();
@@ -31,7 +31,7 @@ async function fixCloudFormationStack() {
             console.log('🔄 Waiting for rollback to complete...');
 
             // Wait for rollback to complete
-            const waitCmd = `aws cloudformation wait stack-update-complete --stack-name ${stackName}`;
+            const waitCmd = `aws cloudformation wait stack-update-complete --stack-name ${stackName} --profile hitechparadigm`;
             console.log('⏳ This may take several minutes...');
 
             try {
@@ -45,7 +45,8 @@ async function fixCloudFormationStack() {
             }
 
             // Check status again
-            const newStatus = execSync(statusCmd, {
+            const newStatusCmd = `aws cloudformation describe-stacks --stack-name ${stackName} --query "Stacks[0].StackStatus" --output text --profile hitechparadigm`;
+            const newStatus = execSync(newStatusCmd, {
                 encoding: 'utf8'
             }).trim();
             console.log(`New Status: ${newStatus}`);
