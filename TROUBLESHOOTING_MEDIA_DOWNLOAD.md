@@ -1,5 +1,37 @@
 # 🔧 Troubleshooting Guide: Media Download Issues
 
+## 🎬 Critical Issue: Small Video Files (FFmpeg Layer Missing)
+
+### **Symptoms: 17KB Video Files Instead of Real MP4s**
+- Video files are only 17-30 KB instead of MB-sized
+- Video Assembler reports `processingMode: fallback`
+- Files contain assembly instructions instead of real MP4 content
+- `ffmpegAvailable: false` in health checks
+
+### **Solution: Use Enhanced CI/CD Pipeline (Recommended)**
+The CI/CD pipeline automatically builds and deploys the FFmpeg layer:
+
+```bash
+# Deploy via CI/CD (builds FFmpeg layer automatically)
+git push origin main      # → Production deployment
+git push origin develop   # → Development deployment
+
+# Or use GitHub Actions manual deployment
+```
+
+**Benefits:**
+- ✅ Builds production Linux binaries in CI environment
+- ✅ No Windows compatibility issues
+- ✅ Automatic validation and deployment
+
+**Verification:**
+```bash
+node test-ffmpeg-fix.js
+# Should show: FFmpeg Available: ✅, Real MP4 Creation: ✅
+```
+
+---
+
 ## 🚨 Critical Issue: Placeholder Images Instead of Real Media
 
 ### **Symptoms**

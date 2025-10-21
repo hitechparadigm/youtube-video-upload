@@ -25,16 +25,18 @@ An intelligent video creation pipeline that automatically generates professional
 
 ### Prerequisites
 - AWS Account with appropriate permissions
+- GitHub repository with Actions enabled
 - API keys for Pexels, Pixabay, and Google Places
-- Node.js 18+ and AWS CLI
 
-### 1. Deploy Infrastructure
+### 1. Setup CI/CD Pipeline (Recommended)
 ```bash
-# Clone and deploy
+# Clone and setup
 git clone <repository-url>
 cd automated-video-pipeline
-sam build --template-file template-simplified.yaml
-sam deploy --guided
+
+# Configure GitHub Secrets (required for CI/CD)
+# Go to GitHub → Settings → Secrets and variables → Actions
+# Add: AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY
 ```
 
 ### 2. Configure API Keys (CRITICAL)
@@ -49,20 +51,45 @@ aws secretsmanager create-secret \
   }'
 ```
 
-### 3. Test the Pipeline
+### 3. Deploy via CI/CD (Recommended)
 ```bash
-# Run a test video creation
-node run-france-pipeline.js
+# Deploy to development
+git checkout develop
+git push origin develop
+
+# Deploy to production
+git checkout main
+git push origin main
+
+# Or use manual deployment via GitHub Actions UI
+```
+
+### 4. Alternative: Local Deployment
+```bash
+# Install SAM CLI and deploy locally
+sam deploy --config-env dev
+```
+
+### 5. Test the Pipeline
+```bash
+# Test the deployed pipeline
+node test-complete-pipeline.js
 ```
 
 ## 🚨 Critical Requirements
 
-**Secrets Manager Permission**: The Media Curator Lambda function MUST have `secretsmanager:GetSecretValue` permission to access API keys. Without this:
-- ❌ Only 47-byte placeholder files are created
-- ❌ No real YouTube videos are generated
-- ✅ With permission: MB-sized real media files and actual video creation
+**CI/CD Pipeline**: The enhanced CI/CD pipeline automatically handles:
+- ✅ **FFmpeg Layer**: Production Linux binaries for real MP4 creation
+- ✅ **Secrets Manager**: Proper IAM permissions for API key access
+- ✅ **Scene 3 Fix**: Rate limiting solution for consistent media generation
+- ✅ **Multi-Environment**: Safe dev → staging → production deployment
 
-See [Troubleshooting Guide](TROUBLESHOOTING_MEDIA_DOWNLOAD.md) for complete setup validation.
+**Manual Setup Requirements** (if not using CI/CD):
+- Secrets Manager permission for Media Curator Lambda
+- FFmpeg layer deployment for real video creation
+- API keys properly configured in AWS Secrets Manager
+
+See [CI/CD Deployment Guide](CICD_DEPLOYMENT_GUIDE.md) and [Troubleshooting Guide](TROUBLESHOOTING_MEDIA_DOWNLOAD.md) for complete setup.
 
 ---
 
@@ -107,27 +134,35 @@ Each component stores context in S3 and DynamoDB for the next stage to consume.
 
 ## 🔧 Development
 
+### CI/CD Pipeline (Enhanced)
+The project includes a comprehensive CI/CD pipeline with:
+- **Production FFmpeg Layer**: Real MP4 video creation
+- **Multi-Environment Support**: Dev, Staging, Production
+- **Smart Deployment**: Conditional deployment based on changes
+- **Comprehensive Testing**: Multi-stage validation
+- **Scene 3 Fix**: Automated rate limiting solution
+
 ### Local Testing
 ```bash
-# Validate syntax
-npm run test:syntax
+# Test complete pipeline
+node test-complete-pipeline.js
 
-# Run linting
-npm run lint
+# Test Scene 3 fix
+node test-hotfix-validation.js
 
-# Test individual components
-node debug-media-curator.js
-node debug-video-size.js
+# Test Video Assembler
+node test-video-assembler-direct.js
+
+# Deploy via CI/CD helper
+node deploy-via-cicd.js
 ```
 
-### CI/CD Pipeline
-The project includes GitHub Actions workflows for:
-- Automated testing and validation
-- Multi-environment deployment (dev/staging/prod)
-- Syntax error prevention
-- Resource cleanup
+### Deployment Methods
+1. **CI/CD Pipeline** (Recommended): Push to deploy automatically
+2. **Manual GitHub Actions**: Use workflow dispatch
+3. **Local SAM**: `sam deploy --config-env dev`
 
-See [GitHub Actions Setup](GITHUB_ACTIONS_SETUP.md) for configuration details.
+See [CI/CD Deployment Guide](CICD_DEPLOYMENT_GUIDE.md) for detailed instructions.
 
 ---
 

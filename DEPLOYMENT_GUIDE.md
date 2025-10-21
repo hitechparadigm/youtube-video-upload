@@ -6,37 +6,52 @@
 <!-- sam -->
 <!-- spell-checker: enable -->
 
-# 🚀 DEPLOYMENT GUIDE - Simplified Architecture
+# 🚀 DEPLOYMENT GUIDE - Enhanced CI/CD Pipeline
 
-**Version**: 4.0.0
-**Date**: October 17, 2025
-**Architecture**: Infrastructure as Code with SAM Template
+**Version**: 5.2.0
+**Date**: October 21, 2025
+**Architecture**: Production-Ready CI/CD with FFmpeg Layer Automation
 
 ---
 
 ## 🎯 **OVERVIEW**
 
-This guide covers deploying the simplified Automated Video Pipeline using Infrastructure as Code (SAM template) to eliminate configuration drift and architectural complexity.
+This guide covers deploying the Automated Video Pipeline using the enhanced CI/CD pipeline that provides production-grade automation, real MP4 video creation, and multi-environment support.
 
 ### **Key Benefits**
-- ✅ **No Configuration Drift**: SAM template ensures consistent deployments
-- ✅ **Simplified Architecture**: Self-contained functions, no shared layer dependencies
-- ✅ **Unified Authentication**: SAM-managed API Gateway with consistent auth
-- ✅ **Maintainable Code**: Clear dependencies and resource allocation
+- ✅ **Production FFmpeg Layer**: Automated Linux binary building for real MP4 creation
+- ✅ **Multi-Environment CI/CD**: Dev, Staging, Production deployment automation
+- ✅ **Smart Deployment**: Conditional deployment based on file changes
+- ✅ **Comprehensive Testing**: Multi-stage validation with real API testing
+- ✅ **Scene 3 Fix**: Automated rate limiting solution deployment
+- ✅ **No Windows Issues**: All building happens in Linux CI environment
 
 ---
 
 ## 📋 **PREREQUISITES**
 
-### **Required Tools**
+### **CI/CD Pipeline Setup (Recommended)**
 ```bash
-# AWS CLI (v2.x)
+# GitHub repository with Actions enabled
+# AWS credentials configured in GitHub Secrets:
+# - AWS_ACCESS_KEY_ID
+# - AWS_SECRET_ACCESS_KEY
+
+# API keys for external services:
+# - Pexels API key
+# - Pixabay API key
+# - Google Places API key
+```
+
+### **Alternative: Local Development Tools**
+```bash
+# AWS CLI (v2.x) - for local deployment
 aws --version
 
-# SAM CLI (recommended)
+# SAM CLI - for local deployment
 sam --version
 
-# Node.js (v18.x or later)
+# Node.js (v18.x or later) - for testing
 node --version
 ```
 
@@ -47,7 +62,8 @@ Your AWS credentials need permissions for:
 - S3 buckets (create, read, write)
 - DynamoDB tables (create, read, write)
 - IAM roles (create for Lambda execution)
-- **🚨 CRITICAL: Secrets Manager (read access for API keys)**
+- **Secrets Manager (read access for API keys)**
+- **CloudFormation (stack management)**
 
 ---
 

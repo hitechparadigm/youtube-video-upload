@@ -1,21 +1,21 @@
 # 📚 Documentation Index
 
-**Last Updated**: October 20, 2025
-**Status**: ✅ Production Ready (v5.0.1)
+**Last Updated**: October 21, 2025
+**Status**: ✅ Production Ready (v5.2.0) - Enhanced CI/CD Pipeline
 
 ---
 
 ## 🎯 Quick Start (Read These First)
 
-1. **[README.md](README.md)** - Project overview, features, and quick start guide
-2. **[KIRO_ENTRY_POINT.md](KIRO_ENTRY_POINT.md)** - Current status, recent fixes, and next steps
-3. **[DEPLOYMENT_GUIDE.md](DEPLOYMENT_GUIDE.md)** - Complete deployment instructions with critical requirements
+1. **[README.md](README.md)** - Project overview, features, and CI/CD quick start
+2. **[DEPLOYMENT_GUIDE.md](DEPLOYMENT_GUIDE.md)** - Enhanced CI/CD deployment with FFmpeg layer automation
+3. **[deploy-via-cicd.js](deploy-via-cicd.js)** - Interactive deployment helper script
 
 ---
 
 ## 🚨 Critical Troubleshooting
 
-- **[TROUBLESHOOTING_MEDIA_DOWNLOAD.md](TROUBLESHOOTING_MEDIA_DOWNLOAD.md)** - Fix placeholder image issues (47-byte files)
+- **[TROUBLESHOOTING_MEDIA_DOWNLOAD.md](TROUBLESHOOTING_MEDIA_DOWNLOAD.md)** - Fix small video files (FFmpeg layer) and placeholder images
 - **[SYNTAX_ERROR_PREVENTION.md](SYNTAX_ERROR_PREVENTION.md)** - Prevent optional chaining syntax errors in CI/CD
 
 ---
@@ -30,9 +30,11 @@
   - `tasks.md` - Implementation tasks (completed ✅)
 
 ### Deployment & Operations
-- **[DEPLOYMENT_GUIDE.md](DEPLOYMENT_GUIDE.md)** - Step-by-step deployment with IAM requirements
-- **[GitHub Actions Setup](.github/SETUP.md)** - CI/CD pipeline configuration and secrets
-- **[template-simplified.yaml](template-simplified.yaml)** - SAM template for infrastructure
+- **[DEPLOYMENT_GUIDE.md](DEPLOYMENT_GUIDE.md)** - Enhanced CI/CD deployment with FFmpeg automation
+- **[.github/workflows/deploy-pipeline-enhanced.yml](.github/workflows/deploy-pipeline-enhanced.yml)** - Production CI/CD pipeline
+- **[samconfig.toml](samconfig.toml)** - Multi-environment SAM configuration
+- **[template-simplified.yaml](template-simplified.yaml)** - SAM template with FFmpeg layer integration
+- **[deploy-via-cicd.js](deploy-via-cicd.js)** - Interactive deployment helper
 
 ### Development & Maintenance
 - **[CHANGELOG.md](CHANGELOG.md)** - Version history, updates, and critical fixes

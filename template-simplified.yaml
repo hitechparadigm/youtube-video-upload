@@ -28,18 +28,18 @@ Globals:
       Architecture: simplified
 
 Resources:
-  # FFmpeg Layer for video processing
-  FFmpegLayer:
-    Type: AWS::Lambda::LayerVersion
-    Properties:
-      LayerName: !Sub 'ffmpeg-layer-${Environment}'
-      Description: FFmpeg binaries for video processing
-      Content:
-        S3Bucket: !Sub 'automated-video-pipeline-deployments-${Environment}'
-        S3Key: layers/ffmpeg-layer.zip
-      CompatibleRuntimes:
-        - nodejs22.x
-      LicenseInfo: 'GPL-2.0-or-later'
+  # FFmpeg Layer for video processing (Using external pre-built layer)
+  # FFmpegLayer:
+  #   Type: AWS::Lambda::LayerVersion
+  #   Properties:
+  #     LayerName: !Sub 'ffmpeg-layer-${Environment}'
+  #     Description: FFmpeg binaries for video processing
+  #     Content:
+  #       S3Bucket: !Sub 'automated-video-pipeline-deployments-${Environment}'
+  #       S3Key: layers/ffmpeg-layer.zip
+  #     CompatibleRuntimes:
+  #       - nodejs22.x
+  #     LicenseInfo: 'GPL-2.0-or-later'
 
   # S3 Bucket for video assets
   VideoBucket:
@@ -250,7 +250,7 @@ Resources:
       CodeUri: src/lambda/video-assembler/
       Handler: index.handler
       Layers:
-        - !Ref FFmpegLayer
+        - arn:aws:lambda:us-east-1:898466741470:layer:ffmpeg:2
       Environment:
         Variables:
           FFMPEG_PATH: /opt/bin/ffmpeg
@@ -258,12 +258,18 @@ Resources:
       Timeout: 900
       MemorySize: 3008
       Events:
-        Api:
+        AssembleApi:
           Type: Api
           Properties:
             RestApiId: !Ref VideoApi
             Path: /video/assemble
             Method: POST
+        HealthApi:
+          Type: Api
+          Properties:
+            RestApiId: !Ref VideoApi
+            Path: /video/health
+            Method: GET
       Policies:
         - S3FullAccessPolicy:
             BucketName: !Ref VideoBucket
