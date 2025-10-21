@@ -176,12 +176,22 @@ jobs:
 
         # Extract binaries
         echo "📦 Extracting FFmpeg binaries..."
-        tar -xf ffmpeg-release-amd64-static.tar.xz --strip-components=1
+        tar -xf ffmpeg-release-amd64-static.tar.xz
+
+        # Find the extracted directory (name varies by version)
+        EXTRACTED_DIR=$(find . -maxdepth 1 -name "ffmpeg-*-amd64-static" -type d | head -1)
+        echo "Found extracted directory: $EXTRACTED_DIR"
+
+        if [ -z "$EXTRACTED_DIR" ]; then
+          echo "❌ Could not find extracted FFmpeg directory"
+          ls -la
+          exit 1
+        fi
 
         # Keep only needed binaries and clean up
-        mv ffmpeg-*-amd64-static/ffmpeg .
-        mv ffmpeg-*-amd64-static/ffprobe .
-        rm -rf ffmpeg-*-amd64-static ffmpeg-release-amd64-static.tar.xz
+        mv "$EXTRACTED_DIR/ffmpeg" .
+        mv "$EXTRACTED_DIR/ffprobe" .
+        rm -rf "$EXTRACTED_DIR" ffmpeg-release-amd64-static.tar.xz
 
         # Make binaries executable
         chmod +x ffmpeg ffprobe
@@ -360,6 +370,34 @@ jobs:
       uses: actions/download-artifact@v4
       with:
         name: packaged-template-${{ matrix.environment }}
+
+    - name: Check and recover CloudFormation stack
+      run: |
+        echo "🔧 Checking CloudFormation stack status..."
+        STACK_NAME="automated-video-pipeline-${{ matrix.environment }}"
+
+        # Check if stack exists and its status
+        if aws cloudformation describe-stacks --stack-name $STACK_NAME >/dev/null 2>&1; then
+          STATUS=$(aws cloudformation describe-stacks --stack-name $STACK_NAME --query 'Stacks[0].StackStatus' --output text)
+          echo "Current stack status: $STATUS"
+
+          if [ "$STATUS" = "UPDATE_ROLLBACK_IN_PROGRESS" ]; then
+            echo "⚠️ Stack is in UPDATE_ROLLBACK_IN_PROGRESS, waiting for completion..."
+            aws cloudformation wait stack-update-complete --stack-name $STACK_NAME || true
+
+            # Check status again
+            STATUS=$(aws cloudformation describe-stacks --stack-name $STACK_NAME --query 'Stacks[0].StackStatus' --output text)
+            echo "Stack status after wait: $STATUS"
+          fi
+
+          if [ "$STATUS" = "UPDATE_ROLLBACK_FAILED" ]; then
+            echo "❌ Stack is in UPDATE_ROLLBACK_FAILED state"
+            echo "💡 Manual intervention required in AWS Console"
+            exit 1
+          fi
+        else
+          echo "ℹ️ Stack does not exist, will create new stack"
+        fi
 
     - name: Deploy to ${{ matrix.environment }}
       run: |
