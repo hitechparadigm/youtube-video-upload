@@ -17,6 +17,7 @@
 ## 🚨 Status & Troubleshooting
 
 - **[CURRENT_STATUS.md](CURRENT_STATUS.md)** - Production readiness status and achievements
+- **[GOOGLE_PLACES_FIX.md](GOOGLE_PLACES_FIX.md)** - Google Places Photo API fix documentation
 - **[TROUBLESHOOTING_MEDIA_DOWNLOAD.md](TROUBLESHOOTING_MEDIA_DOWNLOAD.md)** - Pipeline status and optimization opportunities
 - **[SYNTAX_ERROR_PREVENTION.md](SYNTAX_ERROR_PREVENTION.md)** - Prevent optional chaining syntax errors in CI/CD
 
@@ -68,9 +69,14 @@
 ### Testing & Validation
 - **[test-complete-pipeline.js](test-complete-pipeline.js)** - Complete pipeline testing (6/6 components)
 - **[test-hotfix-validation.js](test-hotfix-validation.js)** - Scene 3 fix validation (100% success)
+- **[test-google-places-priority.js](test-google-places-priority.js)** - Google Places photo testing (25% ratio)
+- **[test-google-places-photo.js](test-google-places-photo.js)** - Direct Google Places API testing
 - **[test-video-assembler-direct.js](test-video-assembler-direct.js)** - Video Assembler testing
+- **[test-video-assembly-existing.js](test-video-assembly-existing.js)** - Video assembly with existing projects
+- **[test-create-real-video.js](test-create-real-video.js)** - End-to-end video creation testing
 - **[check-ffmpeg-layer.js](check-ffmpeg-layer.js)** - FFmpeg layer status checking
 - **[fix-cloudformation-stack.js](fix-cloudformation-stack.js)** - CloudFormation recovery tool
+- **[deploy-google-places-fix.js](deploy-google-places-fix.js)** - Google Places fix deployment
 - **[run-france-pipeline.js](run-france-pipeline.js)** - Complete pipeline test script
 - **[scripts/validate-syntax.js](scripts/validate-syntax.js)** - Syntax validation for all Lambda functions
 

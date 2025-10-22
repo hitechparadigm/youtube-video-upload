@@ -1,0 +1,14 @@
+{
+	"folders": [
+		{
+			"path": "."
+		}
+	],
+	"settings": {
+		"javascript.validate.enable": true,
+		"javascript.format.enable": true,
+		"files.associations": {
+			"*.js": "javascript"
+		}
+	}
+}

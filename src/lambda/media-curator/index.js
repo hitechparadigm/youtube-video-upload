@@ -386,9 +386,8 @@ class GooglePlacesManager {
             try {
                 await this.checkRateLimit();
 
-                // Use new Places API v1 format for better quality photos
-                const photoName = `places/${place.place_id}/photos/${photo.photo_reference}/media`;
-                const photoUrl = `${this.baseUrlV1}/${photoName}?maxWidthPx=1600&maxHeightPx=1200&skipHttpRedirect=false&key=${this.apiKey}`;
+                // Use Legacy Photo API format (Places API v1 returns 400 errors)
+                const photoUrl = `https://maps.googleapis.com/maps/api/place/photo?maxwidth=1600&maxheight=1200&photoreference=${photo.photo_reference}&key=${this.apiKey}`;
 
                 console.log(`🔍 Fetching Google Places photo: ${place.name}`);
 
@@ -452,21 +451,21 @@ class GooglePlacesManager {
         try {
             // Try multiple search strategies for better coverage
             const searchStrategies = [{
-                query: query,
-                type: 'tourist_attraction'
-            },
-            {
-                query: query,
-                type: 'point_of_interest'
-            },
-            {
-                query: `${query} landmarks`,
-                type: 'tourist_attraction'
-            },
-            {
-                query: `${query} attractions`,
-                type: 'point_of_interest'
-            }
+                    query: query,
+                    type: 'tourist_attraction'
+                },
+                {
+                    query: query,
+                    type: 'point_of_interest'
+                },
+                {
+                    query: `${query} landmarks`,
+                    type: 'tourist_attraction'
+                },
+                {
+                    query: `${query} attractions`,
+                    type: 'point_of_interest'
+                }
             ];
 
             const allPlaces = new Set(); // Use Set to avoid duplicates
