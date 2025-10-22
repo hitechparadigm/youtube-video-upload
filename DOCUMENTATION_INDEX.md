@@ -1,21 +1,23 @@
 # 📚 Documentation Index
 
 **Last Updated**: October 21, 2025
-**Status**: ✅ Production Ready (v5.2.0) - Enhanced CI/CD Pipeline
+**Status**: ✅ Production Ready (v5.2.0) - Complete Pipeline Working (6/6 Components)
 
 ---
 
 ## 🎯 Quick Start (Read These First)
 
-1. **[README.md](README.md)** - Project overview, features, and CI/CD quick start
-2. **[DEPLOYMENT_GUIDE.md](DEPLOYMENT_GUIDE.md)** - Enhanced CI/CD deployment with FFmpeg layer automation
-3. **[deploy-via-cicd.js](deploy-via-cicd.js)** - Interactive deployment helper script
+1. **[README.md](README.md)** - Project overview, features, and production status
+2. **[CURRENT_STATUS.md](CURRENT_STATUS.md)** - Current production-ready status and achievements
+3. **[DEPLOYMENT_GUIDE.md](DEPLOYMENT_GUIDE.md)** - Complete CI/CD deployment guide
+4. **[deploy-via-cicd.js](deploy-via-cicd.js)** - Interactive deployment helper script
 
 ---
 
-## 🚨 Critical Troubleshooting
+## 🚨 Status & Troubleshooting
 
-- **[TROUBLESHOOTING_MEDIA_DOWNLOAD.md](TROUBLESHOOTING_MEDIA_DOWNLOAD.md)** - Fix small video files (FFmpeg layer) and placeholder images
+- **[CURRENT_STATUS.md](CURRENT_STATUS.md)** - Production readiness status and achievements
+- **[TROUBLESHOOTING_MEDIA_DOWNLOAD.md](TROUBLESHOOTING_MEDIA_DOWNLOAD.md)** - Pipeline status and optimization opportunities
 - **[SYNTAX_ERROR_PREVENTION.md](SYNTAX_ERROR_PREVENTION.md)** - Prevent optional chaining syntax errors in CI/CD
 
 ---
@@ -30,7 +32,8 @@
   - `tasks.md` - Implementation tasks (completed ✅)
 
 ### Deployment & Operations
-- **[DEPLOYMENT_GUIDE.md](DEPLOYMENT_GUIDE.md)** - Enhanced CI/CD deployment with FFmpeg automation
+- **[DEPLOYMENT_GUIDE.md](DEPLOYMENT_GUIDE.md)** - Complete CI/CD deployment guide
+- **[CURRENT_STATUS.md](CURRENT_STATUS.md)** - Production readiness status and next steps
 - **[.github/workflows/deploy-pipeline-enhanced.yml](.github/workflows/deploy-pipeline-enhanced.yml)** - Production CI/CD pipeline
 - **[samconfig.toml](samconfig.toml)** - Multi-environment SAM configuration
 - **[template-simplified.yaml](template-simplified.yaml)** - SAM template with FFmpeg layer integration
@@ -63,6 +66,11 @@
 ## 🔧 Development Tools
 
 ### Testing & Validation
+- **[test-complete-pipeline.js](test-complete-pipeline.js)** - Complete pipeline testing (6/6 components)
+- **[test-hotfix-validation.js](test-hotfix-validation.js)** - Scene 3 fix validation (100% success)
+- **[test-video-assembler-direct.js](test-video-assembler-direct.js)** - Video Assembler testing
+- **[check-ffmpeg-layer.js](check-ffmpeg-layer.js)** - FFmpeg layer status checking
+- **[fix-cloudformation-stack.js](fix-cloudformation-stack.js)** - CloudFormation recovery tool
 - **[run-france-pipeline.js](run-france-pipeline.js)** - Complete pipeline test script
 - **[scripts/validate-syntax.js](scripts/validate-syntax.js)** - Syntax validation for all Lambda functions
 
